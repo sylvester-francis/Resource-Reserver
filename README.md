@@ -26,7 +26,6 @@ The Resource Reservation System is a robust, scalable API service designed to ma
 
 1. **Users**
    - Secure authentication
-   - Role-based access control
    - Reservation history
 
 2. **Resources**
@@ -51,7 +50,7 @@ The Resource Reservation System is a robust, scalable API service designed to ma
 - `POST /token` - Obtain access token (login)
 
 ### Resources
-- `POST /resources` - Create a new resource (Admin)
+- `POST /resources` - Create a new resource
 - `GET /resources` - List all resources
 - `GET /resources/search` - Search resources with filters
 - `POST /resources/upload` - Upload multiple resources via CSV
@@ -198,7 +197,7 @@ Create a `.env` file in the root directory with the following variables:
 
 ```env
 # Database Configuration
-DATABASE_URL=sqlite:///./resource.db
+DATABASE_URL=sqlite:///./reservations.db
 
 # Authentication
 SECRET_KEY=your-secret-key-change-in-production
@@ -207,6 +206,42 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # API Configuration
 API_URL=http://localhost:8000
+```
+
+### Development Setup
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+   
+2. Install development dependencies (if any):
+   ```bash
+   pip install -r requirements-dev.txt  # If you have dev requirements
+   ```
+
+3. Run tests:
+   ```bash
+   pytest  # If you have tests
+   ```
+
+4. Start the development server:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+### Testing
+
+To run the test suite (if available):
+
+```bash
+pytest tests/
+```
+
+For test coverage:
+
+```bash
+pytest --cov=app tests/
 ```
 
 ### Environment Variables
