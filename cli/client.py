@@ -1,0 +1,148 @@
+"""API client for communicating with the reservation system."""
+
+import requests
+from datetime import datetime
+from typing import List, Dict, Any
+from cli.config import config
+
+
+class APIClient:
+    """Client for interacting with the reservation system API."""
+
+    def __init__(self):
+        self.base_url = config.api_url
+        self.session = requests.Session()
+        # Set default timeout for all requests
+        self.session.timeout = 30
+
+    def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
+        """Handle API response with proper error handling."""
+        try:
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            # Try to extract error message from response
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("detail", str(e))
+            except Exception:
+                error_msg = str(e)
+            raise requests.exceptions.HTTPError(error_msg, response=response)
+
+    def register(self, username: str, password: str) -> Dict[str, Any]:
+        """Register a new user."""
+        response = self.session.post(
+            f"{self.base_url}/register",
+            json={"username": username, "password": password},
+        )
+        return self._handle_response(response)
+
+    def login(self, username: str, password: str) -> str:
+        """Login and return access token."""
+        response = self.session.post(
+            f"{self.base_url}/token",
+            data={"username": username, "password": password},  # noqa : E501
+        )
+        data = self._handle_response(response)
+        return data["access_token"]
+
+    def list_resources(self) -> List[Dict[str, Any]]:
+        """Get all resources."""
+        response = self.session.get(f"{self.base_url}/resources")
+        return self._handle_response(response)
+
+    def search_resources(
+        self,
+        query: str = None,
+        available_from: datetime = None,
+        available_until: datetime = None,
+    ) -> List[Dict[str, Any]]:
+        """Search resources with optional time filtering."""
+        params = {}
+        if query:
+            params["q"] = query
+        if available_from:
+            params["available_from"] = available_from.isoformat()
+        if available_until:
+            params["available_until"] = available_until.isoformat()
+
+        response = self.session.get(f"{self.base_url}/resources/search", params=params)  # noqa : E501
+        return self._handle_response(response)
+
+    def create_resource(
+        self, name: str, tags: List[str] = None, available: bool = True
+    ) -> Dict[str, Any]:
+        """Create a new resource."""
+        headers = config.get_auth_headers()
+        data = {"name": name, "tags": tags or [], "available": available}
+        response = self.session.post(
+            f"{self.base_url}/resources", json=data, headers=headers
+        )
+        return self._handle_response(response)
+
+    def upload_resources_csv(self, file_path: str) -> Dict[str, Any]:
+        """Upload resources from CSV file."""
+        headers = config.get_auth_headers()
+
+        with open(file_path, "rb") as f:
+            files = {"file": (file_path, f, "text/csv")}
+            response = self.session.post(
+                f"{self.base_url}/resources/upload",
+                files=files,
+                headers=headers,  # noqa : E501
+            )
+
+        return self._handle_response(response)
+
+    def create_reservation(
+        self, resource_id: int, start_time: datetime, end_time: datetime
+    ) -> Dict[str, Any]:
+        """Create a new reservation."""
+        headers = config.get_auth_headers()
+        data = {
+            "resource_id": resource_id,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+        }
+        response = self.session.post(
+            f"{self.base_url}/reservations", json=data, headers=headers
+        )
+        return self._handle_response(response)
+
+    def get_my_reservations(
+        self, include_cancelled: bool = False
+    ) -> List[Dict[str, Any]]:
+        """Get current user's reservations."""
+        headers = config.get_auth_headers()
+        params = {"include_cancelled": include_cancelled}
+        response = self.session.get(
+            f"{self.base_url}/reservations/my", headers=headers, params=params
+        )
+        return self._handle_response(response)
+
+    def cancel_reservation(
+        self, reservation_id: int, reason: str = None
+    ) -> Dict[str, Any]:
+        """Cancel a reservation."""
+        headers = config.get_auth_headers()
+        data = {"reason": reason} if reason else {}
+        response = self.session.post(
+            f"{self.base_url}/reservations/{reservation_id}/cancel",
+            json=data,
+            headers=headers,
+        )
+        return self._handle_response(response)
+
+    def get_reservation_history(self, reservation_id: int) -> List[Dict[str, Any]]:  # noqa : E501
+        """Get reservation history."""
+        headers = config.get_auth_headers()
+        response = self.session.get(
+            f"{self.base_url}/reservations/{reservation_id}/history",
+            headers=headers,  # noqa : E501
+        )
+        return self._handle_response(response)
+
+    def health_check(self) -> Dict[str, Any]:
+        """Check API health status."""
+        response = self.session.get(f"{self.base_url}/health")
+        return self._handle_response(response)
