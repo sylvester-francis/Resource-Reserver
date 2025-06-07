@@ -132,16 +132,19 @@ python -m cli.main system status
 python -m cli.main system config
 ```
 
-> 💡 Images go here (update with your paths):
->
-> ![CLI Auth](images/image3.png)  
-> ![CSV Upload](images/image13.png)  
-> ![Reservations](images/image1.png)  
-> ![History](images/image12.png)  
-> ![Upcoming](images/image8.png)  
-> ![Search](images/image11.png)  
-> ![Interactive List](images/image9.png)  
-> ![Server](images/image10.png)
+> ### 📸 Application Screenshots
+> 
+> | Feature | Screenshot |
+> |---------|------------|
+> | **User Authentication** | ![Login Screen](images/Login.png) |
+> | **User Registration** | ![Registration Form](images/Register.png) |
+> | **Resource Management** | ![Resource List](images/listResources.png) |
+> | **Smart Search** | ![Resource Search](images/SearchResource.png) |
+> | **Reservation Creation** | ![New Reservation](images/Reservation.png) |
+> | **Reservation History** | ![Audit Log](images/Audit.png) |
+> | **Upcoming Reservations** | ![Upcoming Bookings](images/upcoming.png) |
+> | **Server Status** | ![API Server](images/ServerStarted.png) |
+> | **Bulk Upload** | ![CSV Import](images/image13.png) |
 
 ---
 
