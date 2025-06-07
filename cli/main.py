@@ -1,6 +1,8 @@
 import typer
 import requests
 from rich import print
+from rich.table import Table
+from rich.console import Console
 
 from typing import Optional
 from datetime import datetime, timezone
@@ -25,7 +27,7 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 client = APIClient()
-
+console = Console()
 
 # Authentication commands
 auth_app = typer.Typer(help="Authentication commands")
@@ -49,12 +51,12 @@ def register():
     try:
         user = client.register(username, password)
         print(
-            f"✅ Successfully registered user: [bold green]{user['username']}[/bold green]"  # noqa : E501
+            f"✅ Successfully registered user: [bold green]{user['username']}[/bold green]"
         )
         print("💡 You can now login with: [cyan]cli auth login[/cyan]")
     except requests.exceptions.HTTPError as e:
         if "already" in str(e).lower():
-            print("❌ Username already exists. Please choose a different username.")  # noqa : E501
+            print("❌ Username already exists. Please choose a different username.")
         else:
             print(f"❌ Registration failed: {e}")
         raise typer.Exit(1)
@@ -123,8 +125,8 @@ def list_resources(
         print("─" * 50)
 
         for resource in resources:
-            status = "🟢 Available" if resource["available"] else "🔴 Unavailable"  # noqa : E501
-            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")  # noqa : E501
+            status = "🟢 Available" if resource["available"] else "🔴 Unavailable"
+            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")
             print(f"     │ {status}")
 
             if show_details and resource.get("tags"):
@@ -139,12 +141,15 @@ def list_resources(
 
 @resource_app.command("search")
 def search_resources(
-    query: Optional[str] = typer.Option(None, "--query", "-q", help="Search query"),  # noqa : E501
+    query: Optional[str] = typer.Option(None, "--query", "-q", help="Search query"),
     available_from: Optional[str] = typer.Option(
         None, "--from", help="Available from (YYYY-MM-DD HH:MM)"
     ),
     available_until: Optional[str] = typer.Option(
         None, "--until", help="Available until (YYYY-MM-DD HH:MM)"
+    ),
+    available_only: bool = typer.Option(
+        True, "--available-only/--all", help="Show only available resources"
     ),
     interactive: bool = typer.Option(
         False, "--interactive", "-i", help="Interactive mode"
@@ -157,9 +162,9 @@ def search_resources(
         print("🔍 [bold]Interactive Resource Search[/bold]")
         query = prompt_for_optional("Search query (press Enter to skip)")
 
-        if typer.confirm("Check availability for specific time period?", default=False):  # noqa : E501
+        if typer.confirm("Check availability for specific time period?", default=False):
             available_from = typer.prompt("Available from (YYYY-MM-DD HH:MM)")
-            available_until = typer.prompt("Available until (YYYY-MM-DD HH:MM)")  # noqa : E501
+            available_until = typer.prompt("Available until (YYYY-MM-DD HH:MM)")
 
     # Parse datetime inputs
     start_time = None
@@ -167,7 +172,7 @@ def search_resources(
 
     if available_from or available_until:
         if not (available_from and available_until):
-            print("❌ Both --from and --until must be specified for time filtering")  # noqa : E501
+            print("❌ Both --from and --until must be specified for time filtering")
             raise typer.Exit(1)
 
         try:
@@ -183,12 +188,12 @@ def search_resources(
             raise typer.Exit(1)
 
     try:
-        resources = client.search_resources(query, start_time, end_time)
+        resources = client.search_resources(query, start_time, end_time, available_only)
 
         if not resources:
             if start_time and end_time:
                 print(
-                    f"😞 No resources available from {format_datetime(start_time)} to {format_datetime(end_time)}"  # noqa : E501
+                    f"😞 No resources available from {format_datetime(start_time)} to {format_datetime(end_time)}"
                 )
             else:
                 print("😞 No resources found matching your search")
@@ -197,9 +202,9 @@ def search_resources(
         # Display results
         if start_time and end_time:
             duration = format_duration(start_time, end_time)
-            print(f"\n✅ [bold]Found {len(resources)} resources available[/bold]")  # noqa : E501
+            print(f"\n✅ [bold]Found {len(resources)} resources available[/bold]")
             print(
-                f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)} ({duration})"  # noqa : E501
+                f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)} ({duration})"
             )
         else:
             print(f"\n🔍 [bold]Found {len(resources)} resources[/bold]")
@@ -207,14 +212,14 @@ def search_resources(
         print("─" * 60)
 
         for resource in resources:
-            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")  # noqa : E501
+            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")
             if resource.get("tags"):
                 print(f"     │ Tags: {', '.join(resource['tags'])}")
             print()
 
         # Offer to make a reservation if time period was specified
         if start_time and end_time and resources:
-            if typer.confirm("Would you like to make a reservation?", default=False):  # noqa : E501
+            if typer.confirm("Would you like to make a reservation?", default=False):
                 resource_id = typer.prompt("Enter resource ID", type=int)
 
                 # Validate resource ID
@@ -234,7 +239,7 @@ def search_resources(
                     print(f"📋 ID: {reservation['id']}")
                     print(f"🏢 Resource: {selected_resource['name']}")
                     print(
-                        f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}"  # noqa : E501
+                        f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}"
                     )
 
                 except requests.exceptions.HTTPError as e:
@@ -245,10 +250,133 @@ def search_resources(
         raise typer.Exit(1)
 
 
+@resource_app.command("availability")
+def resource_availability(
+    resource_id: int = typer.Argument(..., help="Resource ID"),
+    days: int = typer.Option(7, "--days", "-d", help="Number of days to check ahead"),
+    detailed: bool = typer.Option(False, "--detailed", help="Show detailed schedule"),
+):
+    """Get availability schedule for a resource."""
+    try:
+        config.get_auth_headers()  # Check authentication
+    except ValueError:
+        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        raise typer.Exit(1)
+
+    try:
+        availability = client.get_resource_availability(resource_id, days)
+
+        print(f"\n📅 [bold]Availability for {availability['resource_name']}[/bold]")
+        print(f"🆔 Resource ID: {availability['resource_id']}")
+        print(
+            f"🕐 Current time: {format_datetime(datetime.fromisoformat(availability['current_time'].replace('Z', '')))}"
+        )
+
+        current_status = (
+            "🟢 Available"
+            if availability["is_currently_available"]
+            else "🔴 Unavailable"
+        )
+        print(f"📊 Current status: {current_status}")
+
+        base_status = "🟢 Enabled" if availability["base_available"] else "🔴 Disabled"
+        print(f"⚙️  Base setting: {base_status}")
+
+        reservations = availability.get("reservations", [])
+        if reservations:
+            print(f"\n📋 [bold]Upcoming Reservations ({len(reservations)})[/bold]")
+            print("─" * 60)
+
+            for i, res in enumerate(reservations, 1):
+                start = datetime.fromisoformat(res["start_time"].replace("Z", ""))
+                end = datetime.fromisoformat(res["end_time"].replace("Z", ""))
+                duration = format_duration(start, end)
+
+                print(f"{i:2}. {format_datetime(start)} - {format_datetime(end)}")
+                print(f"    Duration: {duration} | Status: {res['status']}")
+                if detailed:
+                    print(
+                        f"    Reservation ID: {res['id']} | User ID: {res['user_id']}"
+                    )
+                print()
+        else:
+            print("\n🎉 No upcoming reservations - fully available!")
+
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            print("❌ Resource not found")
+        else:
+            print(f"❌ Failed to get availability: {e}")
+        raise typer.Exit(1)
+
+
+@resource_app.command("enable")
+def enable_resource(
+    resource_id: int = typer.Argument(..., help="Resource ID"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+):
+    """Enable a resource (for maintenance mode)."""
+    try:
+        config.get_auth_headers()  # Check authentication
+    except ValueError:
+        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        raise typer.Exit(1)
+
+    if not force:
+        if not confirm_action(f"Enable resource {resource_id}?"):
+            print("Operation cancelled")
+            return
+
+    try:
+        result = client.update_resource_availability(resource_id, True)
+        print(
+            f"✅ [bold green]Resource {resource_id} enabled successfully[/bold green]"
+        )
+        print(f"🏢 Resource: {result['resource']['name']}")
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            print("❌ Resource not found")
+        else:
+            print(f"❌ Failed to enable resource: {e}")
+        raise typer.Exit(1)
+
+
+@resource_app.command("disable")
+def disable_resource(
+    resource_id: int = typer.Argument(..., help="Resource ID"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+):
+    """Disable a resource (for maintenance mode)."""
+    try:
+        config.get_auth_headers()  # Check authentication
+    except ValueError:
+        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        raise typer.Exit(1)
+
+    if not force:
+        if not confirm_action(
+            f"Disable resource {resource_id}? This will prevent new reservations."
+        ):
+            print("Operation cancelled")
+            return
+
+    try:
+        result = client.update_resource_availability(resource_id, False)
+        print(f"✅ [bold orange1]Resource {resource_id} disabled[/bold orange1]")
+        print(f"🏢 Resource: {result['resource']['name']}")
+        print("ℹ️  Resource is now in maintenance mode")
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            print("❌ Resource not found")
+        else:
+            print(f"❌ Failed to disable resource: {e}")
+        raise typer.Exit(1)
+
+
 @resource_app.command("create")
 def create_resource(
     name: str = typer.Argument(..., help="Resource name"),
-    tags: Optional[str] = typer.Option("", "--tags", "-t", help="Comma-separated tags"),  # noqa : E501
+    tags: Optional[str] = typer.Option("", "--tags", "-t", help="Comma-separated tags"),
     available: bool = typer.Option(
         True, "--available/--unavailable", help="Resource availability"
     ),
@@ -260,11 +388,11 @@ def create_resource(
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
         raise typer.Exit(1)
 
-    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []  # noqa : E501
+    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []
 
     try:
         resource = client.create_resource(name, tag_list, available)
-        print(f"✅ [bold green]Created resource:[/bold green] {resource['name']}")  # noqa : E501
+        print(f"✅ [bold green]Created resource:[/bold green] {resource['name']}")
         print(f"📋 ID: {resource['id']}")
         if tag_list:
             print(f"🏷️  Tags: {', '.join(tag_list)}")
@@ -339,7 +467,151 @@ def upload_resources(
         raise typer.Exit(1)
 
 
-# Reservation commands
+# System commands
+system_app = typer.Typer(help="System and utility commands")
+app.add_typer(system_app, name="system")
+
+
+@system_app.command("status")
+def system_status():
+    """Check system status and connectivity."""
+    print("🔍 [bold]System Status Check[/bold]")
+    print("─" * 40)
+
+    # Check API connectivity
+    try:
+        health = client.health_check()
+        print("🌐 API Connection: [green]✅ OK[/green]")
+        print(f"📊 API Status: {health.get('status', 'unknown')}")
+
+        if "timestamp" in health:
+            api_time = datetime.fromisoformat(health["timestamp"].replace("Z", ""))
+            print(f"🕐 API Time: {format_datetime(api_time)}")
+
+        # Show background task status if available
+        if "background_tasks" in health:
+            tasks = health["background_tasks"]
+            for task_name, task_status in tasks.items():
+                status_emoji = {
+                    "running": "🟢",
+                    "completed": "✅",
+                    "failed": "❌",
+                    "cancelled": "⏹️",
+                    "not_started": "⏸️",
+                }.get(task_status, "❓")
+                print(f"🔧 {task_name}: {status_emoji} {task_status}")
+
+    except requests.exceptions.HTTPError as e:
+        print("🌐 API Connection: [red]❌ Failed[/red]")
+        print(f"   Error: {e}")
+        return
+    except Exception as e:
+        print("🌐 API Connection: [red]❌ Error[/red]")
+        print(f"   Error: {e}")
+        return
+
+    # Check authentication
+    token = config.load_token()
+    if token:
+        try:
+            client.get_my_reservations()
+            print("🔐 Authentication: [green]✅ Valid[/green]")
+        except requests.exceptions.HTTPError:
+            print("🔐 Authentication: [yellow]⚠️ Token expired[/yellow]")
+            print("   Use: [cyan]cli auth login[/cyan]")
+        except Exception:
+            print("🔐 Authentication: [red]❌ Error[/red]")
+    else:
+        print("🔐 Authentication: [red]❌ Not logged in[/red]")
+        print("   Use: [cyan]cli auth login[/cyan]")
+
+    # Check configuration
+    print(f"⚙️  API URL: {config.api_url}")
+    print(f"📁 Config Dir: {config.config_dir}")
+
+
+@system_app.command("summary")
+def availability_summary():
+    """Get system-wide availability summary."""
+    try:
+        summary = client.get_availability_summary()
+
+        print("\n📊 [bold]System Availability Summary[/bold]")
+        print("═" * 50)
+
+        # Create a nice table
+        table = Table(show_header=True, header_style="bold blue")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Count", style="green", justify="right")
+        table.add_column("Percentage", style="yellow", justify="right")
+
+        total = summary["total_resources"]
+        available = summary["available_now"]
+        unavailable = summary["unavailable_now"]
+        in_use = summary["currently_in_use"]
+
+        # Calculate percentages
+        avail_pct = (available / total * 100) if total > 0 else 0
+        unavail_pct = (unavailable / total * 100) if total > 0 else 0
+        usage_pct = (in_use / total * 100) if total > 0 else 0
+
+        table.add_row("Total Resources", str(total), "100%")
+        table.add_row("Available Now", str(available), f"{avail_pct:.1f}%")
+        table.add_row("Unavailable", str(unavailable), f"{unavail_pct:.1f}%")
+        table.add_row("Currently In Use", str(in_use), f"{usage_pct:.1f}%")
+
+        console.print(table)
+
+        # Show timestamp
+        timestamp = datetime.fromisoformat(summary["timestamp"].replace("Z", ""))
+        print(f"\n🕐 Last updated: {format_datetime(timestamp)}")
+
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ Failed to get summary: {e}")
+        raise typer.Exit(1)
+
+
+@system_app.command("cleanup")
+def manual_cleanup():
+    """Manually trigger cleanup of expired reservations."""
+    try:
+        config.get_auth_headers()  # Check authentication
+    except ValueError:
+        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        raise typer.Exit(1)
+
+    if not confirm_action("Trigger manual cleanup of expired reservations?"):
+        print("Cleanup cancelled")
+        return
+
+    try:
+        result = client.manual_cleanup_expired()
+        print("✅ [bold green]Cleanup completed![/bold green]")
+        print(f"🧹 Cleaned up: {result['expired_count']} expired reservations")
+
+        if result["expired_count"] == 0:
+            print("🎉 No expired reservations found - system is clean!")
+
+        timestamp = datetime.fromisoformat(result["timestamp"].replace("Z", ""))
+        print(f"🕐 Completed at: {format_datetime(timestamp)}")
+
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ Cleanup failed: {e}")
+        raise typer.Exit(1)
+
+
+@system_app.command("config")
+def show_config():
+    """Show current configuration."""
+    print("⚙️  [bold]Current Configuration[/bold]")
+    print("─" * 40)
+    print(f"API URL: {config.api_url}")
+    print(f"Config Directory: {config.config_dir}")
+    print(f"Token File: {config.token_file}")
+    print(f"Authenticated: {'Yes' if config.load_token() else 'No'}")
+
+
+# Reservation commands (keeping existing ones but adding new features)
 reservation_app = typer.Typer(help="Reservation management commands")
 app.add_typer(reservation_app, name="reservations")
 
@@ -374,7 +646,7 @@ def create_reservation(
                     end_time = start_time + duration
                 except ValueError:
                     print(
-                        "❌ End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"  # noqa : E501
+                        "❌ End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"
                     )
                     raise typer.Exit(1)
         else:
@@ -401,24 +673,24 @@ def create_reservation(
         raise typer.Exit(1)
 
     try:
-        reservation = client.create_reservation(resource_id, start_time, end_time)  # noqa : E501
+        reservation = client.create_reservation(resource_id, start_time, end_time)
         duration = format_duration(start_time, end_time)
 
         print("🎉 [bold green]Reservation created successfully![/bold green]")
         print(f"📋 ID: {reservation['id']}")
         print(f"🏢 Resource: {reservation['resource']['name']}")
-        print(f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}")  # noqa : E501
+        print(f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}")
         print(f"⏱️  Duration: {duration}")
 
     except requests.exceptions.HTTPError as e:
         if "conflicts" in str(e).lower():
             print("❌ [red]Time slot conflicts with existing reservation[/red]")
             print(
-                "💡 Use [cyan]cli resources search --from 'START' --until 'END'[/cyan] to find available times"  # noqa : E501
+                "💡 Use [cyan]cli resources search --from 'START' --until 'END'[/cyan] to find available times"
             )
         elif "not found" in str(e).lower():
             print("❌ Resource not found")
-            print("💡 Use [cyan]cli resources list[/cyan] to see available resources")  # noqa : E501
+            print("💡 Use [cyan]cli resources list[/cyan] to see available resources")
         else:
             print(f"❌ Failed to create reservation: {e}")
         raise typer.Exit(1)
@@ -430,7 +702,7 @@ def list_my_reservations(
         False,
         "--include-cancelled",
         "-c",
-        help="Include cancelled reservations",  # noqa : E501
+        help="Include cancelled reservations",
     ),
     upcoming_only: bool = typer.Option(
         False, "--upcoming", "-u", help="Show only upcoming reservations"
@@ -466,31 +738,31 @@ def list_my_reservations(
             return
 
         # Group by status
-        active_reservations = [r for r in reservations if r["status"] == "active"]  # noqa : E501
-        cancelled_reservations = [r for r in reservations if r["status"] == "cancelled"]  # noqa : E501
+        active_reservations = [r for r in reservations if r["status"] == "active"]
+        cancelled_reservations = [r for r in reservations if r["status"] == "cancelled"]
 
-        print(f"\n📅 [bold]Your Reservations ({len(reservations)} total)[/bold]")  # noqa : E501
+        print(f"\n📅 [bold]Your Reservations ({len(reservations)} total)[/bold]")
         print("═" * 60)
 
         # Show active reservations
         if active_reservations:
-            print(f"\n✅ [bold green]Active ({len(active_reservations)})[/bold green]")  # noqa : E501
+            print(f"\n✅ [bold green]Active ({len(active_reservations)})[/bold green]")
             print("─" * 40)
 
             for reservation in active_reservations:
                 start = format_datetime(
-                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))
                 )
                 end = format_datetime(
-                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))
                 )
                 duration = format_duration(
-                    datetime.fromisoformat(reservation["start_time"].replace("Z", "")),  # noqa : E501
-                    datetime.fromisoformat(reservation["end_time"].replace("Z", "")),  # noqa : E501
+                    datetime.fromisoformat(reservation["start_time"].replace("Z", "")),
+                    datetime.fromisoformat(reservation["end_time"].replace("Z", "")),
                 )
 
                 print(
-                    f"[cyan]{reservation['id']:3}[/cyan] │ [bold]{reservation['resource']['name']}[/bold]"  # noqa : E501
+                    f"[cyan]{reservation['id']:3}[/cyan] │ [bold]{reservation['resource']['name']}[/bold]"
                 )
                 print(f"     │ {start} to {end} ({duration})")
 
@@ -507,25 +779,25 @@ def list_my_reservations(
         # Show cancelled reservations if requested
         if include_cancelled and cancelled_reservations:
             print(
-                f"\n❌ [bold red]Cancelled ({len(cancelled_reservations)})[/bold red]"  # noqa : E501
+                f"\n❌ [bold red]Cancelled ({len(cancelled_reservations)})[/bold red]"
             )
             print("─" * 40)
 
             for reservation in cancelled_reservations:
                 start = format_datetime(
-                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))
                 )
                 end = format_datetime(
-                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))
                 )
 
                 print(
-                    f"[cyan]{reservation['id']:3}[/cyan] │ [dim]{reservation['resource']['name']}[/dim]"  # noqa : E501
+                    f"[cyan]{reservation['id']:3}[/cyan] │ [dim]{reservation['resource']['name']}[/dim]"
                 )
                 print(f"     │ [dim]{start} to {end}[/dim]")
 
                 if reservation.get("cancellation_reason"):
-                    print(f"     │ Reason: {reservation['cancellation_reason']}")  # noqa : E501
+                    print(f"     │ Reason: {reservation['cancellation_reason']}")
 
                 if detailed and reservation.get("cancelled_at"):
                     cancelled = format_datetime(
@@ -548,7 +820,7 @@ def cancel_reservation(
     reason: Optional[str] = typer.Option(
         None, "--reason", "-r", help="Cancellation reason"
     ),
-    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt"),  # noqa : E501
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt"),
 ):
     """Cancel a reservation."""
     try:
@@ -560,10 +832,10 @@ def cancel_reservation(
     # Get reservation details first for confirmation
     try:
         reservations = client.get_my_reservations()
-        reservation = next((r for r in reservations if r["id"] == reservation_id), None)  # noqa : E501
+        reservation = next((r for r in reservations if r["id"] == reservation_id), None)
 
         if not reservation:
-            print(f"❌ Reservation {reservation_id} not found or not owned by you")  # noqa : E501
+            print(f"❌ Reservation {reservation_id} not found or not owned by you")
             raise typer.Exit(1)
 
         if reservation["status"] == "cancelled":
@@ -571,17 +843,17 @@ def cancel_reservation(
             raise typer.Exit(1)
 
     except requests.exceptions.HTTPError:
-        # If we can't fetch details, proceed anyway (the API will handle validation) # noqa : E501
+        # If we can't fetch details, proceed anyway (the API will handle validation)
         reservation = None
 
     # Show confirmation with details if available
     if not force:
         if reservation:
             start = format_datetime(
-                datetime.fromisoformat(reservation["start_time"].replace("Z", ""))  # noqa : E501
+                datetime.fromisoformat(reservation["start_time"].replace("Z", ""))
             )
             end = format_datetime(
-                datetime.fromisoformat(reservation["end_time"].replace("Z", ""))  # noqa : E501
+                datetime.fromisoformat(reservation["end_time"].replace("Z", ""))
             )
 
             print("\n📋 [bold]Reservation Details:[/bold]")
@@ -599,9 +871,9 @@ def cancel_reservation(
         reason = prompt_for_optional("Cancellation reason (optional)")
 
     try:
-        result = client.cancel_reservation(reservation_id, reason)  # noqa : F481
+        result = client.cancel_reservation(reservation_id, reason)
         print(
-            f"✅ [bold green]Reservation {reservation_id} cancelled successfully[/bold green]"  # noqa : E501
+            f"✅ [bold green]Reservation {reservation_id} cancelled successfully[/bold green]"
         )
 
         if reason:
@@ -672,72 +944,11 @@ def show_reservation_history(
             print("❌ Reservation not found")
         elif "access denied" in str(e).lower():
             print(
-                "❌ Access denied - you can only view history for your own reservations"  # noqa : E501
+                "❌ Access denied - you can only view history for your own reservations"
             )
         else:
             print(f"❌ Failed to fetch history: {e}")
         raise typer.Exit(1)
-
-
-# System commands
-system_app = typer.Typer(help="System and utility commands")
-app.add_typer(system_app, name="system")
-
-
-@system_app.command("status")
-def system_status():
-    """Check system status and connectivity."""
-    print("🔍 [bold]System Status Check[/bold]")
-    print("─" * 40)
-
-    # Check API connectivity
-    try:
-        health = client.health_check()
-        print("🌐 API Connection: [green]✅ OK[/green]")
-        print(f"📊 API Status: {health.get('status', 'unknown')}")
-
-        if "timestamp" in health:
-            api_time = datetime.fromisoformat(health["timestamp"].replace("Z", ""))  # noqa : E501
-            print(f"🕐 API Time: {format_datetime(api_time)}")
-
-    except requests.exceptions.HTTPError as e:
-        print("🌐 API Connection: [red]❌ Failed[/red]")
-        print(f"   Error: {e}")
-        return
-    except Exception as e:
-        print("🌐 API Connection: [red]❌ Error[/red]")
-        print(f"   Error: {e}")
-        return
-
-    # Check authentication
-    token = config.load_token()
-    if token:
-        try:
-            client.get_my_reservations()
-            print("🔐 Authentication: [green]✅ Valid[/green]")
-        except requests.exceptions.HTTPError:
-            print("🔐 Authentication: [yellow]⚠️ Token expired[/yellow]")
-            print("   Use: [cyan]cli auth login[/cyan]")
-        except Exception:
-            print("🔐 Authentication: [red]❌ Error[/red]")
-    else:
-        print("🔐 Authentication: [red]❌ Not logged in[/red]")
-        print("   Use: [cyan]cli auth login[/cyan]")
-
-    # Check configuration
-    print(f"⚙️  API URL: {config.api_url}")
-    print(f"📁 Config Dir: {config.config_dir}")
-
-
-@system_app.command("config")
-def show_config():
-    """Show current configuration."""
-    print("⚙️  [bold]Current Configuration[/bold]")
-    print("─" * 40)
-    print(f"API URL: {config.api_url}")
-    print(f"Config Directory: {config.config_dir}")
-    print(f"Token File: {config.token_file}")
-    print(f"Authenticated: {'Yes' if config.load_token() else 'No'}")
 
 
 # Quick action commands (shortcuts)
@@ -745,9 +956,9 @@ def show_config():
 def quick_reserve(
     resource_id: int = typer.Argument(..., help="Resource ID"),
     start: str = typer.Argument(..., help="Start time (YYYY-MM-DD HH:MM)"),
-    duration: str = typer.Argument(..., help="Duration (e.g., 2h, 30m, 1h30m)"),  # noqa : E501
+    duration: str = typer.Argument(..., help="Duration (e.g., 2h, 30m, 1h30m)"),
 ):
-    """Quick reserve command (shortcut for reservations create with duration)."""  # noqa : E501
+    """Quick reserve command (shortcut for reservations create with duration)."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError:
@@ -764,12 +975,12 @@ def quick_reserve(
         raise typer.Exit(1)
 
     try:
-        reservation = client.create_reservation(resource_id, start_time, end_time)  # noqa : E501
+        reservation = client.create_reservation(resource_id, start_time, end_time)
 
         print("🎉 [bold green]Quick reservation created![/bold green]")
         print(f"📋 ID: {reservation['id']}")
         print(f"🏢 Resource: {reservation['resource']['name']}")
-        print(f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}")  # noqa : E501
+        print(f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}")
         print(f"⏱️  Duration: {duration}")
 
     except requests.exceptions.HTTPError as e:
@@ -777,108 +988,6 @@ def quick_reserve(
             print("❌ [red]Time slot conflicts with existing reservation[/red]")
         else:
             print(f"❌ Failed to create reservation: {e}")
-        raise typer.Exit(1)
-
-
-@app.command("find")
-def find_and_reserve(
-    duration: str = typer.Argument(..., help="Duration needed (e.g., 2h, 30m)"),  # noqa : E501
-    query: Optional[str] = typer.Option(
-        None, "--query", "-q", help="Resource search query"
-    ),
-    start_from: Optional[str] = typer.Option(
-        None, "--from", help="Earliest start time (YYYY-MM-DD HH:MM)"
-    ),
-):
-    """Find available resources and make a reservation interactively."""
-    try:
-        config.get_auth_headers()  # Check authentication
-    except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
-
-    try:
-        duration_delta = parse_duration(duration)
-    except ValueError as e:
-        print(f"❌ {e}")
-        raise typer.Exit(1)
-
-    # Get start time
-    if start_from:
-        try:
-            start_time = parse_datetime(start_from)
-        except ValueError as e:
-            print(f"❌ {e}")
-            raise typer.Exit(1)
-    else:
-        start_input = typer.prompt("When would you like to start? (YYYY-MM-DD HH:MM)")  # noqa : E501
-        try:
-            start_time = parse_datetime(start_input)
-        except ValueError as e:
-            print(f"❌ {e}")
-            raise typer.Exit(1)
-
-    end_time = start_time + duration_delta
-
-    # Search for available resources
-    print(f"\n🔍 Searching for resources available for {duration}...")
-    print(f"📅 Time slot: {format_datetime(start_time)} to {format_datetime(end_time)}")  # noqa : E501
-
-    try:
-        resources = client.search_resources(query, start_time, end_time)
-
-        if not resources:
-            print("😞 No resources available for that time slot")
-            print("💡 Try a different time or shorter duration")
-            return
-
-        print(f"\n✅ Found {len(resources)} available resources:")
-        print("─" * 50)
-
-        for i, resource in enumerate(resources, 1):
-            print(f"[cyan]{i:2}[/cyan]. {resource['name']} (ID: {resource['id']})")  # noqa : E501
-            if resource.get("tags"):
-                print(f"     Tags: {', '.join(resource['tags'])}")
-
-        print()
-
-        # Let user choose
-        while True:
-            try:
-                choice = typer.prompt("Select a resource (number)", type=int)
-                if 1 <= choice <= len(resources):
-                    break
-                else:
-                    print(f"❌ Please enter a number between 1 and {len(resources)}")  # noqa : E501
-            except typer.Abort:
-                print("Selection cancelled")
-                return
-
-        selected_resource = resources[choice - 1]
-
-        # Confirm reservation
-        print("\n📋 [bold]Reservation Summary:[/bold]")
-        print(f"Resource: {selected_resource['name']}")
-        print(f"Time: {format_datetime(start_time)} to {format_datetime(end_time)}")  # noqa : E501
-        print(f"Duration: {duration}")
-        print()
-
-        if not confirm_action("Create this reservation?", default=True):
-            print("Reservation cancelled")
-            return
-
-        # Create reservation
-        reservation = client.create_reservation(
-            selected_resource["id"], start_time, end_time
-        )
-
-        print("\n🎉 [bold green]Reservation created successfully![/bold green]")
-        print(f"📋 Reservation ID: {reservation['id']}")
-        print(f"🏢 Resource: {reservation['resource']['name']}")
-        print(f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}")  # noqa : E501
-
-    except requests.exceptions.HTTPError as e:
-        print(f"❌ Search failed: {e}")
         raise typer.Exit(1)
 
 
@@ -905,7 +1014,7 @@ def show_upcoming_reservations():
         if not upcoming:
             print("📅 No upcoming reservations")
             print(
-                "💡 Create one with: [cyan]cli reserve[/cyan] or [cyan]cli find[/cyan]"  # noqa : E501
+                "💡 Create one with: [cyan]cli reserve[/cyan] or [cyan]cli find[/cyan]"
             )
             return
 
@@ -916,12 +1025,12 @@ def show_upcoming_reservations():
         print("═" * 60)
 
         for reservation in upcoming:
-            start_dt = datetime.fromisoformat(reservation["start_time"]).replace(  # noqa : E501
+            start_dt = datetime.fromisoformat(reservation["start_time"]).replace(
                 tzinfo=timezone.utc
             )
             end_dt = datetime.fromisoformat(reservation["end_time"]).replace(
                 tzinfo=timezone.utc
-            )  # noqa : E501
+            )
 
             # Calculate time until start
             time_until = start_dt - now
@@ -937,7 +1046,7 @@ def show_upcoming_reservations():
             duration = format_duration(start_dt, end_dt)
 
             print(
-                f"[cyan]{reservation['id']:3}[/cyan] │ [bold]{reservation['resource']['name']}[/bold]"  # noqa : E501
+                f"[cyan]{reservation['id']:3}[/cyan] │ [bold]{reservation['resource']['name']}[/bold]"
             )
             print(f"     │ {format_datetime(start_dt)} ({time_str})")
             print(f"     │ Duration: {duration}")

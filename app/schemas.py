@@ -58,6 +58,12 @@ class ResourceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ResourceAvailabilityUpdate(BaseModel):
+    available: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ReservationCreate(BaseModel):
     resource_id: int
     start_time: datetime

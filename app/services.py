@@ -1,7 +1,7 @@
 # app/services.py
 """Business logic layer with clear separation of concerns."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from app import models, schemas
@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 class ResourceService:
-    """Service for resource management operations."""
+    """Service for resource management operations with dynamic availability."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -31,8 +31,14 @@ class ResourceService:
             raise ValueError(f"Resource '{resource_data.name}' already exists.") from e  # noqa : E501
 
     def get_all_resources(self) -> List[models.Resource]:
-        """Get all resources."""
-        return self.db.query(models.Resource).all()
+        """Get all resources with real-time availability status."""
+        resources = self.db.query(models.Resource).all()
+
+        # Update availability status based on current reservations
+        for resource in resources:
+            resource.available = self._is_resource_currently_available(resource.id)  # noqa : E501
+
+        return resources
 
     def search_resources(
         self,
@@ -41,17 +47,25 @@ class ResourceService:
         available_from: datetime = None,
         available_until: datetime = None,
     ) -> List[models.Resource]:
-        """Search resources with optional time-based filtering."""
+        """Search resources with optional time-based filtering and real-time availability."""  # noqa : E501
 
         # If time period specified, filter out booked resources
         if available_from and available_until:
             available_resources = []
+
+            # Get all resources that are not permanently disabled
             resources = (
-                self.db.query(models.Resource).filter(models.Resource.available).all()  # noqa :E501
+                self.db.query(models.Resource)
+                .filter(
+                    models.Resource.available
+                )  # Only include enabled resources # noqa : E501
+                .all()
             )
 
             for resource in resources:
-                if not self._has_conflict(resource.id, available_from, available_until):  # noqa :E501
+                if not self._has_conflict(resource.id, available_from, available_until):  # noqa : E501
+                    # Set dynamic availability for the response
+                    resource.available = True
                     available_resources.append(resource)
 
             # Apply text search if provided
@@ -60,7 +74,7 @@ class ResourceService:
                 available_resources = [
                     r
                     for r in available_resources
-                    if query_lower in r.name.lower()  # noqa :E501
+                    if query_lower in r.name.lower()  # noqa : E501
                 ]
 
             return available_resources
@@ -68,18 +82,69 @@ class ResourceService:
         # Regular search without time filtering
         db_query = self.db.query(models.Resource)
 
-        if available_only:
-            db_query = db_query.filter(models.Resource.available)
+        # Get base resources
+        resources = db_query.all()
 
-        if query:
-            db_query = db_query.filter(models.Resource.name.ilike(f"%{query}%"))  # noqa :E501
+        # Update real-time availability for each resource
+        filtered_resources = []
+        for resource in resources:
+            # Check real-time availability
+            is_currently_available = self._is_resource_currently_available(resource.id)  # noqa : E501
 
-        return db_query.all()
+            # Apply availability filter
+            if available_only and not is_currently_available:
+                continue
+
+            # Apply text search filter
+            if query:
+                query_lower = query.lower()
+                if not (
+                    query_lower in resource.name.lower()
+                    or any(query_lower in tag.lower() for tag in resource.tags)
+                ):
+                    continue
+
+            # Set dynamic availability status
+            resource.available = is_currently_available
+            filtered_resources.append(resource)
+
+        return filtered_resources
+
+    def _is_resource_currently_available(self, resource_id: int) -> bool:
+        """Check if a resource is currently available (not in an active reservation)."""  # noqa : E501
+        now = datetime.now(timezone.utc)
+
+        # Check if resource has any active reservations right now
+        current_reservation = (
+            self.db.query(models.Reservation)
+            .filter(
+                models.Reservation.resource_id == resource_id,
+                models.Reservation.status == "active",
+                models.Reservation.start_time <= now,
+                models.Reservation.end_time > now,
+            )
+            .first()
+        )
+
+        # Also check the base availability setting
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+
+        if not resource:
+            return False
+
+        # Resource is available if:
+        # 1. It's not disabled (base available = True)
+        # 2. It's not currently reserved
+        return resource.available and current_reservation is None
 
     def _has_conflict(
         self, resource_id: int, start_time: datetime, end_time: datetime
     ) -> bool:
-        """Check if resource has conflicting reservations."""
+        """Check if resource has conflicting reservations during specified time period."""  # noqa : E501
         conflict = (
             self.db.query(models.Reservation)
             .filter(
@@ -92,6 +157,63 @@ class ResourceService:
         )
 
         return conflict is not None
+
+    def update_resource_availability(
+        self, resource_id: int, available: bool
+    ) -> models.Resource:
+        """Manually update resource base availability (for maintenance, etc.)."""  # noqa : E501
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+
+        if not resource:
+            raise ValueError("Resource not found")
+
+        resource.available = available
+        self.db.commit()
+        self.db.refresh(resource)
+        return resource
+
+    def get_resource_availability_schedule(
+        self, resource_id: int, days_ahead: int = 7
+    ) -> dict:
+        """Get detailed availability schedule for a resource."""
+        from datetime import timedelta
+
+        now = datetime.now(timezone.utc)
+        end_date = now + timedelta(days=days_ahead)
+
+        # Get all reservations for this resource in the time period
+        reservations = (
+            self.db.query(models.Reservation)
+            .filter(
+                models.Reservation.resource_id == resource_id,
+                models.Reservation.status == "active",
+                models.Reservation.start_time < end_date,
+                models.Reservation.end_time > now,
+            )
+            .order_by(models.Reservation.start_time)
+            .all()
+        )
+
+        return {
+            "resource_id": resource_id,
+            "current_time": now,
+            "is_currently_available": self._is_resource_currently_available(
+                resource_id
+            ),
+            "reservations": [
+                {
+                    "id": res.id,
+                    "start_time": res.start_time,
+                    "end_time": res.end_time,
+                    "user_id": res.user_id,
+                }
+                for res in reservations
+            ],
+        }
 
 
 class ReservationService:

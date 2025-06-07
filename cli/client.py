@@ -1,3 +1,4 @@
+# cli/client.py - Updated with new endpoints
 """API client for communicating with the reservation system."""
 
 import requests
@@ -41,7 +42,7 @@ class APIClient:
         """Login and return access token."""
         response = self.session.post(
             f"{self.base_url}/token",
-            data={"username": username, "password": password},  # noqa : E501
+            data={"username": username, "password": password},
         )
         data = self._handle_response(response)
         return data["access_token"]
@@ -56,6 +57,7 @@ class APIClient:
         query: str = None,
         available_from: datetime = None,
         available_until: datetime = None,
+        available_only: bool = True,
     ) -> List[Dict[str, Any]]:
         """Search resources with optional time filtering."""
         params = {}
@@ -65,8 +67,10 @@ class APIClient:
             params["available_from"] = available_from.isoformat()
         if available_until:
             params["available_until"] = available_until.isoformat()
+        if not available_only:
+            params["available_only"] = "false"
 
-        response = self.session.get(f"{self.base_url}/resources/search", params=params)  # noqa : E501
+        response = self.session.get(f"{self.base_url}/resources/search", params=params)  # noqa: E501
         return self._handle_response(response)
 
     def create_resource(
@@ -89,9 +93,38 @@ class APIClient:
             response = self.session.post(
                 f"{self.base_url}/resources/upload",
                 files=files,
-                headers=headers,  # noqa : E501
+                headers=headers,
             )
 
+        return self._handle_response(response)
+
+    def get_resource_availability(
+        self, resource_id: int, days_ahead: int = 7
+    ) -> Dict[str, Any]:
+        """Get detailed availability schedule for a resource."""
+        params = {"days_ahead": days_ahead}
+        response = self.session.get(
+            f"{self.base_url}/resources/{resource_id}/availability",
+            params=params,  # noqa : E501
+        )
+        return self._handle_response(response)
+
+    def update_resource_availability(
+        self, resource_id: int, available: bool
+    ) -> Dict[str, Any]:
+        """Update resource base availability (for maintenance, etc.)."""
+        headers = config.get_auth_headers()
+        data = {"available": available}
+        response = self.session.put(
+            f"{self.base_url}/resources/{resource_id}/availability",
+            json=data,
+            headers=headers,
+        )
+        return self._handle_response(response)
+
+    def get_availability_summary(self) -> Dict[str, Any]:
+        """Get system-wide availability summary."""
+        response = self.session.get(f"{self.base_url}/resources/availability/summary")  # noqa :E501
         return self._handle_response(response)
 
     def create_reservation(
@@ -138,7 +171,15 @@ class APIClient:
         headers = config.get_auth_headers()
         response = self.session.get(
             f"{self.base_url}/reservations/{reservation_id}/history",
-            headers=headers,  # noqa : E501
+            headers=headers,
+        )
+        return self._handle_response(response)
+
+    def manual_cleanup_expired(self) -> Dict[str, Any]:
+        """Manually trigger cleanup of expired reservations."""
+        headers = config.get_auth_headers()
+        response = self.session.post(
+            f"{self.base_url}/admin/cleanup-expired", headers=headers
         )
         return self._handle_response(response)
 
