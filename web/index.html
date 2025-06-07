@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Reservation System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .gradient-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+        }
+
+        .gradient-btn:hover {
+            background: linear-gradient(45deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-active {
+            background: linear-gradient(45deg, #10b981, #059669);
+        }
+
+        .status-cancelled {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // Custom Hook for API calls
+        const useAPI = () => {
+            const [token, setToken] = useState(localStorage.getItem('auth_token'));
+            const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || 'null'));
+            const [loading, setLoading] = useState(false);
+
+            const apiCall = useCallback(async (endpoint, options = {}) => {
+                setLoading(true);
+                try {
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        ...(token && { 'Authorization': `Bearer ${token}` }),
+                        ...options.headers
+                    };
+
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        ...options,
+                        headers
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'API request failed');
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    throw error;
+                } finally {
+                    setLoading(false);
+                }
+            }, [token]);
+
+            const login = async (username, password) => {
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                const response = await fetch(`${API_BASE_URL}/token`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid credentials');
+                }
+
+                const data = await response.json();
+                setToken(data.access_token);
+                localStorage.setItem('auth_token', data.access_token);
+
+                // Store user info
+                const userInfo = { username };
+                setUser(userInfo);
+                localStorage.setItem('user', JSON.stringify(userInfo));
+
+                return data;
+            };
+
+            const logout = () => {
+                setToken(null);
+                setUser(null);
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+            };
+
+            const register = async (username, password) => {
+                const response = await fetch(`${API_BASE_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Registration failed');
+                }
+
+                return await response.json();
+            };
+
+            return {
+                apiCall,
+                login,
+                logout,
+                register,
+                token,
+                user,
+                loading,
+                isAuthenticated: !!token
+            };
+        };
+
+        // Login Component
+        const LoginForm = ({ onLogin, onRegister }) => {
+            const [isLogin, setIsLogin] = useState(true);
+            const [formData, setFormData] = useState({ username: '', password: '', confirmPassword: '' });
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+
+                try {
+                    if (isLogin) {
+                        await onLogin(formData.username, formData.password);
+                    } else {
+                        if (formData.password !== formData.confirmPassword) {
+                            throw new Error('Passwords do not match');
+                        }
+                        await onRegister(formData.username, formData.password);
+                        setIsLogin(true);
+                        setFormData({ username: '', password: '', confirmPassword: '' });
+                        alert('Registration successful! Please login.');
+                    }
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="glass-card rounded-2xl p-8 w-full max-w-md animate-fade-in">
+                        <div className="text-center mb-8">
+                            <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i className="fas fa-calendar-alt text-2xl text-white"></i>
+                            </div>
+                            <h1 className="text-3xl font-bold text-white mb-2">Resource Reservation</h1>
+                            <p className="text-white text-opacity-80">Professional resource management system</p>
+                        </div>
+
+                        <div className="flex bg-white bg-opacity-10 rounded-lg p-1 mb-6">
+                            <button
+                                onClick={() => setIsLogin(true)}
+                                className={`flex-1 py-2 rounded-md transition-all ${isLogin ? 'bg-white text-purple-600' : 'text-white'}`}
+                            >
+                                Login
+                            </button>
+                            <button
+                                onClick={() => setIsLogin(false)}
+                                className={`flex-1 py-2 rounded-md transition-all ${!isLogin ? 'bg-white text-purple-600' : 'text-white'}`}
+                            >
+                                Register
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Username"
+                                    value={formData.username}
+                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                    className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <input
+                                    type="password"
+                                    placeholder="Password"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                    required
+                                />
+                            </div>
+
+                            {!isLogin && (
+                                <div>
+                                    <input
+                                        type="password"
+                                        placeholder="Confirm Password"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                        className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                        required
+                                    />
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="bg-red-500 bg-opacity-20 border border-red-500 border-opacity-50 text-white p-3 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full gradient-btn text-white py-3 rounded-lg font-semibold flex items-center justify-center space-x-2"
+                            >
+                                {loading ? (
+                                    <div className="loading-spinner"></div>
+                                ) : (
+                                    <>
+                                        <span>{isLogin ? 'Login' : 'Register'}</span>
+                                        <i className="fas fa-arrow-right"></i>
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // Dashboard Component
+        const Dashboard = ({ api, onLogout }) => {
+            const [activeTab, setActiveTab] = useState('resources');
+            const [resources, setResources] = useState([]);
+            const [reservations, setReservations] = useState([]);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [showCreateResource, setShowCreateResource] = useState(false);
+            const [showCreateReservation, setShowCreateReservation] = useState(false);
+            const [selectedResource, setSelectedResource] = useState(null);
+
+            // Load data
+            useEffect(() => {
+                loadResources();
+                loadReservations();
+            }, []);
+
+            const loadResources = async () => {
+                try {
+                    const data = await api.apiCall('/resources');
+                    setResources(data);
+                } catch (error) {
+                    console.error('Failed to load resources:', error);
+                }
+            };
+
+            const loadReservations = async () => {
+                try {
+                    const data = await api.apiCall('/reservations/my');
+                    setReservations(data);
+                } catch (error) {
+                    console.error('Failed to load reservations:', error);
+                }
+            };
+
+            const filteredResources = resources.filter(resource =>
+                resource.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                resource.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
+
+            const upcomingReservations = reservations
+                .filter(r => r.status === 'active' && new Date(r.start_time) > new Date())
+                .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+            const stats = {
+                totalResources: resources.length,
+                availableResources: resources.filter(r => r.available).length,
+                activeReservations: reservations.filter(r => r.status === 'active').length,
+                upcomingReservations: upcomingReservations.length
+            };
+
+            return (
+                <div className="min-h-screen p-4">
+                    {/* Header */}
+                    <div className="glass-card rounded-2xl p-6 mb-6 animate-fade-in">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i className="fas fa-calendar-alt text-xl text-white"></i>
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-white">Resource Reservation System</h1>
+                                    <p className="text-white text-opacity-70">Welcome back, {api.user?.username}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onLogout}
+                                className="bg-red-500 bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all flex items-center space-x-2"
+                            >
+                                <i className="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        {[
+                            { label: 'Total Resources', value: stats.totalResources, icon: 'fas fa-cube', color: 'bg-blue-500' },
+                            { label: 'Available Now', value: stats.availableResources, icon: 'fas fa-check-circle', color: 'bg-green-500' },
+                            { label: 'Active Bookings', value: stats.activeReservations, icon: 'fas fa-calendar-check', color: 'bg-orange-500' },
+                            { label: 'Upcoming', value: stats.upcomingReservations, icon: 'fas fa-clock', color: 'bg-purple-500' }
+                        ].map((stat, index) => (
+                            <div key={index} className="glass-card rounded-xl p-4 card-hover animate-fade-in">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-white text-opacity-70 text-sm">{stat.label}</p>
+                                        <p className="text-2xl font-bold text-white">{stat.value}</p>
+                                    </div>
+                                    <div className={`w-12 h-12 ${stat.color} bg-opacity-20 rounded-lg flex items-center justify-center`}>
+                                        <i className={`${stat.icon} text-white text-xl`}></i>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Navigation Tabs */}
+                    <div className="glass-card rounded-2xl p-6 animate-fade-in">
+                        <div className="flex space-x-1 bg-white bg-opacity-10 p-1 rounded-lg mb-6">
+                            {[
+                                { id: 'resources', label: 'Resources', icon: 'fas fa-cube' },
+                                { id: 'reservations', label: 'My Reservations', icon: 'fas fa-calendar' },
+                                { id: 'upcoming', label: 'Upcoming', icon: 'fas fa-clock' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex-1 py-3 px-4 rounded-md transition-all flex items-center justify-center space-x-2 ${activeTab === tab.id ? 'bg-white text-purple-600' : 'text-white hover:bg-white hover:bg-opacity-10'
+                                        }`}
+                                >
+                                    <i className={tab.icon}></i>
+                                    <span>{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Tab Content */}
+                        {activeTab === 'resources' && (
+                            <ResourcesTab
+                                resources={filteredResources}
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                onCreateResource={() => setShowCreateResource(true)}
+                                onReserve={(resource) => {
+                                    setSelectedResource(resource);
+                                    setShowCreateReservation(true);
+                                }}
+                                onRefresh={loadResources}
+                            />
+                        )}
+
+                        {activeTab === 'reservations' && (
+                            <ReservationsTab
+                                reservations={reservations}
+                                onRefresh={loadReservations}
+                                api={api}
+                            />
+                        )}
+
+                        {activeTab === 'upcoming' && (
+                            <UpcomingTab reservations={upcomingReservations} />
+                        )}
+                    </div>
+
+                    {/* Modals */}
+                    {showCreateResource && (
+                        <CreateResourceModal
+                            api={api}
+                            onClose={() => setShowCreateResource(false)}
+                            onSuccess={() => {
+                                setShowCreateResource(false);
+                                loadResources();
+                            }}
+                        />
+                    )}
+
+                    {showCreateReservation && (
+                        <CreateReservationModal
+                            api={api}
+                            resource={selectedResource}
+                            onClose={() => {
+                                setShowCreateReservation(false);
+                                setSelectedResource(null);
+                            }}
+                            onSuccess={() => {
+                                setShowCreateReservation(false);
+                                setSelectedResource(null);
+                                loadReservations();
+                            }}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        // Resources Tab Component
+        const ResourcesTab = ({ resources, searchQuery, setSearchQuery, onCreateResource, onReserve, onRefresh }) => {
+            return (
+                <div>
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search resources..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full p-3 pl-10 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                />
+                                <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-white text-opacity-70"></i>
+                            </div>
+                        </div>
+                        <div className="flex space-x-2 ml-4">
+                            <button
+                                onClick={onRefresh}
+                                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all flex items-center space-x-2"
+                            >
+                                <i className="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                            <button
+                                onClick={onCreateResource}
+                                className="gradient-btn text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                            >
+                                <i className="fas fa-plus"></i>
+                                <span>Add Resource</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {resources.map(resource => (
+                            <div key={resource.id} className="bg-white bg-opacity-10 rounded-lg p-4 card-hover">
+                                <div className="flex justify-between items-start mb-3">
+                                    <h3 className="text-lg font-semibold text-white">{resource.name}</h3>
+                                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${resource.available ? 'bg-green-500 bg-opacity-20 text-green-300' : 'bg-red-500 bg-opacity-20 text-red-300'
+                                        }`}>
+                                        {resource.available ? 'Available' : 'Unavailable'}
+                                    </div>
+                                </div>
+
+                                {resource.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-3">
+                                        {resource.tags.map(tag => (
+                                            <span key={tag} className="bg-white bg-opacity-20 text-white text-xs px-2 py-1 rounded">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={() => onReserve(resource)}
+                                        disabled={!resource.available}
+                                        className="flex-1 gradient-btn disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-lg transition-all flex items-center justify-center space-x-2"
+                                    >
+                                        <i className="fas fa-calendar-plus"></i>
+                                        <span>Reserve</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {resources.length === 0 && (
+                        <div className="text-center py-12">
+                            <i className="fas fa-cube text-4xl text-white text-opacity-50 mb-4"></i>
+                            <p className="text-white text-opacity-70">No resources found</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Reservations Tab Component
+        const ReservationsTab = ({ reservations, onRefresh, api }) => {
+            const [cancellingId, setCancellingId] = useState(null);
+
+            const handleCancel = async (reservationId) => {
+                if (!confirm('Are you sure you want to cancel this reservation?')) return;
+
+                setCancellingId(reservationId);
+                try {
+                    await api.apiCall(`/reservations/${reservationId}/cancel`, {
+                        method: 'POST',
+                        body: JSON.stringify({})
+                    });
+                    onRefresh();
+                } catch (error) {
+                    alert('Failed to cancel reservation: ' + error.message);
+                } finally {
+                    setCancellingId(null);
+                }
+            };
+
+            return (
+                <div>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold text-white">My Reservations</h2>
+                        <button
+                            onClick={onRefresh}
+                            className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all flex items-center space-x-2"
+                        >
+                            <i className="fas fa-sync-alt"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {reservations.map(reservation => {
+                            const startTime = new Date(reservation.start_time);
+                            const endTime = new Date(reservation.end_time);
+                            const isUpcoming = startTime > new Date();
+
+                            return (
+                                <div key={reservation.id} className="bg-white bg-opacity-10 rounded-lg p-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-white mb-1">
+                                                {reservation.resource.name}
+                                            </h3>
+                                            <p className="text-white text-opacity-70 mb-2">
+                                                {startTime.toLocaleDateString()} • {startTime.toLocaleTimeString()} - {endTime.toLocaleTimeString()}
+                                            </p>
+                                            <div className="flex items-center space-x-2">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${reservation.status === 'active' ? 'status-active text-white' : 'status-cancelled text-white'
+                                                    }`}>
+                                                    {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                                                </span>
+                                                {isUpcoming && (
+                                                    <span className="bg-blue-500 bg-opacity-20 text-blue-300 px-2 py-1 rounded-full text-xs">
+                                                        Upcoming
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {reservation.status === 'active' && isUpcoming && (
+                                            <button
+                                                onClick={() => handleCancel(reservation.id)}
+                                                disabled={cancellingId === reservation.id}
+                                                className="bg-red-500 bg-opacity-20 hover:bg-opacity-30 text-red-300 px-3 py-1 rounded-lg transition-all text-sm flex items-center space-x-2"
+                                            >
+                                                {cancellingId === reservation.id ? (
+                                                    <div className="loading-spinner w-4 h-4"></div>
+                                                ) : (
+                                                    <>
+                                                        <i className="fas fa-times"></i>
+                                                        <span>Cancel</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {reservations.length === 0 && (
+                        <div className="text-center py-12">
+                            <i className="fas fa-calendar text-4xl text-white text-opacity-50 mb-4"></i>
+                            <p className="text-white text-opacity-70">No reservations found</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Upcoming Tab Component
+        const UpcomingTab = ({ reservations }) => {
+            return (
+                <div>
+                    <h2 className="text-xl font-semibold text-white mb-4">Upcoming Reservations</h2>
+
+                    <div className="space-y-4">
+                        {reservations.map(reservation => {
+                            const startTime = new Date(reservation.start_time);
+                            const endTime = new Date(reservation.end_time);
+                            const timeUntil = startTime - new Date();
+                            const hoursUntil = Math.floor(timeUntil / (1000 * 60 * 60));
+                            const daysUntil = Math.floor(hoursUntil / 24);
+
+                            let timeText;
+                            if (daysUntil > 0) {
+                                timeText = `in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+                            } else if (hoursUntil > 0) {
+                                timeText = `in ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
+                            } else {
+                                timeText = 'starting soon';
+                            }
+
+                            return (
+                                <div key={reservation.id} className="bg-white bg-opacity-10 rounded-lg p-4">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-white mb-1">
+                                                {reservation.resource.name}
+                                            </h3>
+                                            <p className="text-white text-opacity-70 mb-1">
+                                                {startTime.toLocaleDateString()} • {startTime.toLocaleTimeString()} - {endTime.toLocaleTimeString()}
+                                            </p>
+                                            <p className="text-blue-300 text-sm">
+                                                <i className="fas fa-clock mr-1"></i>
+                                                {timeText}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="w-12 h-12 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center">
+                                                <i className="fas fa-calendar-check text-blue-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {reservations.length === 0 && (
+                        <div className="text-center py-12">
+                            <i className="fas fa-clock text-4xl text-white text-opacity-50 mb-4"></i>
+                            <p className="text-white text-opacity-70">No upcoming reservations</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Create Resource Modal
+        const CreateResourceModal = ({ api, onClose, onSuccess }) => {
+            const [formData, setFormData] = useState({ name: '', tags: '', available: true });
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+
+                try {
+                    const tags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    await api.apiCall('/resources', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            name: formData.name,
+                            tags,
+                            available: formData.available
+                        })
+                    });
+                    onSuccess();
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-white">Create New Resource</h2>
+                            <button
+                                onClick={onClose}
+                                className="text-white text-opacity-70 hover:text-opacity-100 transition-all"
+                            >
+                                <i className="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-white text-opacity-70 text-sm mb-2">Resource Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                    placeholder="e.g., Conference Room A"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-white text-opacity-70 text-sm mb-2">Tags (comma-separated)</label>
+                                <input
+                                    type="text"
+                                    value={formData.tags}
+                                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                                    className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                    placeholder="e.g., meeting, conference, large"
+                                />
+                            </div>
+
+                            <div className="flex items-center space-x-3">
+                                <input
+                                    type="checkbox"
+                                    id="available"
+                                    checked={formData.available}
+                                    onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
+                                    className="w-4 h-4 text-purple-600 rounded"
+                                />
+                                <label htmlFor="available" className="text-white">Available for booking</label>
+                            </div>
+
+                            {error && (
+                                <div className="bg-red-500 bg-opacity-20 border border-red-500 border-opacity-50 text-white p-3 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white py-3 rounded-lg transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-1 gradient-btn text-white py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
+                                >
+                                    {loading ? (
+                                        <div className="loading-spinner"></div>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-plus"></i>
+                                            <span>Create</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // Create Reservation Modal
+        const CreateReservationModal = ({ api, resource, onClose, onSuccess }) => {
+            const [formData, setFormData] = useState({
+                startDate: '',
+                startTime: '',
+                endDate: '',
+                endTime: ''
+            });
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            // Set default dates/times
+            useEffect(() => {
+                const now = new Date();
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const defaultStartTime = '09:00';
+                const defaultEndTime = '10:00';
+
+                setFormData({
+                    startDate: tomorrow.toISOString().split('T')[0],
+                    startTime: defaultStartTime,
+                    endDate: tomorrow.toISOString().split('T')[0],
+                    endTime: defaultEndTime
+                });
+            }, []);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+
+                try {
+                    const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
+                    const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
+
+                    if (endDateTime <= startDateTime) {
+                        throw new Error('End time must be after start time');
+                    }
+
+                    await api.apiCall('/reservations', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            resource_id: resource.id,
+                            start_time: startDateTime.toISOString(),
+                            end_time: endDateTime.toISOString()
+                        })
+                    });
+                    onSuccess();
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-white">Reserve Resource</h2>
+                            <button
+                                onClick={onClose}
+                                className="text-white text-opacity-70 hover:text-opacity-100 transition-all"
+                            >
+                                <i className="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+
+                        {resource && (
+                            <div className="bg-white bg-opacity-10 rounded-lg p-3 mb-4">
+                                <h3 className="text-white font-semibold">{resource.name}</h3>
+                                {resource.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                        {resource.tags.map(tag => (
+                                            <span key={tag} className="bg-white bg-opacity-20 text-white text-xs px-2 py-1 rounded">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-white text-opacity-70 text-sm mb-2">Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={formData.startDate}
+                                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                        className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-white text-opacity-70 text-sm mb-2">Start Time</label>
+                                    <input
+                                        type="time"
+                                        value={formData.startTime}
+                                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                                        className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-white text-opacity-70 text-sm mb-2">End Date</label>
+                                    <input
+                                        type="date"
+                                        value={formData.endDate}
+                                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                        className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-white text-opacity-70 text-sm mb-2">End Time</label>
+                                    <input
+                                        type="time"
+                                        value={formData.endTime}
+                                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                                        className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="bg-red-500 bg-opacity-20 border border-red-500 border-opacity-50 text-white p-3 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white py-3 rounded-lg transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-1 gradient-btn text-white py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
+                                >
+                                    {loading ? (
+                                        <div className="loading-spinner"></div>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-calendar-plus"></i>
+                                            <span>Reserve</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main App Component
+        const App = () => {
+            const api = useAPI();
+
+            if (!api.isAuthenticated) {
+                return <LoginForm onLogin={api.login} onRegister={api.register} />;
+            }
+
+            return <Dashboard api={api} onLogout={api.logout} />;
+        };
+
+        // Render the app
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+
+</html>
