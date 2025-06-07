@@ -3,7 +3,6 @@
 ![Python Version](https://img.shields.io/badge/python-3.7%2B-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Framework-green?logo=fastapi)
 ![Typer CLI](https://img.shields.io/badge/CLI-Typer-informational?logo=terminal)
-![License](https://img.shields.io/github/license/sylvester-francis/Resource-Reserver)
 ![Status](https://img.shields.io/badge/status-MVP-yellow)
 
 ## Overview
