@@ -5,6 +5,21 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 
+def ensure_timezone_aware(dt):
+    """Ensure datetime is timezone-aware (convert to UTC if naive)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        # If naive, assume it's UTC
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def utcnow():
+    """Get current UTC datetime that's timezone-aware."""
+    return datetime.now(timezone.utc)
+
+
 class UserCreate(BaseModel):
     username: str
     password: str
@@ -69,11 +84,27 @@ class ReservationCreate(BaseModel):
     start_time: datetime
     end_time: datetime
 
+    @field_validator("start_time")
+    @classmethod
+    def validate_start_time(cls, v: datetime) -> datetime:
+        # Ensure timezone awareness
+        v = ensure_timezone_aware(v)
+
+        if v <= utcnow():
+            raise ValueError("Start time must be in the future")
+        return v
+
     @field_validator("end_time")
     @classmethod
     def validate_end_time(cls, v: datetime, info) -> datetime:
+        # Ensure timezone awareness
+        v = ensure_timezone_aware(v)
+
         start = info.data.get("start_time")
         if start:
+            # Ensure start time is also timezone-aware
+            start = ensure_timezone_aware(start)
+
             if v <= start:
                 raise ValueError("End time must be after start time")
 
@@ -83,13 +114,6 @@ class ReservationCreate(BaseModel):
             if duration < timedelta(minutes=15):
                 raise ValueError("Reservation must be at least 15 minutes")
 
-        return v
-
-    @field_validator("start_time")
-    @classmethod
-    def validate_start_time(cls, v: datetime) -> datetime:
-        if v <= datetime.now(timezone.utc):
-            raise ValueError("Start time must be in the future")
         return v
 
 

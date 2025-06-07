@@ -1,3 +1,5 @@
+# app/main.py - Updated with timezone-aware datetime handling
+
 import csv
 from io import StringIO
 from typing import List, Optional
@@ -6,7 +8,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, status  # noqa : E501
+from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -24,8 +26,23 @@ logger = logging.getLogger(__name__)
 cleanup_task = None
 
 
+def ensure_timezone_aware(dt):
+    """Ensure datetime is timezone-aware (convert to UTC if naive)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        # If naive, assume it's UTC
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def utcnow():
+    """Get current UTC datetime that's timezone-aware."""
+    return datetime.now(timezone.utc)
+
+
 async def cleanup_expired_reservations():
-    """Background task to clean up expired reservations and update availability."""  # noqa : E501
+    """Background task to clean up expired reservations and update availability."""
     from app.database import SessionLocal
 
     logger.info("Starting cleanup task for expired reservations")
@@ -33,7 +50,7 @@ async def cleanup_expired_reservations():
     while True:
         try:
             db = SessionLocal()
-            now = datetime.now(timezone.utc)
+            now = utcnow()
 
             # Find expired reservations that are still marked as active
             expired_reservations = (
@@ -48,7 +65,7 @@ async def cleanup_expired_reservations():
             # Process expired reservations
             if expired_reservations:
                 logger.info(
-                    f"Cleaning up {len(expired_reservations)} expired reservations"  # noqa : E501
+                    f"Cleaning up {len(expired_reservations)} expired reservations"
                 )
 
                 for reservation in expired_reservations:
@@ -57,7 +74,7 @@ async def cleanup_expired_reservations():
                         reservation_id=reservation.id,
                         action="expired",
                         user_id=reservation.user_id,
-                        details=f"Reservation automatically expired at {now.isoformat()}",  # noqa : E501
+                        details=f"Reservation automatically expired at {now.isoformat()}",
                     )
                     db.add(history)
 
@@ -65,7 +82,7 @@ async def cleanup_expired_reservations():
                     reservation.status = "expired"
 
                     logger.info(
-                        f"Expired reservation {reservation.id} for resource {reservation.resource_id}"  # noqa : E501
+                        f"Expired reservation {reservation.id} for resource {reservation.resource_id}"
                     )
 
                 db.commit()
@@ -163,7 +180,7 @@ def health_check():
 
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow(),
+        "timestamp": utcnow(),
         "background_tasks": {"cleanup_task": task_status},
     }
 
@@ -174,7 +191,7 @@ def health_check():
     response_model=schemas.UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):  # noqa : E501
+def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
     user_service = UserService(db)
 
@@ -235,7 +252,7 @@ def list_resources(db: Session = Depends(get_db)):
 
 @app.get("/resources/search", response_model=List[schemas.ResourceResponse])
 def search_resources(
-    q: Optional[str] = Query(None, description="Search query for resource names"),  # noqa : E501
+    q: Optional[str] = Query(None, description="Search query for resource names"),
     available_only: bool = Query(
         True, description="Filter to only available resources"
     ),
@@ -249,6 +266,12 @@ def search_resources(
 ):
     """Search resources with optional time-based availability filtering."""
 
+    # Ensure timezone awareness for datetime parameters
+    if available_from:
+        available_from = ensure_timezone_aware(available_from)
+    if available_until:
+        available_until = ensure_timezone_aware(available_until)
+
     # Validate time range if provided
     if available_from and available_until:
         if available_until <= available_from:
@@ -257,7 +280,7 @@ def search_resources(
                 detail="End time must be after start time",
             )
 
-        if available_from <= datetime.utcnow():
+        if available_from <= utcnow():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Start time must be in the future",
@@ -298,11 +321,9 @@ def upload_resources_csv(
                     continue
 
                 tags = [
-                    tag.strip()
-                    for tag in row.get("tags", "").split(",")
-                    if tag.strip()  # noqa : E501
+                    tag.strip() for tag in row.get("tags", "").split(",") if tag.strip()
                 ]
-                available = row.get("available", "true").lower() in ("true", "1", "yes")  # noqa : E501
+                available = row.get("available", "true").lower() in ("true", "1", "yes")
 
                 resource_data = schemas.ResourceCreate(
                     name=name, tags=tags, available=available
@@ -343,7 +364,7 @@ def get_resource_availability(
         )
         return availability
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))  # noqa : E501
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @app.put("/resources/{resource_id}/availability")
@@ -361,11 +382,11 @@ def update_resource_availability(
             resource_id, availability_update.available
         )
         return {
-            "message": f"Resource availability updated to {'available' if availability_update.available else 'unavailable'}",  # noqa : E501
+            "message": f"Resource availability updated to {'available' if availability_update.available else 'unavailable'}",
             "resource": resource,
         }
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))  # noqa : E501
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @app.get("/resources/availability/summary")
@@ -380,7 +401,7 @@ def get_availability_summary(db: Session = Depends(get_db)):
     unavailable_now = total_resources - available_now
 
     # Get resources currently in use
-    now = datetime.utcnow()
+    now = utcnow()
     in_use = (
         db.query(models.Reservation)
         .filter(
@@ -415,12 +436,12 @@ def create_reservation(
     reservation_service = ReservationService(db)
 
     try:
-        return reservation_service.create_reservation(reservation_data, current_user.id)  # noqa : E501
+        return reservation_service.create_reservation(reservation_data, current_user.id)
     except ValueError as e:
         if "conflicts" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))  # noqa : E501
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))  # noqa : E501
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @app.get("/reservations/my", response_model=List[schemas.ReservationResponse])
@@ -433,7 +454,7 @@ def get_my_reservations(
 ):
     """Get current user's reservations."""
     reservation_service = ReservationService(db)
-    return reservation_service.get_user_reservations(current_user.id, include_cancelled)  # noqa : E501
+    return reservation_service.get_user_reservations(current_user.id, include_cancelled)
 
 
 @app.post("/reservations/{reservation_id}/cancel")
@@ -457,11 +478,11 @@ def cancel_reservation(
         }
     except ValueError as e:
         if "not found" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))  # noqa : E501
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         elif "only cancel your own" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))  # noqa : E501
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))  # noqa : E501
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @app.get("/reservations/{reservation_id}/history")
@@ -497,18 +518,18 @@ def get_reservation_history(
 @app.post("/admin/cleanup-expired")
 def manual_cleanup_expired_reservations(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),  # noqa : E501
+    current_user: models.User = Depends(get_current_user),
 ):
     """Manually trigger cleanup of expired reservations (admin endpoint)."""
     try:
-        now = datetime.now(timezone.utc)
+        now = utcnow()
 
         # Find expired reservations
         expired_reservations = (
             db.query(models.Reservation)
             .filter(
                 models.Reservation.status == "active",
-                models.Reservation.end_time < now,  # noqa : E501
+                models.Reservation.end_time < now,
             )
             .all()
         )
@@ -520,7 +541,7 @@ def manual_cleanup_expired_reservations(
                 reservation_id=reservation.id,
                 action="expired",
                 user_id=reservation.user_id,
-                details=f"Reservation manually expired by user {current_user.id} at {now.isoformat()}",  # noqa : E501
+                details=f"Reservation manually expired by user {current_user.id} at {now.isoformat()}",
             )
             db.add(history)
 
@@ -531,7 +552,7 @@ def manual_cleanup_expired_reservations(
         db.commit()
 
         return {
-            "message": f"Successfully cleaned up {cleanup_count} expired reservations",  # noqa : E501
+            "message": f"Successfully cleaned up {cleanup_count} expired reservations",
             "expired_count": cleanup_count,
             "timestamp": now,
         }

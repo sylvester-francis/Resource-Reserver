@@ -1,12 +1,28 @@
-# app/services.py
+# app/services.py - Updated with timezone-aware datetime handling
+
 """Business logic layer with clear separation of concerns."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from app import models, schemas
 from app.auth import hash_password
 from sqlalchemy.exc import IntegrityError
+
+
+def ensure_timezone_aware(dt):
+    """Ensure datetime is timezone-aware (convert to UTC if naive)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        # If naive, assume it's UTC
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def utcnow():
+    """Get current UTC datetime that's timezone-aware."""
+    return datetime.now(timezone.utc)
 
 
 class ResourceService:
@@ -15,7 +31,7 @@ class ResourceService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_resource(self, resource_data: schemas.ResourceCreate) -> models.Resource:  # noqa : E501
+    def create_resource(self, resource_data: schemas.ResourceCreate) -> models.Resource:
         resource = models.Resource(
             name=resource_data.name,
             available=resource_data.available,
@@ -28,7 +44,7 @@ class ResourceService:
             return resource
         except IntegrityError as e:
             self.db.rollback()
-            raise ValueError(f"Resource '{resource_data.name}' already exists.") from e  # noqa : E501
+            raise ValueError(f"Resource '{resource_data.name}' already exists.") from e
 
     def get_all_resources(self) -> List[models.Resource]:
         """Get all resources with real-time availability status."""
@@ -36,7 +52,7 @@ class ResourceService:
 
         # Update availability status based on current reservations
         for resource in resources:
-            resource.available = self._is_resource_currently_available(resource.id)  # noqa : E501
+            resource.available = self._is_resource_currently_available(resource.id)
 
         return resources
 
@@ -47,7 +63,13 @@ class ResourceService:
         available_from: datetime = None,
         available_until: datetime = None,
     ) -> List[models.Resource]:
-        """Search resources with optional time-based filtering and real-time availability."""  # noqa : E501
+        """Search resources with optional time-based filtering and real-time availability."""
+
+        # Ensure timezone awareness for datetime parameters
+        if available_from:
+            available_from = ensure_timezone_aware(available_from)
+        if available_until:
+            available_until = ensure_timezone_aware(available_until)
 
         # If time period specified, filter out booked resources
         if available_from and available_until:
@@ -56,14 +78,12 @@ class ResourceService:
             # Get all resources that are not permanently disabled
             resources = (
                 self.db.query(models.Resource)
-                .filter(
-                    models.Resource.available
-                )  # Only include enabled resources # noqa : E501
+                .filter(models.Resource.available)  # Only include enabled resources
                 .all()
             )
 
             for resource in resources:
-                if not self._has_conflict(resource.id, available_from, available_until):  # noqa : E501
+                if not self._has_conflict(resource.id, available_from, available_until):
                     # Set dynamic availability for the response
                     resource.available = True
                     available_resources.append(resource)
@@ -72,9 +92,7 @@ class ResourceService:
             if query:
                 query_lower = query.lower()
                 available_resources = [
-                    r
-                    for r in available_resources
-                    if query_lower in r.name.lower()  # noqa : E501
+                    r for r in available_resources if query_lower in r.name.lower()
                 ]
 
             return available_resources
@@ -89,7 +107,7 @@ class ResourceService:
         filtered_resources = []
         for resource in resources:
             # Check real-time availability
-            is_currently_available = self._is_resource_currently_available(resource.id)  # noqa : E501
+            is_currently_available = self._is_resource_currently_available(resource.id)
 
             # Apply availability filter
             if available_only and not is_currently_available:
@@ -111,8 +129,8 @@ class ResourceService:
         return filtered_resources
 
     def _is_resource_currently_available(self, resource_id: int) -> bool:
-        """Check if a resource is currently available (not in an active reservation)."""  # noqa : E501
-        now = datetime.now(timezone.utc)
+        """Check if a resource is currently available (not in an active reservation)."""
+        now = utcnow()
 
         # Check if resource has any active reservations right now
         current_reservation = (
@@ -144,7 +162,11 @@ class ResourceService:
     def _has_conflict(
         self, resource_id: int, start_time: datetime, end_time: datetime
     ) -> bool:
-        """Check if resource has conflicting reservations during specified time period."""  # noqa : E501
+        """Check if resource has conflicting reservations during specified time period."""
+        # Ensure timezone awareness
+        start_time = ensure_timezone_aware(start_time)
+        end_time = ensure_timezone_aware(end_time)
+
         conflict = (
             self.db.query(models.Reservation)
             .filter(
@@ -161,7 +183,7 @@ class ResourceService:
     def update_resource_availability(
         self, resource_id: int, available: bool
     ) -> models.Resource:
-        """Manually update resource base availability (for maintenance, etc.)."""  # noqa : E501
+        """Manually update resource base availability (for maintenance, etc.)."""
         resource = (
             self.db.query(models.Resource)
             .filter(models.Resource.id == resource_id)
@@ -180,10 +202,18 @@ class ResourceService:
         self, resource_id: int, days_ahead: int = 7
     ) -> dict:
         """Get detailed availability schedule for a resource."""
-        from datetime import timedelta
-
-        now = datetime.now(timezone.utc)
+        now = utcnow()
         end_date = now + timedelta(days=days_ahead)
+
+        # Get the resource
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+
+        if not resource:
+            raise ValueError("Resource not found")
 
         # Get all reservations for this resource in the time period
         reservations = (
@@ -200,16 +230,19 @@ class ResourceService:
 
         return {
             "resource_id": resource_id,
+            "resource_name": resource.name,
             "current_time": now,
             "is_currently_available": self._is_resource_currently_available(
                 resource_id
             ),
+            "base_available": resource.available,
             "reservations": [
                 {
                     "id": res.id,
                     "start_time": res.start_time,
                     "end_time": res.end_time,
                     "user_id": res.user_id,
+                    "status": res.status,
                 }
                 for res in reservations
             ],
@@ -227,6 +260,10 @@ class ReservationService:
     ) -> models.Reservation:
         """Create a new reservation with conflict validation."""
 
+        # Ensure timezone awareness
+        start_time = ensure_timezone_aware(reservation_data.start_time)
+        end_time = ensure_timezone_aware(reservation_data.end_time)
+
         # Validate resource exists and is available
         resource = (
             self.db.query(models.Resource)
@@ -243,26 +280,26 @@ class ReservationService:
         # Check for conflicts
         conflicts = self._get_conflicts(
             reservation_data.resource_id,
-            reservation_data.start_time,
-            reservation_data.end_time,
+            start_time,
+            end_time,
         )
 
         if conflicts:
             conflict_times = []
             for conflict in conflicts:
                 conflict_times.append(
-                    f"{conflict.start_time.strftime('%H:%M')} to {conflict.end_time.strftime('%H:%M')}"  # noqa :E501
+                    f"{conflict.start_time.strftime('%H:%M')} to {conflict.end_time.strftime('%H:%M')}"
                 )
             raise ValueError(
-                f"Time slot conflicts with existing reservations: {', '.join(conflict_times)}"  # noqa :E501
+                f"Time slot conflicts with existing reservations: {', '.join(conflict_times)}"
             )
 
         # Create reservation
         reservation = models.Reservation(
             user_id=user_id,
             resource_id=reservation_data.resource_id,
-            start_time=reservation_data.start_time,
-            end_time=reservation_data.end_time,
+            start_time=start_time,
+            end_time=end_time,
             status="active",
         )
 
@@ -275,7 +312,7 @@ class ReservationService:
             reservation.id,
             "created",
             user_id,
-            f"Reserved {resource.name} from {reservation_data.start_time} to {reservation_data.end_time}",  # noqa :E501
+            f"Reserved {resource.name} from {start_time} to {end_time}",
         )
 
         return reservation
@@ -304,14 +341,14 @@ class ReservationService:
 
         # Update reservation
         reservation.status = "cancelled"
-        reservation.cancelled_at = datetime.utcnow()
+        reservation.cancelled_at = utcnow()
         reservation.cancellation_reason = cancellation.reason
 
         self.db.commit()
         self.db.refresh(reservation)
 
         # Log the action
-        reason_text = f" (Reason: {cancellation.reason})" if cancellation.reason else ""  # noqa :E501
+        reason_text = f" (Reason: {cancellation.reason})" if cancellation.reason else ""
         self._log_action(
             reservation_id,
             "cancelled",
@@ -351,6 +388,10 @@ class ReservationService:
         self, resource_id: int, start_time: datetime, end_time: datetime
     ) -> List[models.Reservation]:
         """Get all conflicting reservations for a time slot."""
+        # Ensure timezone awareness
+        start_time = ensure_timezone_aware(start_time)
+        end_time = ensure_timezone_aware(end_time)
+
         return (
             self.db.query(models.Reservation)
             .filter(
@@ -362,7 +403,7 @@ class ReservationService:
             .all()
         )
 
-    def _log_action(self, reservation_id: int, action: str, user_id: int, details: str):  # noqa :E501
+    def _log_action(self, reservation_id: int, action: str, user_id: int, details: str):
         """Log a reservation action for audit trail."""
         history = models.ReservationHistory(
             reservation_id=reservation_id,
@@ -383,7 +424,7 @@ class UserService:
     def create_user(self, user_data: schemas.UserCreate) -> models.User:
         """Create a new user with hashed password."""
         hashed_password = hash_password(user_data.password)
-        user = models.User(username=user_data.username, hashed_password=hashed_password)  # noqa :E501
+        user = models.User(username=user_data.username, hashed_password=hashed_password)
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
@@ -392,5 +433,5 @@ class UserService:
     def get_user_by_username(self, username: str) -> Optional[models.User]:
         """Get user by username."""
         return (
-            self.db.query(models.User).filter(models.User.username == username).first()  # noqa :E501
+            self.db.query(models.User).filter(models.User.username == username).first()
         )

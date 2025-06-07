@@ -5,13 +5,1212 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resource Reservation System</title>
-    <link rel="stylesheet" href="./css/style.css">
+    <style>
+        /* CSS Custom Properties for Consistent Design System */
+        :root {
+            /* Spacing System */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 20px;
+            --space-2xl: 24px;
+            --space-3xl: 32px;
+            --space-4xl: 40px;
+            --space-5xl: 48px;
+            --space-6xl: 64px;
+
+            /* Typography Scale */
+            --text-xs: 12px;
+            --text-sm: 14px;
+            --text-base: 16px;
+            --text-lg: 18px;
+            --text-xl: 20px;
+            --text-2xl: 24px;
+            --text-3xl: 30px;
+            --text-4xl: 36px;
+
+            /* Border Radius */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --radius-2xl: 24px;
+            --radius-full: 9999px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            /* Z-index Scale */
+            --z-modal: 1050;
+        }
+
+        /* Base Reset and Typography */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            font-size: var(--text-base);
+        }
+
+        /* Container System */
+        .container {
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+            max-width: 1280px;
+        }
+
+        /* Header Component */
+        .header {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-2xl);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+            gap: var(--space-lg);
+        }
+
+        .header h1 {
+            color: #1e293b;
+            font-size: var(--text-2xl);
+            font-weight: 700;
+        }
+
+        .header .user-info {
+            color: #64748b;
+            font-size: var(--text-sm);
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: var(--space-md);
+            align-items: center;
+        }
+
+        /* Button System */
+        .btn {
+            padding: var(--space-md) var(--space-xl);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-sm);
+            white-space: nowrap;
+            min-height: 44px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #475569 0%, #64748b 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: var(--shadow-sm) !important;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-sm {
+            padding: var(--space-sm) var(--space-lg);
+            font-size: var(--text-xs);
+            min-height: 36px;
+        }
+
+        /* Card System */
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-2xl);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #f1f5f9;
+        }
+
+        /* Stats Grid System */
+        .stats-grid {
+            display: grid;
+            gap: var(--space-xl);
+            margin-bottom: var(--space-2xl);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .stat-card {
+            background: white;
+            padding: var(--space-2xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            border: 1px solid #f1f5f9;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: var(--text-4xl);
+            font-weight: 800;
+            color: #1e293b;
+            display: block;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            margin-top: var(--space-sm);
+        }
+
+        /* Navigation System */
+        .nav-tabs {
+            display: flex;
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-xs);
+            margin-bottom: var(--space-2xl);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #f1f5f9;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: var(--space-md) var(--space-lg);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+            white-space: nowrap;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        /* Form System */
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-sm);
+            font-weight: 600;
+            color: #1e293b;
+            font-size: var(--text-sm);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: var(--space-md);
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            font-size: var(--text-base);
+            transition: all 0.2s;
+            min-height: 44px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-grid {
+            display: grid;
+            gap: var(--space-lg);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #667eea;
+        }
+
+        /* Search System */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .search-input {
+            padding-left: var(--space-5xl);
+            padding-right: var(--space-lg);
+            height: 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-lg);
+            font-size: var(--text-base);
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: var(--space-lg);
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: var(--text-lg);
+        }
+
+        /* Resources Management */
+        .resources-header {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-2xl);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #f1f5f9;
+        }
+
+        .search-and-filters {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xl);
+        }
+
+        .search-row {
+            display: flex;
+            gap: var(--space-lg);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-pill {
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-full);
+            border: 2px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+        }
+
+        .filter-pill.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .filter-pill:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* Results Display */
+        .results-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2xl);
+            padding: var(--space-lg) 0;
+            flex-wrap: wrap;
+            gap: var(--space-lg);
+        }
+
+        .results-count {
+            color: #64748b;
+            font-size: var(--text-sm);
+            font-weight: 500;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: white;
+        }
+
+        .view-btn {
+            padding: var(--space-sm) var(--space-lg);
+            border: none;
+            background: white;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .view-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .view-btn:hover:not(.active) {
+            background: #f8fafc;
+        }
+
+        /* Resources Grid */
+        .resources-grid {
+            display: grid;
+            gap: var(--space-2xl);
+            margin-top: var(--space-2xl);
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        }
+
+        .resource-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-2xl);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            border: 1px solid #f1f5f9;
+            position: relative;
+            overflow: hidden;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .resource-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .resource-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: #e2e8f0;
+        }
+
+        .resource-card:hover::before {
+            opacity: 1;
+        }
+
+        .resource-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-lg);
+            gap: var(--space-md);
+        }
+
+        .resource-title {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.3;
+            flex: 1;
+        }
+
+        .resource-meta {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+
+        .resource-id {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            border: 1px solid #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-family: 'Monaco', 'Consolas', monospace;
+            align-self: flex-start;
+        }
+
+        .resource-id::before {
+            content: '#';
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .status-badge {
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-full);
+            font-size: var(--text-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            align-self: flex-start;
+        }
+
+        .status-available {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+
+        .status-unavailable {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .status-active {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+
+        .status-cancelled {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .status-in-use {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xl);
+            min-height: 28px;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: #475569;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-xl);
+            font-size: var(--text-xs);
+            font-weight: 500;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tag:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            transform: translateY(-1px);
+        }
+
+        .resource-actions {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: auto;
+            flex-wrap: wrap;
+        }
+
+        .btn-reserve {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: var(--space-lg) var(--space-xl);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: var(--text-sm);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+        }
+
+        .btn-reserve:hover:not(:disabled) {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-reserve:disabled {
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-resource-action {
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            color: white;
+            border: none;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: var(--text-xs);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-xs);
+        }
+
+        .btn-resource-action:hover {
+            background: linear-gradient(135deg, #475569 0%, #64748b 100%);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Modal System */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: var(--z-modal);
+            padding: var(--space-lg);
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-3xl);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .modal-title {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: var(--text-2xl);
+            cursor: pointer;
+            color: #64748b;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: #1e293b;
+            background: #f8fafc;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-xl);
+            flex-wrap: wrap;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        /* Loading States */
+        .loading-state {
+            text-align: center;
+            padding: var(--space-6xl) var(--space-xl);
+            color: #64748b;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--space-lg) auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: var(--space-md) var(--space-lg);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg);
+            font-size: var(--text-sm);
+            font-weight: 500;
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: var(--space-6xl) var(--space-xl);
+            color: #64748b;
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 2px dashed #e2e8f0;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: var(--space-xl);
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+            color: #475569;
+        }
+
+        .empty-state p {
+            font-size: var(--text-base);
+            margin-bottom: var(--space-2xl);
+            color: #64748b;
+        }
+
+        /* Login Form */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+            padding: var(--space-lg);
+        }
+
+        .login-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-5xl);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid #f1f5f9;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--space-4xl);
+        }
+
+        .login-header h1 {
+            color: #1e293b;
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: var(--text-sm);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: var(--space-2xl);
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: var(--space-md);
+            border: none;
+            background: white;
+            cursor: pointer;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Reservation Items */
+        .reservation-item {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--space-xl);
+            transition: all 0.3s ease;
+        }
+
+        .reservation-item:hover {
+            box-shadow: var(--shadow-md);
+            border-color: #e2e8f0;
+        }
+
+        .reservation-info h3 {
+            color: #1e293b;
+            font-size: var(--text-lg);
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+        }
+
+        .reservation-time {
+            color: #64748b;
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .reservation-badges {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+
+        .reservation-actions {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* System Status Display */
+        .system-status {
+            display: grid;
+            gap: var(--space-lg);
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .status-section {
+            background: white;
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            border: 1px solid #e2e8f0;
+        }
+
+        .status-section h3 {
+            color: #1e293b;
+            font-size: var(--text-lg);
+            font-weight: 700;
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #64748b;
+            font-size: var(--text-sm);
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .status-value.success {
+            color: #059669;
+        }
+
+        .status-value.error {
+            color: #dc2626;
+        }
+
+        .status-value.warning {
+            color: #d97706;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-md);
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+                gap: var(--space-lg);
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+
+            .search-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-container {
+                max-width: none;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+
+            .results-summary {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+
+            .resources-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+            }
+
+            .resource-actions {
+                flex-direction: column;
+            }
+
+            .reservation-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-lg);
+            }
+
+            .reservation-actions {
+                justify-content: center;
+            }
+
+            .modal-content {
+                padding: var(--space-2xl);
+                margin: var(--space-lg);
+            }
+
+            .modal-actions {
+                flex-direction: column;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+                gap: var(--space-xs);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .system-status {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: var(--space-3xl);
+            }
+
+            .btn {
+                padding: var(--space-sm) var(--space-lg);
+                font-size: var(--text-xs);
+                min-height: 40px;
+            }
+
+            .modal-content {
+                padding: var(--space-xl);
+            }
+
+            .header h1 {
+                font-size: var(--text-xl);
+            }
+
+            .resource-card {
+                min-height: 240px;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-sm {
+            gap: var(--space-sm);
+        }
+
+        .gap-md {
+            gap: var(--space-md);
+        }
+
+        .gap-lg {
+            gap: var(--space-lg);
+        }
+
+        .mb-lg {
+            margin-bottom: var(--space-lg);
+        }
+
+        .mb-xl {
+            margin-bottom: var(--space-xl);
+        }
+
+        .mt-lg {
+            margin-top: var(--space-lg);
+        }
+
+        .mt-xl {
+            margin-top: var(--space-xl);
+        }
+    </style>
 </head>
 
 <body>
     <div id="app"></div>
 
-    <!-- Enhanced Modals for New Features -->
+    <!-- Enhanced Modals -->
 
     <!-- Resource Availability Modal -->
     <div id="availabilityModal" class="modal hidden">
@@ -33,7 +1232,7 @@
     <div id="systemStatusModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">System Status</h2>
+                <h2 class="modal-title">System Health Status</h2>
                 <button class="close-btn" onclick="closeModal('systemStatusModal')">&times;</button>
             </div>
             <div id="systemStatusContent">
@@ -41,44 +1240,6 @@
                     <div class="spinner"></div>
                     <p>Checking system status...</p>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin Panel Modal -->
-    <div id="adminModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Admin Panel</h2>
-                <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
-            </div>
-            <div id="adminContent">
-                <div class="admin-actions">
-                    <div class="admin-section">
-                        <h3>System Maintenance</h3>
-                        <button class="btn btn-primary" onclick="triggerCleanup()">
-                            🧹 Cleanup Expired Reservations
-                        </button>
-                        <p class="help-text">Manually trigger cleanup of expired reservations</p>
-                    </div>
-
-                    <div class="admin-section">
-                        <h3>Resource Management</h3>
-                        <button class="btn btn-secondary" onclick="showBulkResourceUpdate()">
-                            📝 Bulk Update Resources
-                        </button>
-                        <p class="help-text">Update multiple resources at once</p>
-                    </div>
-
-                    <div class="admin-section">
-                        <h3>System Analytics</h3>
-                        <button class="btn btn-secondary" onclick="showSystemAnalytics()">
-                            📊 View Analytics
-                        </button>
-                        <p class="help-text">View system usage statistics</p>
-                    </div>
-                </div>
-                <div id="adminResults" class="admin-results hidden"></div>
             </div>
         </div>
     </div>
@@ -125,46 +1286,6 @@
         </div>
     </div>
 
-    <!-- Resource Maintenance Modal -->
-    <div id="maintenanceModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Resource Maintenance</h2>
-                <button class="close-btn" onclick="closeModal('maintenanceModal')">&times;</button>
-            </div>
-            <div id="maintenanceContent">
-                <div class="maintenance-info">
-                    <h3 id="maintenanceResourceName"></h3>
-                    <p id="maintenanceResourceStatus"></p>
-                </div>
-
-                <div class="maintenance-actions">
-                    <div class="form-group">
-                        <label class="form-label">Action</label>
-                        <select class="form-input" id="maintenanceAction">
-                            <option value="enable">Enable Resource</option>
-                            <option value="disable">Disable Resource (Maintenance Mode)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Reason (optional)</label>
-                        <textarea class="form-input" id="maintenanceReason"
-                            placeholder="e.g., Scheduled maintenance, equipment repair"></textarea>
-                    </div>
-                </div>
-
-                <div id="maintenanceError" class="alert alert-error hidden"></div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary"
-                        onclick="closeModal('maintenanceModal')">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="applyMaintenance()">Apply Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Extended Reservation Modal -->
     <div id="extendedReservationModal" class="modal hidden">
         <div class="modal-content">
@@ -173,7 +1294,9 @@
                 <button class="close-btn" onclick="closeModal('extendedReservationModal')">&times;</button>
             </div>
             <form id="extendedReservationForm" onsubmit="handleExtendedReservation(event)">
-                <div id="selectedResourceInfo" class="selected-resource-info"></div>
+                <div id="selectedResourceInfo"
+                    style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #e2e8f0;">
+                </div>
 
                 <div class="form-grid">
                     <div class="form-group">
@@ -203,11 +1326,13 @@
                         placeholder="Brief description of the reservation purpose"></textarea>
                 </div>
 
-                <div class="availability-check">
+                <div
+                    style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
                     <button type="button" class="btn btn-secondary" onclick="checkAvailability()">
                         🔍 Check Availability
                     </button>
-                    <div id="availabilityResult" class="availability-result hidden"></div>
+                    <div id="availabilityResult" style="margin-top: 12px; padding: 12px; border-radius: 6px;"
+                        class="hidden"></div>
                 </div>
 
                 <div id="extendedReservationError" class="alert alert-error hidden"></div>
@@ -221,7 +1346,1467 @@
         </div>
     </div>
 
-    <script src="./scripts/script.js"></script>
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // Global state
+        let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+        let authToken = localStorage.getItem('auth_token') || null;
+        let currentView = 'login';
+        let activeTab = 'resources';
+        let loading = false;
+
+        // Data storage
+        let resources = [];
+        let reservations = [];
+        let filteredResources = [];
+        let searchQuery = '';
+        let currentFilter = 'all';
+        let viewMode = 'grid';
+        let systemStatus = null;
+        let availabilitySummary = null;
+
+        // Initialize app
+        function init() {
+            if (authToken && currentUser) {
+                currentView = 'dashboard';
+                loadDashboard();
+            } else {
+                currentView = 'login';
+                renderLogin();
+            }
+
+            if (authToken) {
+                loadSystemStatus();
+                setInterval(loadSystemStatus, 30000);
+            }
+        }
+
+        // Enhanced API Helper Functions
+        async function apiCall(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+                ...options.headers
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    ...options,
+                    headers
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.detail || errorText;
+                    } catch {
+                        errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return await response.json();
+                }
+                return await response.text();
+            } catch (error) {
+                console.error(`API call failed for ${endpoint}:`, error);
+                throw error;
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                return await apiCall('/health');
+            } catch (error) {
+                console.error('Health check failed:', error);
+                throw error;
+            }
+        }
+
+        async function login(username, password) {
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            const response = await fetch(`${API_BASE_URL}/token`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error || 'Invalid credentials');
+            }
+
+            const data = await response.json();
+            authToken = data.access_token;
+            currentUser = { username };
+
+            localStorage.setItem('auth_token', authToken);
+            localStorage.setItem('user', JSON.stringify(currentUser));
+
+            return data;
+        }
+
+        async function register(username, password) {
+            return await apiCall('/register', {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            currentView = 'login';
+            renderLogin();
+        }
+
+        async function loadResources() {
+            try {
+                resources = await apiCall('/resources');
+                filterResources();
+            } catch (error) {
+                console.error('Failed to load resources:', error);
+                showMessage('Failed to load resources: ' + error.message, 'error');
+            }
+        }
+
+        async function searchResources(params = {}) {
+            try {
+                const queryParams = new URLSearchParams();
+
+                if (params.query) queryParams.append('q', params.query);
+                if (params.availableOnly !== undefined) queryParams.append('available_only', params.availableOnly);
+                if (params.availableFrom) queryParams.append('available_from', params.availableFrom);
+                if (params.availableUntil) queryParams.append('available_until', params.availableUntil);
+
+                const queryString = queryParams.toString();
+                const endpoint = queryString ? `/resources/search?${queryString}` : '/resources/search';
+
+                return await apiCall(endpoint);
+            } catch (error) {
+                console.error('Failed to search resources:', error);
+                throw error;
+            }
+        }
+
+        async function getResourceAvailability(resourceId, daysAhead = 7) {
+            try {
+                const params = new URLSearchParams({ days_ahead: daysAhead });
+                return await apiCall(`/resources/${resourceId}/availability?${params}`);
+            } catch (error) {
+                console.error('Failed to get resource availability:', error);
+                throw error;
+            }
+        }
+
+        async function getAvailabilitySummary() {
+            try {
+                availabilitySummary = await apiCall('/resources/availability/summary');
+                return availabilitySummary;
+            } catch (error) {
+                console.error('Failed to get availability summary:', error);
+                throw error;
+            }
+        }
+
+        async function loadReservations(includeCancelled = false) {
+            try {
+                const params = new URLSearchParams();
+                if (includeCancelled) params.append('include_cancelled', 'true');
+
+                const endpoint = params.toString() ? `/reservations/my?${params}` : '/reservations/my';
+                reservations = await apiCall(endpoint);
+            } catch (error) {
+                console.error('Failed to load reservations:', error);
+                showMessage('Failed to load reservations: ' + error.message, 'error');
+            }
+        }
+
+        async function getReservationHistory(reservationId) {
+            try {
+                return await apiCall(`/reservations/${reservationId}/history`);
+            } catch (error) {
+                console.error('Failed to get reservation history:', error);
+                throw error;
+            }
+        }
+
+        async function manualCleanupExpired() {
+            try {
+                return await apiCall('/admin/cleanup-expired', { method: 'POST' });
+            } catch (error) {
+                console.error('Failed to cleanup expired reservations:', error);
+                throw error;
+            }
+        }
+
+        async function loadSystemStatus() {
+            try {
+                systemStatus = await checkHealth();
+
+                if (authToken) {
+                    await getAvailabilitySummary();
+                }
+            } catch (error) {
+                console.error('Failed to load system status:', error);
+                systemStatus = { status: 'error', error: error.message };
+            }
+        }
+
+        function filterResources() {
+            let filtered = resources;
+
+            if (currentFilter === 'available') {
+                filtered = filtered.filter(r => r.available);
+            } else if (currentFilter === 'unavailable') {
+                filtered = filtered.filter(r => !r.available);
+            }
+
+            if (searchQuery) {
+                filtered = filtered.filter(resource =>
+                    resource.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    resource.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+            }
+
+            filteredResources = filtered;
+        }
+
+        async function loadDashboard() {
+            try {
+                await Promise.all([
+                    loadResources(),
+                    loadReservations(),
+                    loadSystemStatus()
+                ]);
+                renderDashboard();
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                showMessage('Failed to load dashboard data', 'error');
+            }
+        }
+
+        function renderLogin() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="login-container">
+                    <div class="login-card">
+                        <div class="login-header">
+                            <h1>Resource Reservation System</h1>
+                            <p>Please sign in to your account</p>
+                        </div>
+                        
+                        <div class="auth-tabs">
+                            <button class="auth-tab active" onclick="switchAuthTab(event, 'login')">Sign In</button>
+                            <button class="auth-tab" onclick="switchAuthTab(event, 'register')">Register</button>
+                        </div>
+
+                        <form id="authForm" onsubmit="handleAuth(event)">
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-input" name="username" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-input" name="password" required>
+                            </div>
+                            
+                            <div class="form-group" id="confirmPasswordGroup" style="display: none;">
+                                <label class="form-label">Confirm Password</label>
+                                <input type="password" class="form-input" name="confirmPassword">
+                            </div>
+                            
+                            <div id="authError" class="alert alert-error hidden"></div>
+                            
+                            <button type="submit" class="btn btn-primary" style="width: 100%;" id="authSubmit">
+                                Sign In
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboard() {
+            const stats = calculateStats();
+
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="container">
+                    <div class="header">
+                        <div>
+                            <h1>Resource Reservation System</h1>
+                            <div class="user-info">Welcome back, ${currentUser.username}</div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="showSystemStatusModal()">
+                                📊 System Status
+                            </button>
+                            <button class="btn btn-secondary" onclick="logout()">Sign Out</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-number">${stats.totalResources}</span>
+                            <div class="stat-label">Total Resources</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">${stats.availableResources}</span>
+                            <div class="stat-label">Available Now</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">${stats.activeReservations}</span>
+                            <div class="stat-label">Active Bookings</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">${stats.upcomingReservations}</span>
+                            <div class="stat-label">Upcoming</div>
+                        </div>
+                    </div>
+
+                    <div class="nav-tabs">
+                        <button class="nav-tab ${activeTab === 'resources' ? 'active' : ''}" onclick="switchTab('resources')">
+                            📦 Resources
+                        </button>
+                        <button class="nav-tab ${activeTab === 'reservations' ? 'active' : ''}" onclick="switchTab('reservations')">
+                            📅 My Reservations
+                        </button>
+                        <button class="nav-tab ${activeTab === 'upcoming' ? 'active' : ''}" onclick="switchTab('upcoming')">
+                            ⏰ Upcoming
+                        </button>
+                        <button class="nav-tab ${activeTab === 'analytics' ? 'active' : ''}" onclick="switchTab('analytics')">
+                            📊 Analytics
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div id="tabContent">
+                            ${renderTabContent()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTabContent() {
+            switch (activeTab) {
+                case 'resources':
+                    return renderResourcesTab();
+                case 'reservations':
+                    return renderReservationsTab();
+                case 'upcoming':
+                    return renderUpcomingTab();
+                case 'analytics':
+                    return renderAnalyticsTab();
+                default:
+                    return '';
+            }
+        }
+
+        function renderResourcesTab() {
+            return `
+                <div class="resources-header">
+                    <div class="search-and-filters">
+                        <div class="search-row">
+                            <div class="search-container">
+                                <input type="text" class="form-input search-input" placeholder="Search resources by name or tags..." 
+                                       value="${searchQuery}" onkeyup="handleSearch(this.value)">
+                                <span class="search-icon">🔍</span>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary" onclick="showTimeSearchModal()">
+                                    🕒 Time Search
+                                </button>
+                                <button class="btn btn-secondary" onclick="loadResources(); renderDashboard();">
+                                    🔄 Refresh
+                                </button>
+                                <button class="btn btn-success" onclick="showCreateResourceModal()">
+                                    ➕ Add Resource
+                                </button>
+                                <button class="btn btn-primary" onclick="showUploadCSVModal()">
+                                    📤 Upload CSV
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-pills">
+                            <span style="font-weight: 600; color: #64748b; font-size: 14px;">Filter:</span>
+                            <div class="filter-pill ${currentFilter === 'all' ? 'active' : ''}" onclick="handleFilterChange('all')">
+                                All Resources
+                            </div>
+                            <div class="filter-pill ${currentFilter === 'available' ? 'active' : ''}" onclick="handleFilterChange('available')">
+                                🟢 Available
+                            </div>
+                            <div class="filter-pill ${currentFilter === 'unavailable' ? 'active' : ''}" onclick="handleFilterChange('unavailable')">
+                                🔴 Unavailable
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-summary">
+                    <div class="results-count">
+                        Showing ${filteredResources.length} of ${resources.length} resources
+                    </div>
+                    <div class="view-toggle">
+                        <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="handleViewModeChange('grid')">
+                            ⊞ Grid
+                        </button>
+                        <button class="view-btn ${viewMode === 'list' ? 'active' : ''}" onclick="handleViewModeChange('list')">
+                            ☰ List
+                        </button>
+                    </div>
+                </div>
+
+                ${filteredResources.length === 0 ? `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <h3>No resources found</h3>
+                        <p>${searchQuery || currentFilter !== 'all' ? 'Try adjusting your search or filters' : 'Get started by adding your first resource'}</p>
+                        <button class="btn btn-primary" onclick="showCreateResourceModal()">
+                            ➕ Add Your First Resource
+                        </button>
+                    </div>
+                ` : `
+                    <div class="resources-grid ${viewMode === 'grid' ? 'active' : ''}" style="${viewMode === 'grid' ? 'display: grid' : 'display: none'}">
+                        ${filteredResources.map(resource => renderResourceCard(resource)).join('')}
+                    </div>
+                `}
+            `;
+        }
+
+        function renderResourceCard(resource) {
+            return `
+                <div class="resource-card">
+                    <div class="resource-header">
+                        <h3 class="resource-title">${resource.name}</h3>
+                        <span class="status-badge ${resource.available ? 'status-available' : 'status-unavailable'}">
+                            ${resource.available ? '🟢 Available' : '🔴 Unavailable'}
+                        </span>
+                    </div>
+                    
+                    <div class="resource-meta">
+                        <div class="resource-id">${resource.id.toString().padStart(3, '0')}</div>
+                    </div>
+                    
+                    ${resource.tags.length > 0 ? `
+                        <div class="tags">
+                            ${resource.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                        </div>
+                    ` : '<div class="tags"><span class="tag" style="opacity: 0.5;">No tags</span></div>'}
+                    
+                    <div class="resource-actions">
+                        <button class="btn-reserve" 
+                                ${!resource.available ? 'disabled' : ''} 
+                                onclick="showExtendedReservationModal(${resource.id})">
+                            ${resource.available ? '📅 Reserve Now' : '🚫 Unavailable'}
+                        </button>
+                        <button class="btn-resource-action" onclick="showResourceAvailability(${resource.id})">
+                            📊 Schedule
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderReservationsTab() {
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+                    <h2 style="margin: 0; color: #2c3e50;">My Reservations</h2>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="loadReservations(true); renderDashboard();">
+                            📋 Include Cancelled
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadReservations(); renderDashboard();">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+
+                ${reservations.map(reservation => {
+                const startTime = new Date(reservation.start_time);
+                const endTime = new Date(reservation.end_time);
+                const isUpcoming = startTime > new Date();
+
+                return `
+                        <div class="reservation-item">
+                            <div class="reservation-info">
+                                <h3>${reservation.resource.name}</h3>
+                                <div class="reservation-time">
+                                    ${startTime.toLocaleDateString()} • ${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}
+                                </div>
+                                <div class="reservation-badges">
+                                    <span class="status-badge ${reservation.status === 'active' ? 'status-active' : 'status-cancelled'}">
+                                        ${reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                                    </span>
+                                    ${isUpcoming ? '<span class="status-badge" style="background-color: #dbeafe; color: #1e40af;">Upcoming</span>' : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="reservation-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="showReservationHistory(${reservation.id})">
+                                    📋 History
+                                </button>
+                                ${reservation.status === 'active' && isUpcoming ? `
+                                    <button class="btn btn-sm btn-danger" onclick="cancelReservation(${reservation.id})">
+                                        ❌ Cancel
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-secondary" onclick="showResourceAvailability(${reservation.resource_id})">
+                                    📊 Schedule
+                                </button>
+                            </div>
+                        </div>
+                    `;
+            }).join('')}
+
+                ${reservations.length === 0 ? `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <h3>No reservations found</h3>
+                        <p>Once you make a reservation, you'll see it here with full history tracking</p>
+                        <button class="btn btn-primary" onclick="switchTab('resources')">
+                            📦 Browse Resources
+                        </button>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function renderUpcomingTab() {
+            const upcomingReservations = getUpcomingReservations();
+
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #2c3e50;">Upcoming Reservations</h2>
+                    <button class="btn btn-secondary" onclick="loadReservations(); renderDashboard();">
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                ${upcomingReservations.map(reservation => {
+                const startTime = new Date(reservation.start_time);
+                const endTime = new Date(reservation.end_time);
+                const timeUntil = startTime - new Date();
+                const hoursUntil = Math.floor(timeUntil / (1000 * 60 * 60));
+                const daysUntil = Math.floor(hoursUntil / 24);
+
+                let timeText;
+                if (daysUntil > 0) {
+                    timeText = `in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+                } else if (hoursUntil > 0) {
+                    timeText = `in ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
+                } else {
+                    timeText = 'starting soon';
+                }
+
+                return `
+                        <div class="reservation-item">
+                            <div class="reservation-info">
+                                <h3>${reservation.resource.name}</h3>
+                                <div class="reservation-time">
+                                    ${startTime.toLocaleDateString()} • ${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}
+                                </div>
+                                <div style="color: #3498db; font-size: 14px; margin-top: 4px;">
+                                    ⏰ ${timeText}
+                                </div>
+                            </div>
+                            <div class="reservation-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="showReservationHistory(${reservation.id})">
+                                    📋 History
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="cancelReservation(${reservation.id})">
+                                    ❌ Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+            }).join('')}
+
+                ${upcomingReservations.length === 0 ? `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⏰</div>
+                        <h3>No upcoming reservations</h3>
+                        <p>Your upcoming reservations will appear here</p>
+                        <button class="btn btn-primary" onclick="switchTab('resources')">
+                            📦 Browse Resources
+                        </button>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function renderAnalyticsTab() {
+            const stats = calculateDetailedStats();
+
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #2c3e50;">System Analytics</h2>
+                    <button class="btn btn-secondary" onclick="loadDashboard();">
+                        🔄 Refresh Data
+                    </button>
+                </div>
+
+                <div class="system-status">
+                    <div class="status-section">
+                        <h3>📊 Resource Statistics</h3>
+                        <div class="status-item">
+                            <span class="status-label">Total Resources</span>
+                            <span class="status-value">${stats.totalResources}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Available Now</span>
+                            <span class="status-value success">${stats.availableResources}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">In Usage</span>
+                            <span class="status-value warning">${stats.inUsageResources}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">In Maintenance</span>
+                            <span class="status-value error">${stats.unavailableResources}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Utilization Rate</span>
+                            <span class="status-value">${stats.utilizationRate}%</span>
+                        </div>
+                    </div>
+
+                    <div class="status-section">
+                        <h3>📅 Reservation Statistics</h3>
+                        <div class="status-item">
+                            <span class="status-label">Active Reservations</span>
+                            <span class="status-value">${stats.activeReservations}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Upcoming Reservations</span>
+                            <span class="status-value">${stats.upcomingReservations}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Cancelled Reservations</span>
+                            <span class="status-value warning">${stats.cancelledReservations}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Total Reservations</span>
+                            <span class="status-value">${stats.totalReservations}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Success Rate</span>
+                            <span class="status-value success">${stats.successRate}%</span>
+                        </div>
+                    </div>
+
+                    <div class="status-section">
+                        <h3>⚙️ System Health</h3>
+                        <div class="status-item">
+                            <span class="status-label">API Status</span>
+                            <span class="status-value ${systemStatus?.status === 'healthy' ? 'success' : 'error'}">
+                                ${systemStatus?.status === 'healthy' ? '✅ Healthy' : '❌ Error'}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Background Tasks</span>
+                            <span class="status-value success">
+                                ${systemStatus?.background_tasks?.cleanup_task === 'running' ? '✅ Running' : '⚠️ Stopped'}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Current Time</span>
+                            <span class="status-value">
+                                ${systemStatus?.timestamp ? new Date(systemStatus.timestamp).toLocaleTimeString() : 'Unknown'}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Resources In Use Now</span>
+                            <span class="status-value warning">
+                                ${availabilitySummary?.currently_in_use || 0}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <h3>🔧 System Actions</h3>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-warning" onclick="triggerCleanup()">
+                            🧹 Cleanup Expired Reservations
+                        </button>
+                        <button class="btn btn-secondary" onclick="showSystemStatusModal()">
+                            📊 Detailed System Status
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadSystemStatus(); renderDashboard();">
+                            🔄 Refresh System Status
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper Functions
+        function calculateStats() {
+            return {
+                totalResources: resources.length,
+                availableResources: resources.filter(r => r.available).length,
+                activeReservations: reservations.filter(r => r.status === 'active').length,
+                upcomingReservations: getUpcomingReservations().length
+            };
+        }
+
+        function calculateDetailedStats() {
+            const totalResources = resources.length;
+            const availableResources = resources.filter(r => r.available).length;
+            const unavailableResources = totalResources - availableResources;
+            const activeReservations = reservations.filter(r => r.status === 'active').length;
+            const cancelledReservations = reservations.filter(r => r.status === 'cancelled').length;
+            const upcomingReservations = getUpcomingReservations().length;
+            const inUsageResources = availabilitySummary?.currently_in_use || 0;
+
+            const utilizationRate = totalResources > 0 ?
+                Math.round((activeReservations / totalResources) * 100) : 0;
+
+            const successRate = reservations.length > 0 ?
+                Math.round(((reservations.length - cancelledReservations) / reservations.length) * 100) : 100;
+
+            return {
+                totalResources,
+                availableResources,
+                unavailableResources,
+                inUsageResources,
+                activeReservations,
+                cancelledReservations,
+                upcomingReservations,
+                totalReservations: reservations.length,
+                utilizationRate,
+                successRate
+            };
+        }
+
+        function getUpcomingReservations() {
+            return reservations
+                .filter(r => r.status === 'active' && new Date(r.start_time) > new Date())
+                .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        }
+
+        // Event Handlers
+        function switchAuthTab(event, tab) {
+            const tabs = document.querySelectorAll('.auth-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const confirmGroup = document.getElementById('confirmPasswordGroup');
+            const submitBtn = document.getElementById('authSubmit');
+
+            if (tab === 'register') {
+                confirmGroup.style.display = 'block';
+                submitBtn.textContent = 'Register';
+            } else {
+                confirmGroup.style.display = 'none';
+                submitBtn.textContent = 'Sign In';
+            }
+        }
+
+        async function handleAuth(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const username = formData.get('username');
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            const isLogin = document.querySelector('.auth-tab.active').textContent === 'Sign In';
+
+            const errorDiv = document.getElementById('authError');
+            const submitBtn = document.getElementById('authSubmit');
+
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+
+            if (!isLogin && password !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+
+            try {
+                if (isLogin) {
+                    await login(username, password);
+                    currentView = 'dashboard';
+                    await loadDashboard();
+                } else {
+                    await register(username, password);
+                    const loginTab = document.querySelector('.auth-tab');
+                    const registerTab = document.querySelectorAll('.auth-tab')[1];
+                    loginTab.classList.add('active');
+                    registerTab.classList.remove('active');
+                    document.getElementById('confirmPasswordGroup').style.display = 'none';
+                    document.getElementById('authSubmit').textContent = 'Sign In';
+                    form.reset();
+                    showMessage('Registration successful! Please sign in.', 'success');
+                }
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                if (isLogin || document.querySelector('.auth-tab.active').textContent === 'Sign In') {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Register';
+                }
+            }
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            const tabContent = document.getElementById('tabContent');
+            tabContent.innerHTML = renderTabContent();
+        }
+
+        function handleSearch(value) {
+            searchQuery = value;
+            filterResources();
+            const tabContent = document.getElementById('tabContent');
+            tabContent.innerHTML = renderTabContent();
+        }
+
+        function handleFilterChange(filter) {
+            currentFilter = filter;
+            filterResources();
+            const tabContent = document.getElementById('tabContent');
+            tabContent.innerHTML = renderTabContent();
+        }
+
+        function handleViewModeChange(mode) {
+            viewMode = mode;
+            const tabContent = document.getElementById('tabContent');
+            tabContent.innerHTML = renderTabContent();
+        }
+
+        // Modal Functions
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function showSystemStatusModal() {
+            showModal('systemStatusModal');
+            loadSystemStatusDetails();
+        }
+
+        async function loadSystemStatusDetails() {
+            const content = document.getElementById('systemStatusContent');
+
+            try {
+                await loadSystemStatus();
+
+                content.innerHTML = `
+                    <div class="system-status">
+                        <div class="status-section">
+                            <h3>🌐 API Health</h3>
+                            <div class="status-item">
+                                <span class="status-label">Status</span>
+                                <span class="status-value ${systemStatus?.status === 'healthy' ? 'success' : 'error'}">
+                                    ${systemStatus?.status || 'Unknown'}
+                                </span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Timestamp</span>
+                                <span class="status-value">
+                                    ${systemStatus?.timestamp ? new Date(systemStatus.timestamp).toLocaleString() : 'Unknown'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="status-section">
+                            <h3>🔧 Background Tasks</h3>
+                            ${systemStatus?.background_tasks ? Object.entries(systemStatus.background_tasks).map(([name, status]) => `
+                                <div class="status-item">
+                                    <span class="status-label">${name.replace('_', ' ').toUpperCase()}</span>
+                                    <span class="status-value ${status === 'running' ? 'success' : status === 'failed' ? 'error' : 'warning'}">
+                                        ${status}
+                                    </span>
+                                </div>
+                            `).join('') : '<p>No background task information available</p>'}
+                        </div>
+
+                        ${availabilitySummary ? `
+                            <div class="status-section">
+                                <h3>📊 Resource Summary</h3>
+                                <div class="status-item">
+                                    <span class="status-label">Total Resources</span>
+                                    <span class="status-value">${availabilitySummary.total_resources}</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Available Now</span>
+                                    <span class="status-value success">${availabilitySummary.available_now}</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Unavailable</span>
+                                    <span class="status-value warning">${availabilitySummary.unavailable_now}</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Currently In Use</span>
+                                    <span class="status-value warning">${availabilitySummary.currently_in_use}</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Last Updated</span>
+                                    <span class="status-value">
+                                        ${new Date(availabilitySummary.timestamp).toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="alert alert-error">
+                        Failed to load system status: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function triggerCleanup() {
+            try {
+                showMessage('Triggering cleanup...', 'info');
+                const result = await manualCleanupExpired();
+
+                await loadReservations();
+                await loadSystemStatus();
+
+                showMessage(`Cleanup completed: ${result.expired_count} expired reservations removed`, 'success');
+            } catch (error) {
+                showMessage('Cleanup failed: ' + error.message, 'error');
+            }
+        }
+
+        function showTimeSearchModal() {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const startDate = tomorrow.toISOString().slice(0, 16);
+            const endDate = new Date(tomorrow.getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16);
+
+            const form = document.getElementById('timeSearchForm');
+            form.availableFrom.value = startDate;
+            form.availableUntil.value = endDate;
+
+            showModal('timeSearchModal');
+        }
+
+        async function handleTimeSearch(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const errorDiv = document.getElementById('timeSearchError');
+
+            errorDiv.classList.add('hidden');
+
+            try {
+                const query = formData.get('query').trim();
+                const availableFrom = formData.get('availableFrom');
+                const availableUntil = formData.get('availableUntil');
+                const availableOnly = formData.get('availableOnly') === 'on';
+
+                if (!availableFrom || !availableUntil) {
+                    throw new Error('Both start and end times are required');
+                }
+
+                const startTime = new Date(availableFrom);
+                const endTime = new Date(availableUntil);
+
+                if (endTime <= startTime) {
+                    throw new Error('End time must be after start time');
+                }
+
+                if (startTime <= new Date()) {
+                    throw new Error('Start time must be in the future');
+                }
+
+                const searchParams = {
+                    query: query || undefined,
+                    availableOnly,
+                    availableFrom: startTime.toISOString(),
+                    availableUntil: endTime.toISOString()
+                };
+
+                const results = await searchResources(searchParams);
+
+                filteredResources = results;
+                searchQuery = query;
+
+                closeModal('timeSearchModal');
+                switchTab('resources');
+
+                showMessage(`Found ${results.length} resources available from ${startTime.toLocaleString()} to ${endTime.toLocaleString()}`, 'success');
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function showResourceAvailability(resourceId) {
+            showModal('availabilityModal');
+            loadResourceAvailabilityDetails(resourceId);
+        }
+
+        async function loadResourceAvailabilityDetails(resourceId) {
+            const content = document.getElementById('availabilityContent');
+
+            try {
+                const availability = await getResourceAvailability(resourceId);
+                const resource = resources.find(r => r.id === resourceId);
+
+                content.innerHTML = `
+                    <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                            <h3>📊 ${resource?.name || 'Resource'} Availability</h3>
+                            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; ${availability.is_currently_available ? 'color: #059669;' : 'color: #dc2626;'}">
+                                    ${availability.is_currently_available ? '🟢 Available Now' : '🔴 Currently Busy'}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    ⚙️ Base Status: ${availability.base_available ? 'Enabled' : 'Disabled'}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: #64748b; font-size: 14px;">Current Time</span>
+                            <span style="font-weight: 600; color: #1e293b;">${new Date(availability.current_time).toLocaleString()}</span>
+                        </div>
+                        
+                        ${availability.reservations && availability.reservations.length > 0 ? `
+                            <div style="margin-top: 24px;">
+                                <h4>📅 Upcoming Reservations</h4>
+                                ${availability.reservations.map(res => `
+                                    <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 1px solid #f87171; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #991b1b;">
+                                        <div style="font-weight: 600; margin-bottom: 4px;">
+                                            ${new Date(res.start_time).toLocaleString()} - ${new Date(res.end_time).toLocaleString()}
+                                        </div>
+                                        <div style="font-size: 14px; opacity: 0.8;">
+                                            ID: ${res.id} | User: ${res.user_id} | Status: ${res.status || 'active'}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : `
+                            <div style="text-align: center; padding: 40px 16px; color: #64748b; background: white; border-radius: 12px; border: 2px dashed #e2e8f0; margin-top: 24px;">
+                                <div style="font-size: 64px; margin-bottom: 24px; opacity: 0.5;">📅</div>
+                                <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #475569;">No upcoming reservations</h3>
+                                <p style="font-size: 16px; margin-bottom: 0; color: #64748b;">This resource is free for the next 7 days</p>
+                            </div>
+                        `}
+                    </div>
+                `;
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="alert alert-error">
+                        Failed to load availability: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function showExtendedReservationModal(resourceId) {
+            const resource = resources.find(r => r.id === resourceId);
+            if (!resource) return;
+
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const startDate = tomorrow.toISOString().split('T')[0];
+            const startTime = '09:00';
+            const endTime = '10:00';
+
+            document.getElementById('selectedResourceInfo').innerHTML = `
+                <h3>${resource.name}</h3>
+                <p>Resource ID: ${resource.id}</p>
+                ${resource.tags.length > 0 ? `
+                    <div class="tags">
+                        ${resource.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                ` : ''}
+            `;
+
+            const form = document.getElementById('extendedReservationForm');
+            form.startDate.value = startDate;
+            form.endDate.value = startDate;
+            form.startTime.value = startTime;
+            form.endTime.value = endTime;
+            form.purpose.value = '';
+
+            form.dataset.resourceId = resourceId;
+
+            document.getElementById('availabilityResult').classList.add('hidden');
+
+            showModal('extendedReservationModal');
+        }
+
+        async function checkAvailability() {
+            const form = document.getElementById('extendedReservationForm');
+            const formData = new FormData(form);
+            const resultDiv = document.getElementById('availabilityResult');
+
+            try {
+                const startDateTime = new Date(`${formData.get('startDate')}T${formData.get('startTime')}`);
+                const endDateTime = new Date(`${formData.get('endDate')}T${formData.get('endTime')}`);
+
+                if (endDateTime <= startDateTime) {
+                    throw new Error('End time must be after start time');
+                }
+
+                if (startDateTime <= new Date()) {
+                    throw new Error('Start time must be in the future');
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Creating...';
+
+                await apiCall('/reservations', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        resource_id: resourceId,
+                        start_time: startDateTime.toISOString(),
+                        end_time: endDateTime.toISOString()
+                    })
+                });
+
+                closeModal('extendedReservationModal');
+                await loadReservations();
+                renderDashboard();
+                showMessage('Reservation created successfully!', 'success');
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Reservation';
+            }
+        }
+
+        async function cancelReservation(reservationId) {
+            if (!confirm('Are you sure you want to cancel this reservation?')) {
+                return;
+            }
+
+            try {
+                await apiCall(`/reservations/${reservationId}/cancel`, {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'Cancelled by user' })
+                });
+
+                await loadReservations();
+                renderDashboard();
+                showMessage('Reservation cancelled successfully', 'success');
+            } catch (error) {
+                showMessage('Failed to cancel reservation: ' + error.message, 'error');
+            }
+        }
+
+        function showReservationHistory(reservationId) {
+            showModal('availabilityModal');
+            loadReservationHistoryDetails(reservationId);
+        }
+
+        async function loadReservationHistoryDetails(reservationId) {
+            const content = document.getElementById('availabilityContent');
+
+            content.innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading reservation history...</p>
+                </div>
+            `;
+
+            try {
+                const history = await getReservationHistory(reservationId);
+                const reservation = reservations.find(r => r.id === reservationId);
+
+                content.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <h3>📋 Reservation History</h3>
+                        ${reservation ? `
+                            <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                                <h4>${reservation.resource.name}</h4>
+                                <p>ID: ${reservation.id} | ${new Date(reservation.start_time).toLocaleString()} - ${new Date(reservation.end_time).toLocaleString()}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${history.length > 0 ? `
+                        <div style="position: relative; padding-left: 32px;">
+                            <div style="content: ''; position: absolute; left: 16px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #667eea, #764ba2);"></div>
+                            ${history.map((entry, index) => {
+                    const timestamp = new Date(entry.timestamp);
+                    const actionIcons = {
+                        'created': '✅',
+                        'cancelled': '❌',
+                        'updated': '📝',
+                        'expired': '⏰'
+                    };
+
+                    return `
+                                    <div style="position: relative; margin-bottom: 24px; background: white; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; transition: all 0.2s ease;" 
+                                         onmouseover="this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 1px 2px 0 rgba(0, 0, 0, 0.05)'"
+                                         onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                        <div style="content: ''; position: absolute; left: calc(-32px + 8px); top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px ${entry.action === 'created' ? '#10b981' : entry.action === 'cancelled' ? '#ef4444' : entry.action === 'updated' ? '#f59e0b' : '#667eea'}; background: ${entry.action === 'created' ? '#10b981' : entry.action === 'cancelled' ? '#ef4444' : entry.action === 'updated' ? '#f59e0b' : '#667eea'};"></div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #1e293b; font-size: 14px;">
+                                                ${actionIcons[entry.action] || '📋'} 
+                                                ${entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}
+                                            </div>
+                                            <div style="font-size: 12px; color: #64748b; font-weight: 500;">
+                                                ${timestamp.toLocaleDateString()} at ${timestamp.toLocaleTimeString()}
+                                            </div>
+                                        </div>
+                                        ${entry.details ? `
+                                            <p style="color: #475569; font-size: 14px; line-height: 1.5; margin: 0;">${entry.details}</p>
+                                        ` : ''}
+                                    </div>
+                                `;
+                }).join('')}
+                        </div>
+                    ` : `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>No history available</h3>
+                            <p>No audit trail found for this reservation</p>
+                        </div>
+                    `}
+                `;
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="alert alert-error">
+                        Failed to load reservation history: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function showCreateResourceModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Create New Resource</h2>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    
+                    <form onsubmit="handleCreateResource(event)">
+                        <div class="form-group">
+                            <label class="form-label">Resource Name</label>
+                            <input type="text" class="form-input" name="name" placeholder="e.g., Conference Room A" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Tags (comma-separated)</label>
+                            <input type="text" class="form-input" name="tags" placeholder="e.g., meeting, conference, large">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="available" checked>
+                                <span>Available for booking</span>
+                            </label>
+                        </div>
+                        
+                        <div id="createResourceError" class="alert alert-error hidden"></div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                            <button type="submit" class="btn btn-success">Create Resource</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function handleCreateResource(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const errorDiv = form.querySelector('#createResourceError');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            errorDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Creating...';
+
+            try {
+                const tags = formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag);
+                await apiCall('/resources', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: formData.get('name'),
+                        tags,
+                        available: formData.get('available') === 'on'
+                    })
+                });
+
+                form.closest('.modal').remove();
+                await loadResources();
+                renderDashboard();
+                showMessage('Resource created successfully', 'success');
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Resource';
+            }
+        }
+
+        function showUploadCSVModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Upload Resources from CSV</h2>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>CSV Format:</strong> name,tags,available<br>
+                        <small>Example: "Conference Room A","meeting,large",true</small>
+                    </div>
+                    
+                    <form onsubmit="handleUploadCSV(event)">
+                        <div class="form-group">
+                            <label class="form-label">Select CSV File</label>
+                            <input type="file" class="form-input" name="csvFile" accept=".csv" required>
+                        </div>
+                        
+                        <div id="uploadCSVError" class="alert alert-error hidden"></div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Upload Resources</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function handleUploadCSV(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const file = formData.get('csvFile');
+            const errorDiv = form.querySelector('#uploadCSVError');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            if (!file) {
+                errorDiv.textContent = 'Please select a CSV file';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Uploading...';
+
+            try {
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', file);
+
+                const response = await fetch(`${API_BASE_URL}/resources/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: uploadFormData
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Upload failed');
+                }
+
+                const result = await response.json();
+
+                form.closest('.modal').remove();
+                await loadResources();
+                renderDashboard();
+
+                let message = `Successfully created ${result.created_count} resources`;
+                if (result.errors && result.errors.length > 0) {
+                    message += ` (${result.errors.length} errors)`;
+                }
+                showMessage(message, 'success');
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload Resources';
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `alert alert-${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '20px';
+            messageDiv.style.right = '20px';
+            messageDiv.style.zIndex = '1001';
+            messageDiv.style.minWidth = '300px';
+            messageDiv.style.maxWidth = '500px';
+            messageDiv.style.wordWrap = 'break-word';
+
+            document.body.appendChild(messageDiv);
+
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function (event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.remove();
+            }
+        });
+
+        // Initialize the application
+        init();
+    </script>
 </body>
 
 </html>

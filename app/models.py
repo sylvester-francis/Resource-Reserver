@@ -12,9 +12,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+from datetime import datetime, timezone
 
 Base = declarative_base()
+
+
+def utcnow():
+    """Get current UTC datetime that's timezone-aware."""
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -46,11 +51,11 @@ class Reservation(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     resource_id = Column(Integer, ForeignKey("resources.id"), nullable=False)
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=False)
     status = Column(String(20), default="active", nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    cancelled_at = Column(DateTime)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    cancelled_at = Column(DateTime(timezone=True))
     cancellation_reason = Column(Text)
 
     # Relationships
@@ -75,5 +80,5 @@ class ReservationHistory(Base):
     reservation_id = Column(Integer, ForeignKey("reservations.id"), nullable=False)  # noqa : E501
     action = Column(String(50), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime(timezone=True), default=utcnow)
     details = Column(Text)
