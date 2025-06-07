@@ -155,19 +155,18 @@ The Resource Reservation System now features a modern, responsive web interface 
 
 ### 🚀 Running the Web Interface
 
-1. Start the FastAPI backend:
+1. Start the FastAPI backend (in one terminal):
    ```bash
    uvicorn app.main:app --reload
    ```
 
-2. In a new terminal, navigate to the `web` directory and start the development server:
+2. In a new terminal, navigate to the project root directory and start a simple HTTP server:
    ```bash
-   cd web
-   npm install
-   npm run dev
+   # Python 3.x
+   python -m http.server 3000 --directory web
    ```
 
-3. Open your browser and visit: http://localhost:3000
+3. Open your browser and visit: http://localhost:3000/web
 
 > ### 📸 CLI Application Screenshots
 > 
