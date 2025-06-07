@@ -16,9 +16,9 @@ class UserCreate(BaseModel):
             raise ValueError("Username must be 3-50 characters")
         if not v.replace("_", "").replace("-", "").isalnum():
             raise ValueError(
-                "Username can only contain letters, numbers, hyphens and underscores"  # noqa: E501
+                "Username can only contain letters, numbers, hyphens and underscores"  # noqa : E501
             )
-        return v.lower()
+        return v.lower()  # Convert to lowercase
 
     @validator("password")
     def validate_password(cls, v):

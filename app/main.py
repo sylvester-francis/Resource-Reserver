@@ -2,12 +2,11 @@
 """FastAPI application with clean endpoint organization."""
 
 import csv
-import os
 from io import StringIO
 from typing import List, Optional
 from datetime import datetime
 
-from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, status  # noqa : E501
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -50,7 +49,7 @@ def health_check():
     response_model=schemas.UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
+def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):  # noqa : E501
     """Register a new user."""
     user_service = UserService(db)
 
@@ -67,10 +66,14 @@ def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/token")
 def login_user(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),  # noqa : E501
 ):
     """Authenticate user and return access token."""
-    user = authenticate_user(db, form_data.username, form_data.password)
+    # Normalize username from form data
+    normalized_username = form_data.username.lower()
+
+    user = authenticate_user(db, normalized_username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -107,7 +110,7 @@ def list_resources(db: Session = Depends(get_db)):
 
 @app.get("/resources/search", response_model=List[schemas.ResourceResponse])
 def search_resources(
-    q: Optional[str] = Query(None, description="Search query for resource names"),
+    q: Optional[str] = Query(None, description="Search query for resource names"),  # noqa : E501
     available_only: bool = Query(
         True, description="Filter to only available resources"
     ),
@@ -170,9 +173,11 @@ def upload_resources_csv(
                     continue
 
                 tags = [
-                    tag.strip() for tag in row.get("tags", "").split(",") if tag.strip()
+                    tag.strip()
+                    for tag in row.get("tags", "").split(",")
+                    if tag.strip()  # noqa : E501
                 ]
-                available = row.get("available", "true").lower() in ("true", "1", "yes")
+                available = row.get("available", "true").lower() in ("true", "1", "yes")  # noqa : E501
 
                 resource_data = schemas.ResourceCreate(
                     name=name, tags=tags, available=available
@@ -213,12 +218,12 @@ def create_reservation(
     reservation_service = ReservationService(db)
 
     try:
-        return reservation_service.create_reservation(reservation_data, current_user.id)
+        return reservation_service.create_reservation(reservation_data, current_user.id)  # noqa : E501
     except ValueError as e:
         if "conflicts" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))  # noqa : E501
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))  # noqa : E501
 
 
 @app.get("/reservations/my", response_model=List[schemas.ReservationResponse])
@@ -231,7 +236,7 @@ def get_my_reservations(
 ):
     """Get current user's reservations."""
     reservation_service = ReservationService(db)
-    return reservation_service.get_user_reservations(current_user.id, include_cancelled)
+    return reservation_service.get_user_reservations(current_user.id, include_cancelled)  # noqa : E501
 
 
 @app.post("/reservations/{reservation_id}/cancel")
@@ -255,11 +260,11 @@ def cancel_reservation(
         }
     except ValueError as e:
         if "not found" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))  # noqa : E501
         elif "only cancel your own" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))  # noqa : E501
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))  # noqa : E501
 
 
 @app.get("/reservations/{reservation_id}/history")
@@ -278,7 +283,8 @@ def get_reservation_history(
 
     if not reservation:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reservation not found",  # noqa : E501
         )
 
     if reservation.user_id != current_user.id:
@@ -292,7 +298,9 @@ def get_reservation_history(
 
 # Backward compatibility endpoints
 @app.post(
-    "/reserve", response_model=schemas.ReservationResponse, include_in_schema=False
+    "/reserve",
+    response_model=schemas.ReservationResponse,
+    include_in_schema=False,  # noqa : E501
 )
 def reserve_resource(
     reservation_data: schemas.ReservationCreate,

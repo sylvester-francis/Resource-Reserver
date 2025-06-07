@@ -46,21 +46,29 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
-    """Get user by username."""
-    return db.query(models.User).filter(models.User.username == username).first()  # noqa : E501
-
-
 def authenticate_user(
     db: Session, username: str, password: str
 ) -> Optional[models.User]:
     """Authenticate a user with username and password."""
-    user = get_user_by_username(db, username)
+    # Normalize the username to lowercase for case-insensitive comparison
+    normalized_username = username.lower()
+    user = get_user_by_username(db, normalized_username)
 
     if not user or not verify_password(password, user.hashed_password):
         return None
 
     return user
+
+
+def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
+    """Get user by username (case-insensitive)."""
+    # Ensure we're always searching with lowercase
+    normalized_username = username.lower()
+    return (
+        db.query(models.User)
+        .filter(models.User.username == normalized_username)
+        .first()
+    )
 
 
 def get_current_user(
