@@ -5,7 +5,6 @@
 [![Python](https://img.shields.io/badge/Python-3.7%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/Framework-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
 [![Made with Typer](https://img.shields.io/badge/CLI-Typer-0277bd.svg)](https://typer.tiangolo.com/)
-[![Status: MVP](https://img.shields.io/badge/Status-MVP-orange.svg)]
 [![Swagger Docs](https://img.shields.io/badge/API-Docs-brightgreen)](http://localhost:8000/docs)
 
 ---
