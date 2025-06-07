@@ -79,10 +79,10 @@ The Resource Reservation System is a scalable API + CLI tool that helps organiza
 
 ### Technical Stack
 
-**Framework**: FastAPI (Python 3.7+)
-**Database**: SQLite (switchable to PostgreSQL/MySQL)
-**Auth**: JWT
-**Docs**: Auto-generated Swagger / ReDoc
+- **Framework**: FastAPI (Python 3.7+)
+- **Database**: SQLite (switchable to PostgreSQL/MySQL)
+- **Auth**: JWT
+- **Docs**: Auto-generated Swagger / ReDoc
 
 ### Data Models
 
