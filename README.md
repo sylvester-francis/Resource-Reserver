@@ -44,10 +44,30 @@ The Resource Reservation System is a scalable API + CLI tool that helps organiza
 ### Web Interface Features
 
 - **User Authentication & Registration**
+  ![Login Page](./images/login-web.png)
+  *User Login Page*
+  
+  ![Register Page](./images/register-web.png)
+  *User Registration Page*
+
 - **Resource Management** - View and manage all available resources
+  ![Resources List](./images/resources-web.png)
+  *List of Available Resources*
+
 - **Reservation System** - Book and manage your reservations
+  ![Make Reservation](./images/reservations-web.png)
+  *Create a New Reservation*
+  
+  ![Timeslot Conflict](./images/TimeslotConflict.png)
+  *Conflict Detection for Reservations*
+
 - **Upcoming Reservations** - Keep track of your upcoming bookings
+  ![Upcoming Reservations](./images/upcoming-web.png)
+  *View Upcoming Reservations*
+
 - **Responsive Design** - Works on both desktop and mobile devices
+  ![Mobile Responsive View](./images/reservations-web.png)
+  *Mobile-Responsive Interface*
 
 ## Requirements
 
@@ -151,6 +171,30 @@ graph TB
     RESOURCE_SERVICE --> CSV
     FASTAPI --> DOCS
 ```
+
+## Screenshots
+
+### Web Application
+
+| Feature | Screenshot |
+|---------|------------|
+| Login | ![Login Web](./images/login-web.png) |
+| Registration | ![Register Web](./images/register-web.png) |
+| Resources | ![Resources Web](./images/resources-web.png) |
+| Upcoming Reservations | ![Upcoming Web](./images/upcoming-web.png) |
+| Make Reservation | ![Reservation Web](./images/reservations-web.png) |
+| Bulk Upload | ![Upload CSV Web](./images/uploadcsv-web.png) |
+
+### Command Line Interface
+
+| Feature | Screenshot |
+|---------|------------|
+| List Resources | ![List Resources](./images/listResources.png) |
+| Make Reservation | ![Reservation](./images/Reservation.png) |
+| View Upcoming | ![Upcoming](./images/upcoming.png) |
+| View History | ![History](./images/history.png) |
+| Server Status | ![Server Status](./images/ServerStarted.png) |
+| Audit Logs | ![Audit Logs](./images/Audit.png) |
 
 ## Installation
 
