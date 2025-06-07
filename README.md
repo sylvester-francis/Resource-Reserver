@@ -7,16 +7,18 @@ The Resource Reservation System is a robust, scalable API service designed to ma
 ## Key Features
 
 - **User Authentication & Authorization**: Secure access control with JWT-based authentication
-- **Resource Management**: Create, list, and search available resources
+- **Resource Management**: Create, list, and search available resources with tag-based categorization
 - **Intelligent Booking System**: Make, modify, and cancel reservations with conflict prevention
 - **Comprehensive History**: Track all reservation changes and maintain a complete audit log
 - **Bulk Operations**: Import multiple resources via CSV upload
+- **Professional CLI Interface**: Rich, interactive command-line interface with color-coded output
 - **RESTful API**: Clean, well-documented endpoints following REST principles
 - **CORS Support**: Ready for web application integration
 
 ## Technical Architecture
 
 ### Backend Stack
+
 - **Framework**: FastAPI (Python 3.7+)
 - **Database**: SQLite (Production-ready for PostgreSQL/MySQL)
 - **Authentication**: JWT (JSON Web Tokens)
@@ -25,61 +27,66 @@ The Resource Reservation System is a robust, scalable API service designed to ma
 ### Data Models
 
 1. **Users**
-   - Secure authentication
-   - Reservation history
+   - Secure authentication with bcrypt password hashing
+   - Reservation history tracking
 
 2. **Resources**
-   - Unique identification
-   - Availability status
-   - Tag-based categorization
+   - Unique identification with availability status
+   - Tag-based categorization for easy searching
 
 3. **Reservations**
-   - Time-bound bookings
-   - Status tracking (active/cancelled)
-   - Duration calculation
+   - Time-bound bookings with status tracking
+   - Duration calculation and conflict detection
 
 4. **Audit Log**
-   - Complete history of changes
-   - User actions tracking
-   - Timestamped records
+   - Complete history of changes with user actions tracking
+   - Timestamped records for accountability
 
 ## API Endpoints
 
 ### Authentication
+
 - `POST /register` - Register a new user account
 - `POST /token` - Obtain access token (login)
 
 ### Resources
+
 - `POST /resources` - Create a new resource
 - `GET /resources` - List all resources
 - `GET /resources/search` - Search resources with filters
 - `POST /resources/upload` - Upload multiple resources via CSV
 
 ### Reservations
+
 - `POST /reservations` - Create a new reservation
 - `GET /reservations/my` - View user's reservations
 - `POST /reservations/{reservation_id}/cancel` - Cancel a reservation
 - `GET /reservations/{reservation_id}/history` - View reservation history
 
 ### System
+
 - `GET /health` - Health check endpoint
 
 ## Command Line Interface (CLI)
 
-The system includes a powerful CLI built with Typer, providing an intuitive command-line interface for interacting with the Resource Reservation System. The CLI offers tab completion, rich output formatting, and interactive prompts.
+The system includes a powerful CLI built with Typer, providing an intuitive command-line interface for interacting with the Resource Reservation System. The CLI offers rich terminal formatting, interactive prompts, and comprehensive functionality.
+
+![CLI Authentication and Resource Creation](images/image3.png)
 
 ### Key CLI Features
 
-- **Interactive Authentication**: Secure login/logout with token management
-- **Resource Management**: List, search, and manage resources
-- **Reservation Handling**: Create, view, and cancel reservations
-- **Interactive Search**: Find available resources with flexible time-based filtering
-- **Rich Output**: Color-coded and formatted terminal output
-- **Context-Aware Help**: Comprehensive help system with examples
+- **Interactive Authentication**: Secure login/logout with persistent token management
+- **Resource Management**: List, search, create, and upload resources
+- **Reservation Handling**: Create, view, cancel, and track reservations
+- **Advanced Search**: Find available resources with flexible time-based filtering
+- **Rich Output**: Color-coded and formatted terminal output with emojis
+- **Bulk Upload**: CSV file upload with preview and error reporting
+- **Comprehensive History**: Detailed audit trails for all actions
 
-### Common CLI Commands
+### CLI Commands Overview
 
-#### Authentication
+#### Authentication Commands
+
 ```bash
 # Register a new user
 python -m cli.main auth register
@@ -87,87 +94,90 @@ python -m cli.main auth register
 # Login
 python -m cli.main auth login
 
-# Logout
-python -m cli.main auth logout
-
 # Check authentication status
 python -m cli.main auth status
+
+# Logout
+python -m cli.main auth logout
 ```
 
 #### Resource Management
+
 ```bash
-# List all resources (with details)
+# List all resources with details
 python -m cli.main resources list --details
 
-# Search for available resources
+# Search for available resources in a time window
 python -m cli.main resources search --query "conference" --from "2025-06-07 09:00" --until "2025-06-07 17:00"
 
 # Create a new resource
 python -m cli.main resources create "Conference Room A" --tags "meeting,conference"
 
-# Upload resources from CSV
+# Upload resources from CSV with preview
 python -m cli.main resources upload resources.csv --preview
 ```
 
+![CSV Upload with Preview](images/image13.png)
+
 #### Reservation Management
+
 ```bash
-# Create a new reservation
+# Create a reservation with duration
 python -m cli.main reservations create 1 "2025-06-07 14:00" "2h"
 
-# List your reservations (with options)
-python -m cli.main reservations list --upcoming --detailed --include-cancelled
+# List your reservations
+python -m cli.main reservations list --upcoming --detailed
 
-# Cancel a reservation
-python -m cli.main reservations cancel 123 --reason "Meeting cancelled" --force
+# List all reservations including cancelled ones
+python -m cli.main reservations list --include-cancelled --detailed
+```
+
+![Reservation Management](images/Reservation.png)
+
+```bash
+# Cancel a reservation with reason
+python -m cli.main reservations cancel 2 --reason "Meeting cancelled"
 
 # View reservation history
-python -m cli.main reservations show-history 123 --detailed
+python -m cli.main reservations history 2 --detailed
 ```
 
-#### System
-```bash
-# Check system status
-python -m cli.main system status
-
-# Show current configuration
-python -m cli.main system show-config
-```
+![Reservation History](images/history.png)
 
 #### Quick Actions
+
 ```bash
 # Quick reserve with duration
-python -m cli.main quick-reserve 1 "2025-06-07 14:00" "2h"
+python -m cli.main reserve 1 "2025-06-07 14:00" "2h"
 
-# Find and reserve interactively
-python -m cli.main find-and-reserve "2h" --query "conference" --from "tomorrow 9am"
-
-# Show upcoming reservations (shortcut)
+# Show upcoming reservations
 python -m cli.main upcoming
 ```
 
-### CLI Installation
+![Upcoming Reservations](images/upcoming.png)
 
-The CLI is included with the main package. After setting up the project:
+#### Smart Search and Booking
 
-1. Install the package in development mode:
-   ```bash
-   pip install -e .
-   ```
+The CLI includes intelligent search that can help you find available resources and make reservations interactively:
 
-2. Make the CLI executable:
-   ```bash
-   chmod +x cli/main.py
-   ```
+![Smart Search with Conflict Detection](images/SearchResource.png)
 
-3. (Optional) Create an alias in your shell config (e.g., `~/.zshrc` or `~/.bashrc`):
-   ```bash
-   alias reserve="python -m cli.main"
-   ```
-   Then use it like: `reserve resources list`
+![Interactive Resource Search](images/listResources.png)
+
+#### System Commands
+
+```bash
+# Check system status and connectivity
+python -m cli.main system status
+
+# Show current configuration
+python -m cli.main system config
+```
 
 ## Getting Started
 
 ### Prerequisites
+
 - Python 3.7+
 - pip (Python package manager)
 - SQLite (included with Python)
@@ -175,20 +185,62 @@ The CLI is included with the main package. After setting up the project:
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/sylvester-francis/Resource-Reserver.git
    cd Resource-Reserver
    ```
 
 2. Create and activate a virtual environment:
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
+   ```
+
+4. Set up environment variables:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+5. Initialize the database:
+
+   ```bash
+   python -m app.database
+   ```
+
+### Running the Application
+
+1. Start the FastAPI development server:
+
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+![FastAPI Server Running](images/ServerStarted.png)
+
+1. The API will be available at `http://localhost:8000`
+   - Swagger UI: `http://localhost:8000/docs`
+   - ReDoc: `http://localhost:8000/redoc`
+
+1. Use the CLI to interact with the system:
+
+   ```bash
+   # First, register and login
+   python -m cli.main auth register
+   python -m cli.main auth login
+   
+   # Then start using the system
+   python -m cli.main resources list
+   python -m cli.main upcoming
    ```
 
 ## Configuration
@@ -208,42 +260,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 API_URL=http://localhost:8000
 ```
 
-### Development Setup
-
-1. Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-   
-2. Install development dependencies (if any):
-   ```bash
-   pip install -r requirements-dev.txt  # If you have dev requirements
-   ```
-
-3. Run tests:
-   ```bash
-   pytest  # If you have tests
-   ```
-
-4. Start the development server:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-
-### Testing
-
-To run the test suite (if available):
-
-```bash
-pytest tests/
-```
-
-For test coverage:
-
-```bash
-pytest --cov=app tests/
-```
-
 ### Environment Variables
 
 - `DATABASE_URL`: Connection string for the database (defaults to SQLite)
@@ -253,51 +269,36 @@ pytest --cov=app tests/
 - `API_URL`: Base URL for the API (used by the CLI)
 
 For production, make sure to:
+
 1. Change the `SECRET_KEY` to a strong, random value
 2. Use a production database like PostgreSQL
 3. Set appropriate token expiration times
 
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-5. Initialize the database:
-   ```bash
-   python -m app.database
-   ```
-
-### Running the Application
-
-Start the development server:
-```bash
-uvicorn app.main:app --reload
-```
-
-The API will be available at `http://localhost:8000`
-
-## API Documentation
+## Interactive API Documentation
 
 Interactive API documentation is automatically available at:
+
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## Security Considerations
+## Security Features
 
-- Password hashing using bcrypt
-- JWT token-based authentication
-- Secure password requirements
-- Input validation
-- CORS protection
+- **Password Hashing**: bcrypt with proper salting
+- **JWT Authentication**: Secure token-based authentication
+- **Input Validation**: Comprehensive Pydantic schemas
+- **SQL Injection Protection**: SQLAlchemy ORM usage
+- **Authorization Checks**: User-specific resource access
+- **CORS Protection**: Configurable cross-origin settings
 
 ## Deployment
 
 For production deployment, consider:
+
 1. Using a production-grade ASGI server (e.g., Uvicorn with Gunicorn)
 2. Setting up a PostgreSQL database
 3. Configuring proper HTTPS/TLS
 4. Setting up monitoring and logging
+5. Implementing rate limiting
 
 ## License
 
@@ -311,12 +312,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## Note
-
-*This project is a proof of concept designed to demonstrate a resource reservation system. While it includes features suitable for small teams, it should be thoroughly reviewed and enhanced before being used in production environments.*
-
 ## Support
 
 For support, please open an issue on the GitHub repository.
 
 ---
+
+*This project demonstrates a complete resource reservation system with both programmatic (API) and interactive (CLI) interfaces, showcasing modern Python development practices with FastAPI, SQLAlchemy, and Typer.*
