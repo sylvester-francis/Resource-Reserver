@@ -131,7 +131,45 @@ python -m cli.main system status
 python -m cli.main system config
 ```
 
-> ### 📸 Application Screenshots
+## 🌐 Web Interface
+
+The Resource Reservation System now features a modern, responsive web interface that works alongside the existing CLI and API. The web interface provides an intuitive way to manage resources and reservations through a user-friendly dashboard.
+
+### 🖥️ Web Interface Features
+
+- **User Authentication & Registration**
+- **Resource Management** - View and manage all available resources
+- **Reservation System** - Book and manage your reservations
+- **Upcoming Reservations** - Keep track of your upcoming bookings
+- **Responsive Design** - Works on both desktop and mobile devices
+
+### 🖼️ Web Interface Screenshots
+
+| Feature | Screenshot |
+|---------|------------|
+| **Login Screen** | ![Login Screen](images/login-web.png) |
+| **Registration** | ![Registration Form](images/register-web.png) |
+| **Resource Management** | ![Resource List](images/resources-web.png) |
+| **My Reservations** | ![Reservations](images/reservations-web.png) |
+| **Upcoming Reservations** | ![Upcoming Bookings](images/upcoming-web.png) |
+
+### 🚀 Running the Web Interface
+
+1. Start the FastAPI backend:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+2. In a new terminal, navigate to the `web` directory and start the development server:
+   ```bash
+   cd web
+   npm install
+   npm run dev
+   ```
+
+3. Open your browser and visit: http://localhost:3000
+
+> ### 📸 CLI Application Screenshots
 > 
 > | Feature | Screenshot |
 > |---------|------------|
