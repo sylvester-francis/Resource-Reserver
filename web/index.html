@@ -833,6 +833,9 @@
                         <button class="btn btn-success" onclick="showCreateResourceModal()">
                             Add Resource
                         </button>
+                        <button class="btn btn-primary" onclick="showUploadCSVModal()">
+                            Upload CSV
+                        </button>
                     </div>
                 </div>
 
@@ -1141,6 +1144,51 @@
             document.body.appendChild(modal);
         }
 
+        function showUploadCSVModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Upload Resources from CSV</h2>
+                        <button class="close-btn" onclick="closeModal(this)">&times;</button>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; padding: 16px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
+                        <h4 style="margin: 0 0 8px 0; color: #2c3e50;">CSV Format Requirements:</h4>
+                        <ul style="margin: 0; padding-left: 20px; color: #666;">
+                            <li>Required columns: <code>name</code></li>
+                            <li>Optional columns: <code>tags</code> (comma-separated), <code>available</code> (true/false)</li>
+                            <li>Example: <code>Conference Room A,"meeting,large",true</code></li>
+                        </ul>
+                    </div>
+                    
+                    <form onsubmit="handleUploadCSV(event)">
+                        <div class="form-group">
+                            <label class="form-label">Select CSV File</label>
+                            <input type="file" class="form-input" name="csvFile" accept=".csv" required onchange="handleFileSelect(event)">
+                        </div>
+                        
+                        <div id="filePreview" class="hidden" style="margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 10px 0; color: #2c3e50;">File Preview:</h4>
+                            <div id="previewContent" style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
+                            <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">
+                                <span id="previewInfo"></span>
+                            </p>
+                        </div>
+                        
+                        <div id="uploadCSVError" class="alert alert-error hidden"></div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal(this)">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="uploadCSVBtn" disabled>Upload Resources</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
         function showCreateReservationModal(resourceId) {
             const resource = resources.find(r => r.id === resourceId);
             if (!resource) return;
@@ -1242,6 +1290,122 @@
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Create Resource';
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const previewDiv = document.getElementById('filePreview');
+            const previewContent = document.getElementById('previewContent');
+            const previewInfo = document.getElementById('previewInfo');
+            const uploadBtn = document.getElementById('uploadCSVBtn');
+
+            if (!file) {
+                previewDiv.classList.add('hidden');
+                uploadBtn.disabled = true;
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showMessage('Please select a CSV file', 'error');
+                uploadBtn.disabled = true;
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const csvContent = e.target.result;
+                const lines = csvContent.split('\n').filter(line => line.trim());
+
+                if (lines.length === 0) {
+                    showMessage('CSV file is empty', 'error');
+                    uploadBtn.disabled = true;
+                    return;
+                }
+
+                // Show preview of first 5 lines
+                const previewLines = lines.slice(0, 6); // Header + 5 data rows
+                previewContent.innerHTML = previewLines.map((line, index) => {
+                    const isHeader = index === 0;
+                    return `<div style="${isHeader ? 'font-weight: bold; color: #2c3e50;' : 'color: #666;'}">${line}</div>`;
+                }).join('');
+
+                previewInfo.textContent = `File: ${file.name} • ${lines.length - 1} resources (excluding header) • ${(file.size / 1024).toFixed(1)} KB`;
+
+                previewDiv.classList.remove('hidden');
+                uploadBtn.disabled = false;
+            };
+
+            reader.readAsText(file);
+        }
+
+        async function handleUploadCSV(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const file = formData.get('csvFile');
+            const errorDiv = document.getElementById('uploadCSVError');
+            const submitBtn = document.getElementById('uploadCSVBtn');
+
+            if (!file) {
+                errorDiv.textContent = 'Please select a CSV file';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Clear previous errors
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Uploading...';
+
+            try {
+                // Create FormData for file upload
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', file);
+
+                const response = await fetch(`${API_BASE_URL}/resources/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: uploadFormData
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Upload failed');
+                }
+
+                const result = await response.json();
+
+                closeModal(submitBtn);
+                await loadResources();
+                renderDashboard();
+
+                // Show detailed success message
+                let message = `Successfully created ${result.created_count} resources`;
+                if (result.errors && result.errors.length > 0) {
+                    message += ` (${result.errors.length} errors encountered)`;
+                    console.warn('Upload errors:', result.errors);
+                }
+                showMessage(message, 'success');
+
+                // Show errors in console for debugging
+                if (result.errors && result.errors.length > 0) {
+                    setTimeout(() => {
+                        showMessage(`Upload completed with ${result.errors.length} errors. Check console for details.`, 'error');
+                    }, 3000);
+                }
+
+            } catch (error) {
+                errorDiv.textContent = error.message || 'Upload failed';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload Resources';
             }
         }
 
