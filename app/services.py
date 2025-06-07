@@ -6,6 +6,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from app import models, schemas
 from app.auth import hash_password
+from sqlalchemy.exc import IntegrityError
 
 
 class ResourceService:
@@ -14,17 +15,20 @@ class ResourceService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_resource(self, resource_data: schemas.ResourceCreate) -> models.Resource:  # noqa :E501
-        """Create a new resource."""
+    def create_resource(self, resource_data: schemas.ResourceCreate) -> models.Resource:  # noqa : E501
         resource = models.Resource(
             name=resource_data.name,
             available=resource_data.available,
             tags=resource_data.tags or [],
         )
-        self.db.add(resource)
-        self.db.commit()
-        self.db.refresh(resource)
-        return resource
+        try:
+            self.db.add(resource)
+            self.db.commit()
+            self.db.refresh(resource)
+            return resource
+        except IntegrityError as e:
+            self.db.rollback()
+            raise ValueError(f"Resource '{resource_data.name}' already exists.") from e  # noqa : E501
 
     def get_all_resources(self) -> List[models.Resource]:
         """Get all resources."""

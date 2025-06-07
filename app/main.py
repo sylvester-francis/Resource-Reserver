@@ -147,10 +147,11 @@ def upload_resources_csv(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Upload resources from CSV file."""
+    """Upload resources from a CSV file."""
     if not file.filename.endswith(".csv"):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="File must be a CSV"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be a CSV",
         )
 
     try:
@@ -180,14 +181,15 @@ def upload_resources_csv(
                 resource_service.create_resource(resource_data)
                 created_count += 1
 
+            except ValueError as ve:
+                errors.append(f"Row {row_num}: {ve}")
             except Exception as e:
-                errors.append(f"Row {row_num}: {str(e)}")
+                errors.append(f"Row {row_num}: Unexpected error: {e}")
 
-        response = {"created_count": created_count}
-        if errors:
-            response["errors"] = errors[:10]  # Limit to first 10 errors
-
-        return response
+        return {
+            "created_count": created_count,
+            "errors": errors[:10],  # Limit to first 10 errors
+        }
 
     except Exception as e:
         raise HTTPException(
