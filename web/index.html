@@ -10,6 +10,217 @@
 
 <body>
     <div id="app"></div>
+
+    <!-- Enhanced Modals for New Features -->
+
+    <!-- Resource Availability Modal -->
+    <div id="availabilityModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Resource Availability</h2>
+                <button class="close-btn" onclick="closeModal('availabilityModal')">&times;</button>
+            </div>
+            <div id="availabilityContent">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading availability...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status Modal -->
+    <div id="systemStatusModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">System Status</h2>
+                <button class="close-btn" onclick="closeModal('systemStatusModal')">&times;</button>
+            </div>
+            <div id="systemStatusContent">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Checking system status...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Admin Panel</h2>
+                <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
+            </div>
+            <div id="adminContent">
+                <div class="admin-actions">
+                    <div class="admin-section">
+                        <h3>System Maintenance</h3>
+                        <button class="btn btn-primary" onclick="triggerCleanup()">
+                            🧹 Cleanup Expired Reservations
+                        </button>
+                        <p class="help-text">Manually trigger cleanup of expired reservations</p>
+                    </div>
+
+                    <div class="admin-section">
+                        <h3>Resource Management</h3>
+                        <button class="btn btn-secondary" onclick="showBulkResourceUpdate()">
+                            📝 Bulk Update Resources
+                        </button>
+                        <p class="help-text">Update multiple resources at once</p>
+                    </div>
+
+                    <div class="admin-section">
+                        <h3>System Analytics</h3>
+                        <button class="btn btn-secondary" onclick="showSystemAnalytics()">
+                            📊 View Analytics
+                        </button>
+                        <p class="help-text">View system usage statistics</p>
+                    </div>
+                </div>
+                <div id="adminResults" class="admin-results hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Time Search Modal -->
+    <div id="timeSearchModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Time-based Availability Search</h2>
+                <button class="close-btn" onclick="closeModal('timeSearchModal')">&times;</button>
+            </div>
+            <form id="timeSearchForm" onsubmit="handleTimeSearch(event)">
+                <div class="form-group">
+                    <label class="form-label">Search Query (optional)</label>
+                    <input type="text" class="form-input" name="query" placeholder="e.g., conference, projector">
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Available From</label>
+                        <input type="datetime-local" class="form-input" name="availableFrom" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Available Until</label>
+                        <input type="datetime-local" class="form-input" name="availableUntil" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="availableOnly" checked>
+                        <span>Show only available resources</span>
+                    </label>
+                </div>
+
+                <div id="timeSearchError" class="alert alert-error hidden"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('timeSearchModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Search Available Resources</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resource Maintenance Modal -->
+    <div id="maintenanceModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Resource Maintenance</h2>
+                <button class="close-btn" onclick="closeModal('maintenanceModal')">&times;</button>
+            </div>
+            <div id="maintenanceContent">
+                <div class="maintenance-info">
+                    <h3 id="maintenanceResourceName"></h3>
+                    <p id="maintenanceResourceStatus"></p>
+                </div>
+
+                <div class="maintenance-actions">
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        <select class="form-input" id="maintenanceAction">
+                            <option value="enable">Enable Resource</option>
+                            <option value="disable">Disable Resource (Maintenance Mode)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Reason (optional)</label>
+                        <textarea class="form-input" id="maintenanceReason"
+                            placeholder="e.g., Scheduled maintenance, equipment repair"></textarea>
+                    </div>
+                </div>
+
+                <div id="maintenanceError" class="alert alert-error hidden"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('maintenanceModal')">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="applyMaintenance()">Apply Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extended Reservation Modal -->
+    <div id="extendedReservationModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Reservation</h2>
+                <button class="close-btn" onclick="closeModal('extendedReservationModal')">&times;</button>
+            </div>
+            <form id="extendedReservationForm" onsubmit="handleExtendedReservation(event)">
+                <div id="selectedResourceInfo" class="selected-resource-info"></div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-input" name="startDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Time</label>
+                        <input type="time" class="form-input" name="startTime" required>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-input" name="endDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Time</label>
+                        <input type="time" class="form-input" name="endTime" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Purpose (optional)</label>
+                    <textarea class="form-input" name="purpose"
+                        placeholder="Brief description of the reservation purpose"></textarea>
+                </div>
+
+                <div class="availability-check">
+                    <button type="button" class="btn btn-secondary" onclick="checkAvailability()">
+                        🔍 Check Availability
+                    </button>
+                    <div id="availabilityResult" class="availability-result hidden"></div>
+                </div>
+
+                <div id="extendedReservationError" class="alert alert-error hidden"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('extendedReservationModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Reservation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="./scripts/script.js"></script>
 </body>
 
