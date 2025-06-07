@@ -15,6 +15,7 @@ from cli.utils import (
     format_datetime,
     format_duration,
     confirm_action,
+    parse_aware,
     prompt_for_optional,
 )
 
@@ -457,9 +458,7 @@ def list_my_reservations(
         if upcoming_only:
             now = datetime.now(timezone.utc)
             reservations = [
-                r
-                for r in reservations
-                if datetime.fromisoformat(r["start_time"].replace("Z", "")) > now  # noqa : E501
+                r for r in reservations if parse_aware(r["start_time"]) > now
             ]
 
         if not reservations:

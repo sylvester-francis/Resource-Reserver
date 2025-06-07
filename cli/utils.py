@@ -1,9 +1,14 @@
 """Utility functions for CLI operations."""
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import typer
+
+
+def parse_aware(dt_str: str) -> datetime:
+    dt_naive = datetime.fromisoformat(dt_str)
+    return dt_naive.replace(tzinfo=timezone.utc)
 
 
 def parse_datetime(date_str: str) -> datetime:
