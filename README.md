@@ -1,5 +1,11 @@
 # Resource Reservation System
 
+![Python Version](https://img.shields.io/badge/python-3.7%2B-blue?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-Framework-green?logo=fastapi)
+![Typer CLI](https://img.shields.io/badge/CLI-Typer-informational?logo=terminal)
+![License](https://img.shields.io/github/license/sylvester-francis/Resource-Reserver)
+![Status](https://img.shields.io/badge/status-MVP-yellow)
+
 ## Overview
 
 The Resource Reservation System is a robust, scalable API service designed to manage and schedule shared resources within an organization. This system provides a structured approach to resource allocation, enabling users to book, manage, and track the usage of various resources while maintaining a clear audit trail of all transactions.
