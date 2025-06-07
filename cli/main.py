@@ -899,8 +899,7 @@ def show_upcoming_reservations():
         upcoming = [
             r
             for r in reservations
-            if r["status"] == "active"
-            and datetime.fromisoformat(r["start_time"].replace("Z", "")) > now
+            if r["status"] == "active" and parse_aware(r["start_time"]) > now
         ]
 
         if not upcoming:
@@ -917,10 +916,12 @@ def show_upcoming_reservations():
         print("═" * 60)
 
         for reservation in upcoming:
-            start_dt = datetime.fromisoformat(
-                reservation["start_time"].replace("Z", "")
+            start_dt = datetime.fromisoformat(reservation["start_time"]).replace(  # noqa : E501
+                tzinfo=timezone.utc
             )
-            end_dt = datetime.fromisoformat(reservation["end_time"].replace("Z", ""))  # noqa : E501
+            end_dt = datetime.fromisoformat(reservation["end_time"]).replace(
+                tzinfo=timezone.utc
+            )  # noqa : E501
 
             # Calculate time until start
             time_until = start_dt - now
