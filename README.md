@@ -19,6 +19,7 @@ A comprehensive resource management platform designed for enterprise environment
 - [API Reference](#api-reference)
 - [Web Interface](#web-interface)
 - [Command Line Interface](#command-line-interface)
+- [Testing](#testing)
 - [Security](#security)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
@@ -333,6 +334,50 @@ python -m cli.main system status
 python -m cli.main system config
 ```
 
+## Testing
+
+### Test Scripts
+
+The project includes comprehensive test scripts:
+
+```bash
+# Test API endpoints
+./test_api.sh
+
+# Test CLI functionality
+./test_cli.sh
+
+# Run with options
+API_URL=http://localhost:8080 ./test_api.sh
+./test_cli.sh --verbose --no-cleanup
+```
+
+### Test Features
+
+- **Cross-platform**: Works on Linux, macOS, and Windows with proper date handling
+- **Comprehensive**: Tests all API endpoints and CLI commands
+- **Error Handling**: Tests both success and failure scenarios
+- **Authentication**: Complete auth flow testing
+- **Data Validation**: Input validation and edge case testing
+
+### Available Test Options
+
+#### API Testing (`test_api.sh`)
+```bash
+./test_api.sh                                    # Test against localhost:8000
+./test_api.sh -u http://api.example.com          # Test against custom URL
+API_URL=http://localhost:8080 ./test_api.sh      # Use environment variable
+./test_api.sh --quiet                            # Run with minimal output
+```
+
+#### CLI Testing (`test_cli.sh`)
+```bash
+./test_cli.sh                                # Run all tests with default settings
+./test_cli.sh --quiet --no-cleanup          # Run quietly without cleanup
+./test_cli.sh --api-url http://prod.api.com  # Test against different API
+VERBOSE=false ./test_cli.sh                  # Use environment variable
+```
+
 ## Security
 
 ### Security Features
@@ -368,4 +413,4 @@ MIT © [Sylvester Francis](https://github.com/sylvester-francis)
 
 ---
 
-This project is an end-to-end showcase of modern Python backend + CLI tooling using FastAPI, SQLAlchemy, and Typer. Clean code. Strong architecture. Ready for production.
+This project is an end-to-end showcase of modern Python backend + CLI tooling using FastAPI, SQLAlchemy, and Typer. Clean code. Strong architecture. This project can be altered to fit your needs.
