@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =================================================================
-# Resource Reservation System - Fixed API Testing Script
+# Resource Reservation System - API Testing Script
 # =================================================================
 # This script tests all API endpoints with proper authentication
 # and cross-platform date handling
