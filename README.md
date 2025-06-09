@@ -2,7 +2,7 @@
 
 **Enterprise Resource Management and Booking System**
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Typer](https://img.shields.io/badge/CLI-Typer-0277bd?style=flat&logo=python&logoColor=white)](https://typer.tiangolo.com/) [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript) [![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=github-actions&logoColor=white)](https://github.com/features/actions) [![Ruff](https://img.shields.io/badge/Linter-Ruff-D7FF64?style=flat&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/) [![Code style: black](https://img.shields.io/badge/Code%20Style-Black-000000?style=flat&logo=python&logoColor=white)](https://github.com/psf/black) [![Mermaid](https://img.shields.io/badge/Diagrams-Mermaid-FF3670?style=flat&logo=mermaid&logoColor=white)](https://mermaid.js.org/) [![Swagger](https://img.shields.io/badge/API%20Docs-Swagger-85EA2D?style=flat&logo=swagger&logoColor=black)](http://localhost:8000/docs) [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/) [![Test Coverage](https://codecov.io/gh/username/resource-reserver/branch/main/graph/badge.svg)](https://codecov.io/gh/username/resource-reserver)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Typer](https://img.shields.io/badge/CLI-Typer-0277bd?style=flat&logo=python&logoColor=white)](https://typer.tiangolo.com/) [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript) [![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=github-actions&logoColor=white)](https://github.com/features/actions) [![Ruff](https://img.shields.io/badge/Linter-Ruff-D7FF64?style=flat&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/) [![Mermaid](https://img.shields.io/badge/Diagrams-Mermaid-FF3670?style=flat&logo=mermaid&logoColor=white)](https://mermaid.js.org/) [![Swagger](https://img.shields.io/badge/API%20Docs-Swagger-85EA2D?style=flat&logo=swagger&logoColor=black)](http://localhost:8000/docs) [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ## Overview
 
@@ -609,17 +609,20 @@ The CI/CD pipeline consists of three main stages:
 ### Pipeline Stages
 
 #### 1. Code Quality & Linting
+
 - **Ruff**: Fast Python linter with comprehensive rule set
 - **Ruff Format**: Code formatting validation
 - **Flake8**: Additional linting for specific error patterns
 
 #### 2. Testing
+
 - **Pytest**: Complete test suite execution
 - **Coverage**: Code coverage reporting with XML and terminal output
 - **Codecov**: Coverage upload for tracking and badges
 - **Multiple test categories**: API, CLI, and service layer tests
 
 #### 3. Docker Build & Integration
+
 - **Multi-stage builds**: Optimized container images
 - **Integration testing**: End-to-end API and CLI testing
 - **Health checks**: Container health validation
@@ -660,6 +663,7 @@ The pipeline is configured in `.github/workflows/ci.yml` and includes:
 ### Quality Gates
 
 All pull requests must pass:
+
 - ✅ All linting and formatting checks
 - ✅ Test suite with >95% coverage
 - ✅ Docker build and integration tests
