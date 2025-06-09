@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Main API application
   api:
@@ -11,6 +9,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - DATABASE_URL=sqlite:///./data/resource_reserver.db
+      - CLI_CONFIG_DIR=/tmp/.reservation-cli
     volumes:
       - ./data:/app/data
     healthcheck:
@@ -31,6 +30,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
+      - CLI_CONFIG_DIR=/tmp/.reservation-cli
     volumes:
       - .:/app
       - /app/venv  # Exclude virtual environment from mount

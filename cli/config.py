@@ -9,12 +9,14 @@ class CLIConfig:
     """Configuration manager for CLI client."""
 
     def __init__(self):
-        self.config_dir = Path.home() / ".reservation-cli"
+        # Use environment variable if set, otherwise use default
+        config_dir = os.getenv("CLI_CONFIG_DIR", "~/.reservation-cli")
+        self.config_dir = Path(config_dir).expanduser()
         self.token_file = self.config_dir / "auth.json"
         self.api_url = os.getenv("API_URL", "http://localhost:8000")
 
-        # Ensure config directory exists
-        self.config_dir.mkdir(exist_ok=True)
+        # Ensure config directory exists (parents=True creates parent dirs if needed)
+        self.config_dir.mkdir(parents=True, exist_ok=True)
 
     def save_token(self, token: str) -> None:
         """Save authentication token."""
