@@ -464,44 +464,48 @@ Access the web application at `http://localhost:8000` when using Docker deployme
 #### Web Interface Screenshots
 
 **Authentication**
+
 - **Login**: Secure user authentication with modern interface
   
-  ![Login Interface](screenshots/login-web.png)
+  ![Login Interface](screenshots/Web%20Interface/login-web.png)
 
 - **Registration**: New user account creation
   
-  ![Registration Interface](screenshots/register-web.png)
+  ![Registration Interface](screenshots/Web%20Interface/register-web.png)
 
 **Resource Management**
+
 - **Resource List**: Browse and filter available resources with real-time availability
   
-  ![Resource List](screenshots/resourcelist-web.png)
+  ![Resource List](screenshots/Web%20Interface/resourcelist-web.png)
 
 - **Create Resource**: Add new resources with tags and availability settings
   
-  ![Create Resource](screenshots/createresource-web.png)
+  ![Create Resource](screenshots/Web%20Interface/createresource-web.png)
 
 - **Upload Resources**: Bulk import via CSV with format validation
   
-  ![Upload Resources](screenshots/uploadresource-web.png)
+  ![Upload Resources](screenshots/Web%20Interface/uploadresource-web.png)
 
 **Reservation Management**
+
 - **Create Reservation**: Schedule resource bookings with conflict detection
   
-  ![Create Reservation](screenshots/createreservation-web.png)
+  ![Create Reservation](screenshots/Web%20Interface/createreservation-web.png)
 
 - **My Reservations**: View and manage personal bookings
   
-  ![My Reservations](screenshots/myreservations-web.png)
+  ![My Reservations](screenshots/Web%20Interface/myreservations-web.png)
 
 - **Reservation History**: Complete audit trail for reservations
   
-  ![Reservation History](screenshots/resourcehistory-web.png)
+  ![Reservation History](screenshots/Web%20Interface/resourcehistory-web.png)
 
 **System Management**
+
 - **System Status**: Real-time system health and resource summary
   
-  ![System Status](screenshots/systemstatus-web.png)
+  ![System Status](screenshots/Web%20Interface/systemstatus-web.png)
 
 ### Command Line Interface
 
@@ -531,29 +535,34 @@ python -m cli.main resources upload resources.csv
 #### CLI Interface Screenshots
 
 **Main Commands**
+
 - **CLI Help**: Overview of all available commands and options
   
-  ![CLI Main Help](screenshots/cli-main.png)
+  ![CLI Main Help](screenshots/CLI%20Interface/cli-main.png)
 
 **Authentication Commands**
+
 - **Auth Commands**: User registration, login, logout, and status checking
   
-  ![CLI Authentication](screenshots/cli-auth.png)
+  ![CLI Authentication](screenshots/CLI%20Interface/cli-auth.png)
 
 **Resource Management**
+
 - **Resource Commands**: List, create, search, and manage resources
   
-  ![CLI Resources](screenshots/cli-resources.png)
+  ![CLI Resources](screenshots/CLI%20Interface/cli-resources.png)
 
 **Reservation Management**
+
 - **Reservation Commands**: Create, list, cancel, and view reservation history
   
-  ![CLI Reservations](screenshots/cli-reservation.png)
+  ![CLI Reservations](screenshots/CLI%20Interface/cli-reservation.png)
 
 **System Administration**
+
 - **System Commands**: Status monitoring, cleanup, and configuration
   
-  ![CLI System](screenshots/cli-system.png)
+  ![CLI System](screenshots/CLI%20Interface/cli-system.png)
 
 ### CSV Import Format
 
@@ -678,17 +687,20 @@ The CI/CD pipeline consists of three main stages:
 ### Pipeline Stages
 
 #### 1. Code Quality & Linting
+
 - **Ruff**: Fast Python linter with comprehensive rule set
 - **Ruff Format**: Code formatting validation
 - **Flake8**: Additional linting for specific error patterns
 
 #### 2. Testing
+
 - **Pytest**: Complete test suite execution
 - **Coverage**: Code coverage reporting with XML and terminal output
 - **Codecov**: Coverage upload for tracking and badges
 - **Multiple test categories**: API, CLI, and service layer tests
 
 #### 3. Docker Build & Integration
+
 - **Multi-stage builds**: Optimized container images
 - **Integration testing**: End-to-end API and CLI testing
 - **Health checks**: Container health validation
@@ -729,6 +741,7 @@ The pipeline is configured in `.github/workflows/ci.yml` and includes:
 ### Quality Gates
 
 All pull requests must pass:
+
 - ✅ All linting and formatting checks
 - ✅ Test suite with >95% coverage
 - ✅ Docker build and integration tests
