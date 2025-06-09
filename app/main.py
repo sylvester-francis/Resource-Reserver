@@ -1,24 +1,23 @@
 # app/main.py - Updated with timezone-aware datetime handling
 
-import csv
-from io import StringIO
-from typing import List, Optional
-from datetime import datetime, timezone
 import asyncio
+import csv
 import logging
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+from io import StringIO
 
-from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.database import get_db, engine
-from app.services import UserService, ResourceService, ReservationService
 from app.auth import authenticate_user, create_access_token, get_current_user
+from app.database import engine, get_db
+from app.services import ReservationService, ResourceService, UserService
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -34,13 +33,13 @@ def ensure_timezone_aware(dt):
         return None
     if dt.tzinfo is None:
         # If naive, assume it's UTC
-        return dt.replace(tzinfo=timezone.utc)
+        return dt.replace(tzinfo=UTC)
     return dt
 
 
 def utcnow():
     """Get current UTC datetime that's timezone-aware."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 async def cleanup_expired_reservations():
@@ -253,23 +252,23 @@ def create_resource(
     return resource_service.create_resource(resource_data)
 
 
-@app.get("/resources", response_model=List[schemas.ResourceResponse])
+@app.get("/resources", response_model=list[schemas.ResourceResponse])
 def list_resources(db: Session = Depends(get_db)):
     """List all resources."""
     resource_service = ResourceService(db)
     return resource_service.get_all_resources()
 
 
-@app.get("/resources/search", response_model=List[schemas.ResourceResponse])
+@app.get("/resources/search", response_model=list[schemas.ResourceResponse])
 def search_resources(
-    q: Optional[str] = Query(None, description="Search query for resource names"),
+    q: str | None = Query(None, description="Search query for resource names"),
     available_only: bool = Query(
         True, description="Filter to only available resources"
     ),
-    available_from: Optional[datetime] = Query(
+    available_from: datetime | None = Query(
         None, description="Check availability from this time"
     ),
-    available_until: Optional[datetime] = Query(
+    available_until: datetime | None = Query(
         None, description="Check availability until this time"
     ),
     db: Session = Depends(get_db),
@@ -454,7 +453,7 @@ def create_reservation(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@app.get("/reservations/my", response_model=List[schemas.ReservationResponse])
+@app.get("/reservations/my", response_model=list[schemas.ReservationResponse])
 def get_my_reservations(
     include_cancelled: bool = Query(
         False, description="Include cancelled reservations"
@@ -592,7 +591,7 @@ def reserve_resource(
 
 @app.get(
     "/my_reservations",
-    response_model=List[schemas.ReservationResponse],
+    response_model=list[schemas.ReservationResponse],
     include_in_schema=False,
 )
 def get_my_reservations_legacy(

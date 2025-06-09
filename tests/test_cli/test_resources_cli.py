@@ -1,6 +1,6 @@
-from unittest.mock import patch
-import tempfile
 import os
+import tempfile
+from unittest.mock import patch
 
 from cli.main import app
 
@@ -35,7 +35,7 @@ class TestResourcesCLI:
     def test_search_resources_with_time_filter(self, runner, mock_api_success, mock_auth_config, mock_inputs):
         """Test searching resources with time filter"""
         mock_inputs["confirm"].return_value = False  # Don't make reservation
-        
+
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(
                 app,

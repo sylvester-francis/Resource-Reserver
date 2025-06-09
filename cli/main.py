@@ -1,23 +1,22 @@
-import typer
-import requests
-from rich import print
-from rich.table import Table
-from rich.console import Console
-
-from typing import Optional
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from getpass import getpass
 from pathlib import Path
+
+import requests
+import typer
+from rich import print
+from rich.console import Console
+from rich.table import Table
 
 from cli.client import APIClient
 from cli.config import config
 from cli.utils import (
-    parse_datetime,
-    parse_duration,
+    confirm_action,
     format_datetime,
     format_duration,
-    confirm_action,
     parse_aware,
+    parse_datetime,
+    parse_duration,
     prompt_for_optional,
 )
 
@@ -141,11 +140,11 @@ def list_resources(
 
 @resource_app.command("search")
 def search_resources(
-    query: Optional[str] = typer.Option(None, "--query", "-q", help="Search query"),  # noqa : E501
-    available_from: Optional[str] = typer.Option(
+    query: str | None = typer.Option(None, "--query", "-q", help="Search query"),  # noqa : E501
+    available_from: str | None = typer.Option(
         None, "--from", help="Available from (YYYY-MM-DD HH:MM)"
     ),
-    available_until: Optional[str] = typer.Option(
+    available_until: str | None = typer.Option(
         None, "--until", help="Available until (YYYY-MM-DD HH:MM)"
     ),
     available_only: bool = typer.Option(
@@ -376,7 +375,7 @@ def disable_resource(
 @resource_app.command("create")
 def create_resource(
     name: str = typer.Argument(..., help="Resource name"),
-    tags: Optional[str] = typer.Option("", "--tags", "-t", help="Comma-separated tags"),  # noqa : E501
+    tags: str | None = typer.Option("", "--tags", "-t", help="Comma-separated tags"),  # noqa : E501
     available: bool = typer.Option(
         True, "--available/--unavailable", help="Resource availability"
     ),
@@ -430,7 +429,7 @@ def upload_resources(
         try:
             import csv
 
-            with open(csv_file, "r") as f:
+            with open(csv_file) as f:
                 reader = csv.DictReader(f)
                 print(f"\n📄 [bold]Preview of {csv_file.name}:[/bold]")
                 print("─" * 50)
@@ -620,7 +619,7 @@ app.add_typer(reservation_app, name="reservations")
 def create_reservation(
     resource_id: int = typer.Argument(..., help="Resource ID to reserve"),
     start: str = typer.Argument(..., help="Start time (YYYY-MM-DD HH:MM)"),
-    end: Optional[str] = typer.Argument(
+    end: str | None = typer.Argument(
         None, help="End time (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"
     ),
 ):
@@ -728,7 +727,7 @@ def list_my_reservations(
 
         # Filter upcoming if requested
         if upcoming_only:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             reservations = [
                 r for r in reservations if parse_aware(r["start_time"]) > now
             ]
@@ -817,7 +816,7 @@ def list_my_reservations(
 @reservation_app.command("cancel")
 def cancel_reservation(
     reservation_id: int = typer.Argument(..., help="Reservation ID to cancel"),
-    reason: Optional[str] = typer.Option(
+    reason: str | None = typer.Option(
         None, "--reason", "-r", help="Cancellation reason"
     ),
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt"),  # noqa : E501
@@ -1002,7 +1001,7 @@ def show_upcoming_reservations():
 
     try:
         reservations = client.get_my_reservations()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Filter to upcoming active reservations
         upcoming = [
@@ -1026,10 +1025,10 @@ def show_upcoming_reservations():
 
         for reservation in upcoming:
             start_dt = datetime.fromisoformat(reservation["start_time"]).replace(  # noqa : E501
-                tzinfo=timezone.utc
+                tzinfo=UTC
             )
             end_dt = datetime.fromisoformat(reservation["end_time"]).replace(
-                tzinfo=timezone.utc
+                tzinfo=UTC
             )
 
             # Calculate time until start

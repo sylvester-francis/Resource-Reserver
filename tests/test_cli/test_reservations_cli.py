@@ -1,12 +1,13 @@
+import tempfile
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 from typer.testing import CliRunner
-from unittest.mock import patch
-from datetime import datetime, timezone, timedelta
-import tempfile
-from pathlib import Path
 
-from cli.main import app
 from cli.config import CLIConfig
+from cli.main import app
 
 
 @pytest.fixture
@@ -30,8 +31,8 @@ def mock_api_success():
     """Mock successful API responses for reservation commands"""
     with patch("cli.main.client") as mock_client:
         # Mock reservation data
-        future_time = datetime.now(timezone.utc) + timedelta(days=1)
-        
+        future_time = datetime.now(UTC) + timedelta(days=1)
+
         mock_client.get_my_reservations.return_value = [
             {
                 "id": 1,
@@ -40,7 +41,7 @@ def mock_api_success():
                 "start_time": future_time.isoformat(),
                 "end_time": (future_time + timedelta(hours=2)).isoformat(),
                 "status": "active",
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             }
         ]
 
@@ -61,14 +62,14 @@ def mock_api_success():
             {
                 "id": 1,
                 "action": "created",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "details": "Reservation created",
                 "user_id": 1,
             },
             {
                 "id": 2,
                 "action": "cancelled",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "details": "Reservation cancelled by user",
                 "user_id": 1,
             },
@@ -83,15 +84,15 @@ def mock_inputs():
     with patch("typer.prompt") as mock_prompt, \
          patch("cli.main.getpass") as mock_getpass, \
          patch("typer.confirm") as mock_confirm:
-        
+
         # Default return values
         mock_prompt.return_value = "testuser"
-        mock_getpass.return_value = "password123"  
+        mock_getpass.return_value = "password123"
         mock_confirm.return_value = True
-        
+
         yield {
             "prompt": mock_prompt,
-            "getpass": mock_getpass, 
+            "getpass": mock_getpass,
             "confirm": mock_confirm
         }
 
@@ -238,7 +239,7 @@ class TestReservationsCLI:
     ):
         """Test cancelling reservation with confirmation dialog"""
         mock_inputs["confirm"].return_value = True
-        
+
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(
                 app,
@@ -251,7 +252,7 @@ class TestReservationsCLI:
     def test_cancel_reservation_abort(self, runner, mock_api_success, mock_auth_config, mock_inputs):
         """Test aborting reservation cancellation"""
         mock_inputs["confirm"].return_value = False
-        
+
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(app, ["reservations", "cancel", "1"])
 

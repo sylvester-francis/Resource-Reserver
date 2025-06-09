@@ -1,15 +1,16 @@
-import pytest
-import tempfile
 import os
+import tempfile
+from datetime import UTC, datetime
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timezone
 
-from app.main import app
-from app.database import get_db
 from app import models
 from app.auth import hash_password
+from app.database import get_db
+from app.main import app
 
 
 # Test database setup
@@ -99,4 +100,4 @@ def future_datetime():
     """Future datetime for reservations"""
     from datetime import timedelta
 
-    return datetime.now(timezone.utc) + timedelta(days=1)
+    return datetime.now(UTC) + timedelta(days=1)

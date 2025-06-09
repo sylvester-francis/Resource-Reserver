@@ -1,9 +1,11 @@
 # cli/client.py - Updated with new endpoints
 """API client for communicating with the reservation system."""
 
-import requests
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any
+
+import requests
+
 from cli.config import config
 
 
@@ -16,7 +18,7 @@ class APIClient:
         # Set default timeout for all requests
         self.session.timeout = 30
 
-    def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
+    def _handle_response(self, response: requests.Response) -> dict[str, Any]:
         """Handle API response with proper error handling."""
         try:
             response.raise_for_status()
@@ -30,7 +32,7 @@ class APIClient:
                 error_msg = str(e)
             raise requests.exceptions.HTTPError(error_msg, response=response)
 
-    def register(self, username: str, password: str) -> Dict[str, Any]:
+    def register(self, username: str, password: str) -> dict[str, Any]:
         """Register a new user."""
         response = self.session.post(
             f"{self.base_url}/register",
@@ -47,7 +49,7 @@ class APIClient:
         data = self._handle_response(response)
         return data["access_token"]
 
-    def list_resources(self) -> List[Dict[str, Any]]:
+    def list_resources(self) -> list[dict[str, Any]]:
         """Get all resources."""
         response = self.session.get(f"{self.base_url}/resources")
         return self._handle_response(response)
@@ -58,7 +60,7 @@ class APIClient:
         available_from: datetime = None,
         available_until: datetime = None,
         available_only: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search resources with optional time filtering."""
         params = {}
         if query:
@@ -74,8 +76,8 @@ class APIClient:
         return self._handle_response(response)
 
     def create_resource(
-        self, name: str, tags: List[str] = None, available: bool = True
-    ) -> Dict[str, Any]:
+        self, name: str, tags: list[str] = None, available: bool = True
+    ) -> dict[str, Any]:
         """Create a new resource."""
         headers = config.get_auth_headers()
         data = {"name": name, "tags": tags or [], "available": available}
@@ -84,7 +86,7 @@ class APIClient:
         )
         return self._handle_response(response)
 
-    def upload_resources_csv(self, file_path: str) -> Dict[str, Any]:
+    def upload_resources_csv(self, file_path: str) -> dict[str, Any]:
         """Upload resources from CSV file."""
         headers = config.get_auth_headers()
 
@@ -100,7 +102,7 @@ class APIClient:
 
     def get_resource_availability(
         self, resource_id: int, days_ahead: int = 7
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get detailed availability schedule for a resource."""
         params = {"days_ahead": days_ahead}
         response = self.session.get(
@@ -111,7 +113,7 @@ class APIClient:
 
     def update_resource_availability(
         self, resource_id: int, available: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update resource base availability (for maintenance, etc.)."""
         headers = config.get_auth_headers()
         data = {"available": available}
@@ -122,14 +124,14 @@ class APIClient:
         )
         return self._handle_response(response)
 
-    def get_availability_summary(self) -> Dict[str, Any]:
+    def get_availability_summary(self) -> dict[str, Any]:
         """Get system-wide availability summary."""
         response = self.session.get(f"{self.base_url}/resources/availability/summary")  # noqa :E501
         return self._handle_response(response)
 
     def create_reservation(
         self, resource_id: int, start_time: datetime, end_time: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new reservation."""
         headers = config.get_auth_headers()
         data = {
@@ -144,7 +146,7 @@ class APIClient:
 
     def get_my_reservations(
         self, include_cancelled: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get current user's reservations."""
         headers = config.get_auth_headers()
         params = {"include_cancelled": include_cancelled}
@@ -155,7 +157,7 @@ class APIClient:
 
     def cancel_reservation(
         self, reservation_id: int, reason: str = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Cancel a reservation."""
         headers = config.get_auth_headers()
         data = {"reason": reason} if reason else {}
@@ -166,7 +168,7 @@ class APIClient:
         )
         return self._handle_response(response)
 
-    def get_reservation_history(self, reservation_id: int) -> List[Dict[str, Any]]:  # noqa : E501
+    def get_reservation_history(self, reservation_id: int) -> list[dict[str, Any]]:  # noqa : E501
         """Get reservation history."""
         headers = config.get_auth_headers()
         response = self.session.get(
@@ -175,7 +177,7 @@ class APIClient:
         )
         return self._handle_response(response)
 
-    def manual_cleanup_expired(self) -> Dict[str, Any]:
+    def manual_cleanup_expired(self) -> dict[str, Any]:
         """Manually trigger cleanup of expired reservations."""
         headers = config.get_auth_headers()
         response = self.session.post(
@@ -183,7 +185,7 @@ class APIClient:
         )
         return self._handle_response(response)
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check API health status."""
         response = self.session.get(f"{self.base_url}/health")
         return self._handle_response(response)

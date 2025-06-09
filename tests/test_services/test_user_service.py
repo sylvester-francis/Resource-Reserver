@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.services import UserService
 from app import schemas
 from app.auth import verify_password
+from app.services import UserService
 
 
 class TestUserService:

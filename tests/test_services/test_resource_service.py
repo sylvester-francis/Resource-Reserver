@@ -1,8 +1,9 @@
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
-from app.services import ResourceService
+import pytest
+
 from app import models, schemas
+from app.services import ResourceService
 
 
 class TestResourceService:
@@ -90,7 +91,7 @@ class TestResourceService:
         service = ResourceService(db)
 
         try:
-            future_start = datetime.now(timezone.utc) + timedelta(days=1)
+            future_start = datetime.now(UTC) + timedelta(days=1)
             future_end = future_start + timedelta(hours=2)
 
             results = service.search_resources(
@@ -110,7 +111,7 @@ class TestResourceService:
 
         try:
             # Create a reservation first
-            future_start = datetime.now(timezone.utc) + timedelta(days=1)
+            future_start = datetime.now(UTC) + timedelta(days=1)
             future_end = future_start + timedelta(hours=2)
 
             reservation = models.Reservation(

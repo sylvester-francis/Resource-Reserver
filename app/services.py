@@ -2,12 +2,13 @@
 
 """Business logic layer with clear separation of concerns."""
 
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
+
 from app import models, schemas
 from app.auth import hash_password
-from sqlalchemy.exc import IntegrityError
 
 
 def ensure_timezone_aware(dt):
@@ -16,13 +17,13 @@ def ensure_timezone_aware(dt):
         return None
     if dt.tzinfo is None:
         # If naive, assume it's UTC
-        return dt.replace(tzinfo=timezone.utc)
+        return dt.replace(tzinfo=UTC)
     return dt
 
 
 def utcnow():
     """Get current UTC datetime that's timezone-aware."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class ResourceService:
@@ -46,7 +47,7 @@ class ResourceService:
             self.db.rollback()
             raise ValueError(f"Resource '{resource_data.name}' already exists.") from e
 
-    def get_all_resources(self) -> List[models.Resource]:
+    def get_all_resources(self) -> list[models.Resource]:
         """Get all resources with real-time availability status."""
         resources = self.db.query(models.Resource).all()
 
@@ -62,7 +63,7 @@ class ResourceService:
         available_only: bool = True,
         available_from: datetime = None,
         available_until: datetime = None,
-    ) -> List[models.Resource]:
+    ) -> list[models.Resource]:
         """Search resources with optional time-based filtering and real-time availability."""
 
         # Ensure timezone awareness for datetime parameters
@@ -360,7 +361,7 @@ class ReservationService:
 
     def get_user_reservations(
         self, user_id: int, include_cancelled: bool = False
-    ) -> List[models.Reservation]:
+    ) -> list[models.Reservation]:
         """Get reservations for a specific user."""
         query = (
             self.db.query(models.Reservation)
@@ -375,7 +376,7 @@ class ReservationService:
 
     def get_reservation_history(
         self, reservation_id: int
-    ) -> List[models.ReservationHistory]:
+    ) -> list[models.ReservationHistory]:
         """Get history for a specific reservation."""
         return (
             self.db.query(models.ReservationHistory)
@@ -386,7 +387,7 @@ class ReservationService:
 
     def _get_conflicts(
         self, resource_id: int, start_time: datetime, end_time: datetime
-    ) -> List[models.Reservation]:
+    ) -> list[models.Reservation]:
         """Get all conflicting reservations for a time slot."""
         # Ensure timezone awareness
         start_time = ensure_timezone_aware(start_time)
@@ -430,7 +431,7 @@ class UserService:
         self.db.refresh(user)
         return user
 
-    def get_user_by_username(self, username: str) -> Optional[models.User]:
+    def get_user_by_username(self, username: str) -> models.User | None:
         """Get user by username (case-insensitive)."""
         # Normalize username to lowercase for case-insensitive search
         normalized_username = username.lower()

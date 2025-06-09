@@ -1,14 +1,14 @@
 """Utility functions for CLI operations."""
 
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
+
 import typer
 
 
 def parse_aware(dt_str: str) -> datetime:
     dt_naive = datetime.fromisoformat(dt_str)
-    return dt_naive.replace(tzinfo=timezone.utc)
+    return dt_naive.replace(tzinfo=UTC)
 
 
 def parse_datetime(date_str: str) -> datetime:
@@ -77,7 +77,7 @@ def confirm_action(message: str, default: bool = False) -> bool:
     return typer.confirm(message, default=default)
 
 
-def prompt_for_optional(prompt_text: str) -> Optional[str]:
+def prompt_for_optional(prompt_text: str) -> str | None:
     """Prompt for optional input, return None if empty."""
     value = typer.prompt(prompt_text, default="", show_default=False)
     return value.strip() if value.strip() else None

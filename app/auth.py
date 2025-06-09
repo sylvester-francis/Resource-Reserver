@@ -1,13 +1,12 @@
 """Authentication and authorization utilities."""
 
 import os
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app import models
@@ -33,14 +32,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:  # noqa : E501
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:  # noqa : E501
     """Create a JWT access token."""
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  # noqa : E501
+        expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  # noqa : E501
 
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -48,7 +47,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def authenticate_user(
     db: Session, username: str, password: str
-) -> Optional[models.User]:
+) -> models.User | None:
     """Authenticate a user with username and password."""
     # Normalize the username to lowercase for case-insensitive comparison
     normalized_username = username.lower()
@@ -60,7 +59,7 @@ def authenticate_user(
     return user
 
 
-def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
+def get_user_by_username(db: Session, username: str) -> models.User | None:
     """Get user by username (case-insensitive)."""
     # Ensure we're always searching with lowercase
     normalized_username = username.lower()

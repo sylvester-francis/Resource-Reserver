@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 import requests
 
 from cli.main import app
@@ -12,7 +13,7 @@ class TestAuthCLI:
         # Setup mock inputs for registration
         mock_inputs["prompt"].return_value = "testuser"
         mock_inputs["getpass"].side_effect = ["password123", "password123"]
-        
+
         result = runner.invoke(app, ["auth", "register"])
 
         assert result.exit_code == 0
@@ -24,7 +25,7 @@ class TestAuthCLI:
         # Setup mock inputs for password mismatch
         mock_inputs["prompt"].return_value = "testuser"
         mock_inputs["getpass"].side_effect = ["password123", "different"]
-        
+
         result = runner.invoke(app, ["auth", "register"])
 
         assert result.exit_code == 1
@@ -35,7 +36,7 @@ class TestAuthCLI:
         # Setup mock inputs for login
         mock_inputs["prompt"].return_value = "testuser"
         mock_inputs["getpass"].return_value = "password123"
-        
+
         with patch("cli.config.config", mock_config):
             result = runner.invoke(app, ["auth", "login"])
 
@@ -46,10 +47,9 @@ class TestAuthCLI:
     def test_login_invalid_credentials(self, runner, mock_inputs):
         """Test login with invalid credentials"""
         # Setup mock inputs for invalid login
-        mock_inputs["prompt"].return_value = "testuser" 
+        mock_inputs["prompt"].return_value = "testuser"
         mock_inputs["getpass"].return_value = "wrongpass"
-        
-        import requests
+
         with patch("cli.main.client") as mock_client:
             mock_client.login.side_effect = requests.exceptions.HTTPError("Invalid credentials")
             result = runner.invoke(app, ["auth", "login"])
@@ -84,7 +84,7 @@ class TestAuthCLI:
         """Test auth status when not logged in"""
         # Ensure no token is saved
         mock_config.clear_token()
-        
+
         with patch("cli.main.config", mock_config):
             result = runner.invoke(app, ["auth", "status"])
 

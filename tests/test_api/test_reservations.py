@@ -1,5 +1,6 @@
+from datetime import UTC, datetime, timedelta
+
 from fastapi import status
-from datetime import datetime, timezone, timedelta
 
 
 class TestReservations:
@@ -31,7 +32,7 @@ class TestReservations:
 
     def test_create_reservation_past_time(self, client, auth_headers, test_resource):
         """Test reservation creation with past time"""
-        past_time = datetime.now(timezone.utc) - timedelta(hours=1)
+        past_time = datetime.now(UTC) - timedelta(hours=1)
         end_time = past_time + timedelta(hours=1)
 
         reservation_data = {

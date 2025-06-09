@@ -1,8 +1,8 @@
 """Pydantic schemas for request/response validation."""
 
+from datetime import UTC, datetime, timedelta
+
 from pydantic import BaseModel, ConfigDict, field_validator
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional
 
 
 def ensure_timezone_aware(dt):
@@ -11,13 +11,13 @@ def ensure_timezone_aware(dt):
         return None
     if dt.tzinfo is None:
         # If naive, assume it's UTC
-        return dt.replace(tzinfo=timezone.utc)
+        return dt.replace(tzinfo=UTC)
     return dt
 
 
 def utcnow():
     """Get current UTC datetime that's timezone-aware."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class UserCreate(BaseModel):
@@ -52,8 +52,8 @@ class UserResponse(BaseModel):
 
 class ResourceCreate(BaseModel):
     name: str
-    tags: Optional[List[str]] = []
-    available: Optional[bool] = True
+    tags: list[str] | None = []
+    available: bool | None = True
 
     @field_validator("name")
     @classmethod
@@ -68,7 +68,7 @@ class ResourceResponse(BaseModel):
     id: int
     name: str
     available: bool
-    tags: List[str]
+    tags: list[str]
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -126,11 +126,11 @@ class ReservationResponse(BaseModel):
     end_time: datetime
     status: str
     created_at: datetime
-    cancelled_at: Optional[datetime] = None
-    cancellation_reason: Optional[str] = None
+    cancelled_at: datetime | None = None
+    cancellation_reason: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ReservationCancel(BaseModel):
-    reason: Optional[str] = None
+    reason: str | None = None

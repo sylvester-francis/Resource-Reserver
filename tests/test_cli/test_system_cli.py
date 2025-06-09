@@ -45,7 +45,7 @@ class TestSystemCLI:
     def test_manual_cleanup_success(self, runner, mock_api_success, mock_auth_config, mock_inputs):
         """Test manual cleanup of expired reservations"""
         mock_inputs["confirm"].return_value = True
-        
+
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(app, ["system", "cleanup"])
 
@@ -56,7 +56,7 @@ class TestSystemCLI:
     def test_manual_cleanup_abort(self, runner, mock_inputs):
         """Test aborting manual cleanup"""
         mock_inputs["confirm"].return_value = False
-        
+
         result = runner.invoke(app, ["system", "cleanup"])
 
         assert result.exit_code == 0

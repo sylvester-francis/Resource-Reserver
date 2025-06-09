@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-from typing import Optional
 
 
 class CLIConfig:
@@ -23,13 +22,13 @@ class CLIConfig:
         with open(self.token_file, "w") as f:
             json.dump(auth_data, f)
 
-    def load_token(self) -> Optional[str]:
+    def load_token(self) -> str | None:
         """Load authentication token."""
         if not self.token_file.exists():
             return None
 
         try:
-            with open(self.token_file, "r") as f:
+            with open(self.token_file) as f:
                 auth_data = json.load(f)
                 return auth_data.get("access_token")
         except (json.JSONDecodeError, KeyError):
