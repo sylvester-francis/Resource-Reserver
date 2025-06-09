@@ -45,9 +45,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def authenticate_user(
-    db: Session, username: str, password: str
-) -> models.User | None:
+def authenticate_user(db: Session, username: str, password: str) -> models.User | None:
     """Authenticate a user with username and password."""
     # Normalize the username to lowercase for case-insensitive comparison
     normalized_username = username.lower()
@@ -85,8 +83,8 @@ def get_current_user(
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+    except JWTError as e:
+        raise credentials_exception from e
 
     user = get_user_by_username(db, username)
     if user is None:

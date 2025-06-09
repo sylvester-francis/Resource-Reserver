@@ -152,7 +152,11 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080", "http://localhost:8000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://localhost:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -355,7 +359,7 @@ def upload_resources_csv(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to process CSV file: {str(e)}",
-        )
+        ) from e
 
 
 @app.get("/resources/{resource_id}/availability")
@@ -373,7 +377,7 @@ def get_resource_availability(
         )
         return availability
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
 @app.put("/resources/{resource_id}/availability")
@@ -395,7 +399,7 @@ def update_resource_availability(
             "resource": resource,
         }
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
 @app.get("/resources/availability/summary")
@@ -448,9 +452,13 @@ def create_reservation(
         return reservation_service.create_reservation(reservation_data, current_user.id)
     except ValueError as e:
         if "conflicts" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail=str(e)
+            ) from e
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+            ) from e
 
 
 @app.get("/reservations/my", response_model=list[schemas.ReservationResponse])
@@ -487,11 +495,17 @@ def cancel_reservation(
         }
     except ValueError as e:
         if "not found" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+            ) from e
         elif "only cancel your own" in str(e).lower():
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail=str(e)
+            ) from e
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+            ) from e
 
 
 @app.get("/reservations/{reservation_id}/history")
@@ -571,7 +585,7 @@ def manual_cleanup_expired_reservations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during cleanup: {str(e)}",
-        )
+        ) from e
 
 
 # Backward compatibility endpoints

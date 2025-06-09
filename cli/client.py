@@ -30,7 +30,7 @@ class APIClient:
                 error_msg = error_data.get("detail", str(e))
             except Exception:
                 error_msg = str(e)
-            raise requests.exceptions.HTTPError(error_msg, response=response)
+            raise requests.exceptions.HTTPError(error_msg, response=response) from e
 
     def register(self, username: str, password: str) -> dict[str, Any]:
         """Register a new user."""

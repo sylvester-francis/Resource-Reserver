@@ -1,0 +1,307 @@
+
+cli/main.py:400:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+398 |     except requests.exceptions.HTTPError as e:
+399 |         print(f"❌ Failed to create resource: {e}")
+400 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:415:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+413 |     except ValueError:
+414 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+415 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+416 |
+417 |     # Validate file exists
+    |
+
+cli/main.py:448:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+446 |         except Exception as e:
+447 |             print(f"❌ Error reading file: {e}")
+448 |             raise typer.Exit(1)
+    |             ^^^^^^^^^^^^^^^^^^^ B904
+449 |
+450 |     try:
+    |
+
+cli/main.py:466:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+464 |     except requests.exceptions.HTTPError as e:
+465 |         print(f"❌ Upload failed: {e}")
+466 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:570:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+568 |     except requests.exceptions.HTTPError as e:
+569 |         print(f"❌ Failed to get summary: {e}")
+570 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:580:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+578 |     except ValueError:
+579 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+580 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+581 |
+582 |     if not confirm_action("Trigger manual cleanup of expired reservations?"):
+    |
+
+cli/main.py:599:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+597 |     except requests.exceptions.HTTPError as e:
+598 |         print(f"❌ Cleanup failed: {e}")
+599 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:631:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+629 |     except ValueError:
+630 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+631 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+632 |
+633 |     try:
+    |
+
+cli/main.py:650:21: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+648 |                         "❌ End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"  # noqa : E501
+649 |                     )
+650 |                     raise typer.Exit(1)
+    |                     ^^^^^^^^^^^^^^^^^^^ B904
+651 |         else:
+652 |             # Prompt for end time
+    |
+
+cli/main.py:664:21: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+662 |                 except ValueError:
+663 |                     print("❌ Invalid end time or duration format")
+664 |                     raise typer.Exit(1)
+    |                     ^^^^^^^^^^^^^^^^^^^ B904
+665 |
+666 |         if end_time <= start_time:
+    |
+
+cli/main.py:672:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+670 |     except ValueError as e:
+671 |         print(f"❌ {e}")
+672 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+673 |
+674 |     try:
+    |
+
+cli/main.py:695:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+693 |         else:
+694 |             print(f"❌ Failed to create reservation: {e}")
+695 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:718:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+716 |     except ValueError:
+717 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+718 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+719 |
+720 |     try:
+    |
+
+cli/main.py:813:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+811 |     except requests.exceptions.HTTPError as e:
+812 |         print(f"❌ Failed to fetch reservations: {e}")
+813 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:829:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+827 |     except ValueError:
+828 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+829 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+830 |
+831 |     # Get reservation details first for confirmation
+    |
+
+cli/main.py:890:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+888 |         else:
+889 |             print(f"❌ Failed to cancel reservation: {e}")
+890 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:905:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+903 |     except ValueError:
+904 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+905 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+906 |
+907 |     try:
+    |
+
+cli/main.py:950:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+948 |         else:
+949 |             print(f"❌ Failed to fetch history: {e}")
+950 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:965:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+963 |     except ValueError:
+964 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+965 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+966 |
+967 |     try:
+    |
+
+
+
+Found 46 errors.
+cli/main.py:400:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+398 |     except requests.exceptions.HTTPError as e:
+399 |         print(f"❌ Failed to create resource: {e}")
+400 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:415:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+413 |     except ValueError:
+414 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+415 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+416 |
+417 |     # Validate file exists
+    |
+
+cli/main.py:448:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+446 |         except Exception as e:
+447 |             print(f"❌ Error reading file: {e}")
+448 |             raise typer.Exit(1)
+    |             ^^^^^^^^^^^^^^^^^^^ B904
+449 |
+450 |     try:
+    |
+
+cli/main.py:466:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+464 |     except requests.exceptions.HTTPError as e:
+465 |         print(f"❌ Upload failed: {e}")
+466 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:570:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+568 |     except requests.exceptions.HTTPError as e:
+569 |         print(f"❌ Failed to get summary: {e}")
+570 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:580:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+578 |     except ValueError:
+579 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+580 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+581 |
+582 |     if not confirm_action("Trigger manual cleanup of expired reservations?"):
+    |
+
+cli/main.py:599:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+597 |     except requests.exceptions.HTTPError as e:
+598 |         print(f"❌ Cleanup failed: {e}")
+599 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:631:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+629 |     except ValueError:
+630 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+631 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+632 |
+633 |     try:
+    |
+
+cli/main.py:650:21: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+648 |                         "❌ End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"  # noqa : E501
+649 |                     )
+650 |                     raise typer.Exit(1)
+    |                     ^^^^^^^^^^^^^^^^^^^ B904
+651 |         else:
+652 |             # Prompt for end time
+    |
+
+cli/main.py:664:21: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+662 |                 except ValueError:
+663 |                     print("❌ Invalid end time or duration format")
+664 |                     raise typer.Exit(1)
+    |                     ^^^^^^^^^^^^^^^^^^^ B904
+665 |
+666 |         if end_time <= start_time:
+    |
+
+cli/main.py:672:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+670 |     except ValueError as e:
+671 |         print(f"❌ {e}")
+672 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+673 |
+674 |     try:
+    |
+
+cli/main.py:695:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+693 |         else:
+694 |             print(f"❌ Failed to create reservation: {e}")
+695 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+cli/main.py:718:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+716 |     except ValueError:
+717 |         print("❌ Please login first: [cyan]cli auth login[/cyan]")
+718 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+719 |
+720 |     try:
+    |
+
+cli/main.py:813:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+811 |     except requests.exceptions.HTTPError as e:
+812 |         print(f"❌ Failed to fetch reservations: {e}")
+813 |         raise typer.Exit(1)
+    |         ^^^^^^^^^^^^^^^^^^^ B904
+    |
+
+Found 19 errors.

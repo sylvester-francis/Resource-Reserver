@@ -58,7 +58,7 @@ def register():
             print("❌ Username already exists. Please choose a different username.")  # noqa : E501
         else:
             print(f"❌ Registration failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @auth_app.command("login")
@@ -72,9 +72,9 @@ def login():
         token = client.login(username, password)
         config.save_token(token)
         print(f"✅ Welcome back, [bold green]{username}[/bold green]!")
-    except requests.exceptions.HTTPError:
+    except requests.exceptions.HTTPError as e:
         print("❌ Invalid username or password")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @auth_app.command("logout")
@@ -135,7 +135,7 @@ def list_resources(
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Failed to fetch resources: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @resource_app.command("search")
@@ -184,7 +184,7 @@ def search_resources(
 
         except ValueError as e:
             print(f"❌ {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     try:
         resources = client.search_resources(query, start_time, end_time, available_only)  # noqa : E501
@@ -246,7 +246,7 @@ def search_resources(
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Search failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @resource_app.command("availability")
@@ -258,9 +258,9 @@ def resource_availability(
     """Get availability schedule for a resource."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         availability = client.get_resource_availability(resource_id, days)
@@ -306,7 +306,7 @@ def resource_availability(
             print("❌ Resource not found")
         else:
             print(f"❌ Failed to get availability: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @resource_app.command("enable")
@@ -317,9 +317,9 @@ def enable_resource(
     """Enable a resource (for maintenance mode)."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     if not force:
         if not confirm_action(f"Enable resource {resource_id}?"):
@@ -337,7 +337,7 @@ def enable_resource(
             print("❌ Resource not found")
         else:
             print(f"❌ Failed to enable resource: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @resource_app.command("disable")
@@ -348,9 +348,9 @@ def disable_resource(
     """Disable a resource (for maintenance mode)."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     if not force:
         if not confirm_action(
@@ -369,7 +369,7 @@ def disable_resource(
             print("❌ Resource not found")
         else:
             print(f"❌ Failed to disable resource: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @resource_app.command("create")
@@ -383,9 +383,9 @@ def create_resource(
     """Create a new resource."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []  # noqa : E501
 
@@ -397,7 +397,7 @@ def create_resource(
             print(f"🏷️  Tags: {', '.join(tag_list)}")
     except requests.exceptions.HTTPError as e:
         print(f"❌ Failed to create resource: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @resource_app.command("upload")
@@ -410,9 +410,9 @@ def upload_resources(
     """Upload resources from a CSV file."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     # Validate file exists
     csv_file = Path(file_path)
@@ -438,14 +438,14 @@ def upload_resources(
                     if i >= 5:  # Show first 5 rows
                         print("... (showing first 5 rows)")
                         break
-                    print(f"Row {i+1}: {dict(row)}")
+                    print(f"Row {i + 1}: {dict(row)}")
 
                 if not typer.confirm("\nProceed with upload?", default=True):
                     print("Upload cancelled")
                     return
         except Exception as e:
             print(f"❌ Error reading file: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     try:
         print(f"📤 Uploading {csv_file.name}...")
@@ -463,7 +463,7 @@ def upload_resources(
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Upload failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 # System commands
@@ -567,7 +567,7 @@ def availability_summary():
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Failed to get summary: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @system_app.command("cleanup")
@@ -575,9 +575,9 @@ def manual_cleanup():
     """Manually trigger cleanup of expired reservations."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     if not confirm_action("Trigger manual cleanup of expired reservations?"):
         print("Cleanup cancelled")
@@ -596,7 +596,7 @@ def manual_cleanup():
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Cleanup failed: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @system_app.command("config")
@@ -626,9 +626,9 @@ def create_reservation(
     """Create a new reservation."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         start_time = parse_datetime(start)
@@ -643,11 +643,11 @@ def create_reservation(
                 try:
                     duration = parse_duration(end)
                     end_time = start_time + duration
-                except ValueError:
+                except ValueError as e:
                     print(
                         "❌ End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"  # noqa : E501
                     )
-                    raise typer.Exit(1)
+                    raise typer.Exit(1) from e
         else:
             # Prompt for end time
             end_input = typer.prompt(
@@ -659,9 +659,9 @@ def create_reservation(
                 try:
                     duration = parse_duration(end_input)
                     end_time = start_time + duration
-                except ValueError:
+                except ValueError as e:
                     print("❌ Invalid end time or duration format")
-                    raise typer.Exit(1)
+                    raise typer.Exit(1) from e
 
         if end_time <= start_time:
             print("❌ End time must be after start time")
@@ -669,7 +669,7 @@ def create_reservation(
 
     except ValueError as e:
         print(f"❌ {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         reservation = client.create_reservation(resource_id, start_time, end_time)  # noqa : E501
@@ -692,7 +692,7 @@ def create_reservation(
             print("💡 Use [cyan]cli resources list[/cyan] to see available resources")  # noqa : E501
         else:
             print(f"❌ Failed to create reservation: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @reservation_app.command("list")
@@ -713,9 +713,9 @@ def list_my_reservations(
     """List your reservations."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         reservations = client.get_my_reservations(include_cancelled)
@@ -810,7 +810,7 @@ def list_my_reservations(
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Failed to fetch reservations: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @reservation_app.command("cancel")
@@ -824,9 +824,9 @@ def cancel_reservation(
     """Cancel a reservation."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     # Get reservation details first for confirmation
     try:
@@ -887,7 +887,7 @@ def cancel_reservation(
             print("❌ Reservation is already cancelled")
         else:
             print(f"❌ Failed to cancel reservation: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @reservation_app.command("history")
@@ -900,9 +900,9 @@ def show_reservation_history(
     """Show history for a reservation."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         history = client.get_reservation_history(reservation_id)
@@ -947,7 +947,7 @@ def show_reservation_history(
             )
         else:
             print(f"❌ Failed to fetch history: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 # Quick action commands (shortcuts)
@@ -960,9 +960,9 @@ def quick_reserve(
     """Quick reserve command (shortcut for reservations create with duration)."""  # noqa : E501
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         start_time = parse_datetime(start)
@@ -971,7 +971,7 @@ def quick_reserve(
 
     except ValueError as e:
         print(f"❌ {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         reservation = client.create_reservation(resource_id, start_time, end_time)  # noqa : E501
@@ -987,7 +987,7 @@ def quick_reserve(
             print("❌ [red]Time slot conflicts with existing reservation[/red]")
         else:
             print(f"❌ Failed to create reservation: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("upcoming")
@@ -995,9 +995,9 @@ def show_upcoming_reservations():
     """Show upcoming reservations (shortcut)."""
     try:
         config.get_auth_headers()  # Check authentication
-    except ValueError:
+    except ValueError as e:
         print("❌ Please login first: [cyan]cli auth login[/cyan]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     try:
         reservations = client.get_my_reservations()
@@ -1027,9 +1027,7 @@ def show_upcoming_reservations():
             start_dt = datetime.fromisoformat(reservation["start_time"]).replace(  # noqa : E501
                 tzinfo=UTC
             )
-            end_dt = datetime.fromisoformat(reservation["end_time"]).replace(
-                tzinfo=UTC
-            )
+            end_dt = datetime.fromisoformat(reservation["end_time"]).replace(tzinfo=UTC)
 
             # Calculate time until start
             time_until = start_dt - now
@@ -1053,7 +1051,7 @@ def show_upcoming_reservations():
 
     except requests.exceptions.HTTPError as e:
         print(f"❌ Failed to fetch reservations: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 # Main entry point
