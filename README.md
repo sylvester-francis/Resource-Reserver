@@ -141,7 +141,7 @@ graph TB
 
 **Maintainability**: Clean separation of concerns with distinct service layers and standardized interfaces.
 
-**Performance**: Caching strategies and optimized database queries for sub-200ms response times.
+**Performance**: Optimized database queries and efficient request handling for fast response times.
 
 ### Component Responsibilities
 
@@ -230,10 +230,10 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 
 #### Performance Standards
 
-- API response times under 200ms for 95th percentile
-- Support for 1,000+ concurrent users
+- Optimized API response times with efficient database queries
+- Concurrent user support through proper database connection management
 - Database query optimization with proper indexing
-- Horizontal scaling capabilities
+- Horizontal scaling capabilities through containerization
 
 #### Security Requirements
 
@@ -245,10 +245,10 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 
 #### Reliability Standards
 
-- 99.9% uptime capability with proper configuration
+- High uptime capability with proper configuration and monitoring
 - ACID-compliant database transactions
 - Graceful error handling and recovery
-- Automated backup and restore procedures
+- Automated background tasks for system maintenance
 
 #### Compliance and Audit
 
@@ -272,7 +272,7 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 ```bash
 # Clone repository
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
-cd resource-reserver
+cd Resource-Reserver
 
 # Create virtual environment
 python -m venv venv
@@ -302,7 +302,7 @@ For production deployments, use the Docker containerization method described in 
 ```bash
 # Clone and start services
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
-cd resource-reserver
+cd Resource-Reserver
 docker compose up -d
 
 # Verify deployment
@@ -657,10 +657,12 @@ pytest tests/test_services/ # Business logic tests
 
 ### Test Coverage Metrics
 
-- **Overall Coverage**: 95%+
-- **API Endpoints**: 100%
-- **Business Logic**: 98%+
-- **CLI Interface**: 95%+
+The project maintains comprehensive test coverage across all components:
+
+- **API Endpoints**: Complete coverage of all REST endpoints
+- **Business Logic**: Thorough testing of core services and models
+- **CLI Interface**: Full command and argument validation testing
+- **Integration Tests**: End-to-end workflow validation
 
 ### Test Categories
 
@@ -797,7 +799,7 @@ All contributions require:
 ```bash
 # Clone your fork
 git clone https://github.com/YOUR_USERNAME/Resource-Reserver.git
-cd resource-reserver
+cd Resource-Reserver
 
 # Set up development environment
 python -m venv venv
