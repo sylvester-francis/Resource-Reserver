@@ -128,7 +128,6 @@ def mock_inputs():
         patch("cli.main.getpass") as mock_getpass,
         patch("typer.confirm") as mock_confirm,
     ):
-
         # Default return values
         mock_prompt.return_value = "testuser"
         mock_getpass.return_value = "password123"

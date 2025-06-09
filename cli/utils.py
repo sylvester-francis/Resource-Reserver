@@ -26,9 +26,7 @@ def parse_datetime(date_str: str) -> datetime:
         except ValueError:
             continue
 
-    raise ValueError(
-        f"Invalid datetime format: {date_str}. Use YYYY-MM-DD HH:MM"
-    )  # noqa : E501
+    raise ValueError(f"Invalid datetime format: {date_str}. Use YYYY-MM-DD HH:MM")  # noqa : E501
 
 
 def parse_duration(duration_str: str) -> timedelta:

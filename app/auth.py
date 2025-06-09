@@ -32,18 +32,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(
-    data: dict, expires_delta: timedelta | None = None
-) -> str:  # noqa : E501
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:  # noqa : E501
     """Create a JWT access token."""
     to_encode = data.copy()
 
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(UTC) + timedelta(
-            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
-        )  # noqa : E501
+        expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  # noqa : E501
 
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

@@ -72,9 +72,7 @@ class APIClient:
         if not available_only:
             params["available_only"] = "false"
 
-        response = self.session.get(
-            f"{self.base_url}/resources/search", params=params
-        )  # noqa: E501
+        response = self.session.get(f"{self.base_url}/resources/search", params=params)  # noqa: E501
         return self._handle_response(response)
 
     def create_resource(
@@ -128,9 +126,7 @@ class APIClient:
 
     def get_availability_summary(self) -> dict[str, Any]:
         """Get system-wide availability summary."""
-        response = self.session.get(
-            f"{self.base_url}/resources/availability/summary"
-        )  # noqa :E501
+        response = self.session.get(f"{self.base_url}/resources/availability/summary")  # noqa :E501
         return self._handle_response(response)
 
     def create_reservation(
@@ -172,9 +168,7 @@ class APIClient:
         )
         return self._handle_response(response)
 
-    def get_reservation_history(
-        self, reservation_id: int
-    ) -> list[dict[str, Any]]:  # noqa : E501
+    def get_reservation_history(self, reservation_id: int) -> list[dict[str, Any]]:  # noqa : E501
         """Get reservation history."""
         headers = config.get_auth_headers()
         response = self.session.get(

@@ -22,12 +22,8 @@ def test_db():
     database_url = f"sqlite:///{db_path}"
 
     # Create engine and tables
-    engine = create_engine(
-        database_url, connect_args={"check_same_thread": False}
-    )  # noqa : E501
-    TestingSessionLocal = sessionmaker(
-        autocommit=False, autoflush=False, bind=engine
-    )  # noqa : E501
+    engine = create_engine(database_url, connect_args={"check_same_thread": False})  # noqa : E501
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)  # noqa : E501
 
     models.Base.metadata.create_all(bind=engine)
 
