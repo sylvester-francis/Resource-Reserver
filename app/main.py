@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -151,19 +153,27 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080"],
+    allow_origins=["http://localhost:3000", "http://localhost:8080", "http://localhost:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for web interface
+app.mount("/static", StaticFiles(directory="web"), name="static")
+
+
+# Serve the main web application
+@app.get("/")
+def read_root():
+    """Serve the main web application."""
+    return FileResponse("web/index.html")
 
 
 # Enhanced health check endpoint
 @app.get("/health")
 def health_check():
     """Enhanced health check endpoint for monitoring."""
-    global cleanup_task
-
     task_status = "unknown"
     if cleanup_task:
         if cleanup_task.done():

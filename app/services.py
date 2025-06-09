@@ -431,7 +431,9 @@ class UserService:
         return user
 
     def get_user_by_username(self, username: str) -> Optional[models.User]:
-        """Get user by username."""
+        """Get user by username (case-insensitive)."""
+        # Normalize username to lowercase for case-insensitive search
+        normalized_username = username.lower()
         return (
-            self.db.query(models.User).filter(models.User.username == username).first()
+            self.db.query(models.User).filter(models.User.username == normalized_username).first()
         )

@@ -43,6 +43,7 @@ def test_db():
     app.dependency_overrides.clear()
 
 
+@pytest.fixture
 def client(test_db):
     """FastAPI test client"""
     return TestClient(app)
