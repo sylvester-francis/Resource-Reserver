@@ -2,26 +2,7 @@
 
 **Enterprise Resource Management and Booking System**
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-<!-- Core Technologies -->
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Typer](https://img.shields.io/badge/CLI-Typer-0277bd?style=flat&logo=python&logoColor=white)](https://typer.tiangolo.com/)
-[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-
-<!-- Code Quality & CI/CD -->
-[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=github-actions&logoColor=white)](https://github.com/features/actions)
-[![Ruff](https://img.shields.io/badge/Linter-Ruff-D7FF64?style=flat&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
-[![Code style: black](https://img.shields.io/badge/Code%20Style-Black-000000?style=flat&logo=python&logoColor=white)](https://github.com/psf/black)
-
-<!-- Documentation & Diagrams -->
-[![Mermaid](https://img.shields.io/badge/Diagrams-Mermaid-FF3670?style=flat&logo=mermaid&logoColor=white)](https://mermaid.js.org/)
-[![Swagger](https://img.shields.io/badge/API%20Docs-Swagger-85EA2D?style=flat&logo=swagger&logoColor=black)](http://localhost:8000/docs)
-
-<!-- Containerization -->
-[![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-
-[![Test Coverage](https://codecov.io/gh/username/resource-reserver/branch/main/graph/badge.svg)](https://codecov.io/gh/username/resource-reserver)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Typer](https://img.shields.io/badge/CLI-Typer-0277bd?style=flat&logo=python&logoColor=white)](https://typer.tiangolo.com/) [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript) [![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=github-actions&logoColor=white)](https://github.com/features/actions) [![Ruff](https://img.shields.io/badge/Linter-Ruff-D7FF64?style=flat&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/) [![Code style: black](https://img.shields.io/badge/Code%20Style-Black-000000?style=flat&logo=python&logoColor=white)](https://github.com/psf/black) [![Mermaid](https://img.shields.io/badge/Diagrams-Mermaid-FF3670?style=flat&logo=mermaid&logoColor=white)](https://mermaid.js.org/) [![Swagger](https://img.shields.io/badge/API%20Docs-Swagger-85EA2D?style=flat&logo=swagger&logoColor=black)](http://localhost:8000/docs) [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/) [![Test Coverage](https://codecov.io/gh/username/resource-reserver/branch/main/graph/badge.svg)](https://codecov.io/gh/username/resource-reserver)
 
 ## Overview
 
@@ -52,6 +33,7 @@ Resource Reserver is a comprehensive resource management platform designed for o
 - [User Interfaces](#user-interfaces)
 - [Development](#development)
 - [Testing](#testing)
+- [CI/CD Pipeline](#cicd-pipeline)
 - [Contributing](#contributing)
 - [Support](#support)
 
@@ -319,9 +301,9 @@ For production deployments, use the Docker containerization method described in 
 
 ```bash
 # Clone and start services
-git clone https://github.com/username/resource-reserver.git
+git clone https://github.com/sylvester-francis/Resource-Reserver.git
 cd resource-reserver
-docker-compose up -d
+docker compose up -d
 
 # Verify deployment
 curl http://localhost:8000/health
@@ -337,7 +319,7 @@ curl http://localhost:8000/health
 
 ```bash
 # Start development services with hot reload
-docker-compose --profile dev up -d
+docker compose --profile dev up -d
 
 # Access development server
 curl http://localhost:8001/health
@@ -351,6 +333,7 @@ curl http://localhost:8001/health
 |----------|---------|-------------|
 | `DATABASE_URL` | `sqlite:///./data/resource_reserver.db` | Database connection string |
 | `ENVIRONMENT` | `development` | Application environment mode |
+| `CLI_CONFIG_DIR` | `~/.reservation-cli` | CLI configuration directory |
 | `PORT` | `8000` | Application server port |
 
 #### Database Setup
@@ -359,7 +342,6 @@ For production deployments, configure an external database:
 
 ```yaml
 # docker-compose.override.yml
-version: '3.8'
 services:
   api:
     environment:
@@ -436,12 +418,12 @@ The API uses JWT bearer token authentication:
 
 ```bash
 # Register new user
-curl -X POST "http://localhost:8000/auth/register" \
+curl -X POST "http://localhost:8000/register" \
   -H "Content-Type: application/json" \
   -d '{"username": "user", "password": "password"}'
 
 # Authenticate and receive token
-curl -X POST "http://localhost:8000/auth/login" \
+curl -X POST "http://localhost:8000/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=user&password=password"
 
@@ -454,14 +436,14 @@ curl -X GET "http://localhost:8000/resources/" \
 
 | Method | Endpoint | Description | Authentication |
 |--------|----------|-------------|----------------|
-| `POST` | `/auth/register` | User registration | No |
-| `POST` | `/auth/login` | User authentication | No |
-| `GET` | `/resources/` | List resources | Yes |
+| `POST` | `/register` | User registration | No |
+| `POST` | `/token` | User authentication | No |
+| `GET` | `/resources/` | List resources | No |
 | `POST` | `/resources/` | Create resource | Yes |
 | `GET` | `/resources/search` | Search resources | No |
 | `POST` | `/reservations/` | Create reservation | Yes |
 | `GET` | `/reservations/my` | User reservations | Yes |
-| `DELETE` | `/reservations/{id}` | Cancel reservation | Yes |
+| `DELETE` | `/reservations/{id}/cancel` | Cancel reservation | Yes |
 | `GET` | `/health` | System health check | No |
 
 ---
@@ -535,8 +517,7 @@ The project maintains high code quality through automated tooling:
 
 ```bash
 # Code formatting and linting
-black .                          # Format code
-isort .                          # Sort imports
+ruff format .                    # Format code
 ruff check .                     # Lint code
 pytest                           # Run tests
 bandit -r app/ cli/              # Security checks
@@ -556,12 +537,16 @@ resource-reserver/
 ├── cli/                   # Command-line interface
 │   ├── main.py           # CLI entry point
 │   ├── client.py         # API client
-│   └── config.py         # Configuration management
+│   ├── config.py         # Configuration management
+│   └── utils.py          # Utility functions
 ├── web/                  # Web interface
 │   ├── index.html        # Application shell
 │   ├── css/styles.css    # Styling
 │   └── js/script.js      # Client-side logic
 ├── tests/                # Test suite
+│   ├── test_api/         # API tests
+│   ├── test_cli/         # CLI tests
+│   └── test_services/    # Business logic tests
 └── .github/workflows/    # CI/CD pipeline
 ```
 
@@ -609,6 +594,96 @@ pytest tests/test_services/ # Business logic tests
 
 ---
 
+## CI/CD Pipeline
+
+The project includes a comprehensive GitHub Actions CI/CD pipeline that ensures code quality and deployment readiness.
+
+### Pipeline Overview
+
+The CI/CD pipeline consists of three main stages:
+
+1. **Code Quality & Linting**: Code formatting, linting, and style checks
+2. **Testing**: Comprehensive test suite with coverage reporting
+3. **Docker Build & Integration**: Container build, testing, and integration validation
+
+### Pipeline Stages
+
+#### 1. Code Quality & Linting
+- **Ruff**: Fast Python linter with comprehensive rule set
+- **Ruff Format**: Code formatting validation
+- **Flake8**: Additional linting for specific error patterns
+
+#### 2. Testing
+- **Pytest**: Complete test suite execution
+- **Coverage**: Code coverage reporting with XML and terminal output
+- **Codecov**: Coverage upload for tracking and badges
+- **Multiple test categories**: API, CLI, and service layer tests
+
+#### 3. Docker Build & Integration
+- **Multi-stage builds**: Optimized container images
+- **Integration testing**: End-to-end API and CLI testing
+- **Health checks**: Container health validation
+- **Build caching**: GitHub Actions cache optimization
+
+### Running the Pipeline Locally
+
+```bash
+# Install development dependencies
+pip install -r requirements.txt
+pip install ruff flake8 black isort mypy pytest-cov
+
+# Run linting and formatting
+ruff check .
+ruff format --check .
+flake8 .
+
+# Run tests with coverage
+pytest --cov=app --cov=cli --cov-report=xml --cov-report=term-missing
+
+# Build and test Docker image
+docker build -t resource-reserver:test .
+docker run -d --name test-container -p 8000:8000 resource-reserver:test
+curl -f http://localhost:8000/health
+docker stop test-container && docker rm test-container
+```
+
+### Pipeline Configuration
+
+The pipeline is configured in `.github/workflows/ci.yml` and includes:
+
+- **Parallel execution**: Multiple jobs run concurrently for faster feedback
+- **Dependency caching**: pip and Docker layer caching for performance
+- **Build-only strategy**: Docker images are built and tested but not pushed to registries
+- **Comprehensive error handling**: Detailed error reporting and debugging
+- **Integration with external services**: Codecov for coverage tracking
+
+### Quality Gates
+
+All pull requests must pass:
+- ✅ All linting and formatting checks
+- ✅ Test suite with >95% coverage
+- ✅ Docker build and integration tests
+- ✅ No breaking changes to API contracts
+
+### Branch Protection
+
+- **Main branch**: Protected with required status checks
+- **Pull requests**: Required for all changes to main
+- **Review requirements**: Code review by maintainers
+- **Automatic merging**: Available after all checks pass
+
+### CI/CD Workflow
+
+The pipeline follows this workflow:
+
+1. **Trigger**: On push to `main`/`develop` branches or pull requests to `main`
+2. **Linting**: Code quality checks run first for fast feedback
+3. **Testing**: Comprehensive test suite with coverage reporting
+4. **Docker Build**: Container build and integration testing
+5. **Reporting**: Results aggregated and reported to pull requests
+
+---
+
 ## Contributing
 
 ### Getting Started
@@ -635,6 +710,33 @@ All contributions require:
 - Maintained test coverage
 - Updated documentation where applicable
 
+### Development Setup
+
+```bash
+# Clone your fork
+git clone https://github.com/YOUR_USERNAME/Resource-Reserver.git
+cd resource-reserver
+
+# Set up development environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Install pre-commit hooks (optional but recommended)
+pip install pre-commit
+pre-commit install
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes and commit
+git add .
+git commit -m "feat: your feature description"
+
+# Push and create pull request
+git push origin feature/your-feature-name
+```
+
 ---
 
 ## Support
@@ -644,6 +746,29 @@ All contributions require:
 - **API Documentation**: Available at `/docs` endpoint
 - **User Guide**: See Usage section above
 - **Developer Guide**: See Development section above
+- **Architecture**: See [architecture.md](architecture.md)
+
+### Getting Help
+
+- **Issues**: Report bugs and request features on GitHub Issues
+- **Discussions**: Community support and questions on GitHub Discussions
+- **Documentation**: Comprehensive documentation in the repository
+
+### Reporting Issues
+
+When reporting issues, please include:
+
+- **Environment details**: OS, Python version, Docker version
+- **Steps to reproduce**: Detailed reproduction steps
+- **Expected behavior**: What you expected to happen
+- **Actual behavior**: What actually happened
+- **Logs**: Relevant error messages and logs
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -655,3 +780,27 @@ Built with:
 - [SQLAlchemy](https://www.sqlalchemy.org/) - Database toolkit
 - [Typer](https://typer.tiangolo.com/) - CLI framework
 - [pytest](https://pytest.org/) - Testing framework
+- [Ruff](https://docs.astral.sh/ruff/) - Fast Python linter
+- [Docker](https://www.docker.com/) - Containerization platform
+- [GitHub Actions](https://github.com/features/actions) - CI/CD automation
+
+---
+
+## Changelog
+
+### Recent Updates
+
+- **CI/CD Pipeline**: Comprehensive GitHub Actions workflow with quality gates
+- **Docker Improvements**: Enhanced containerization with multi-environment support
+- **Security Enhancements**: Proper exception chaining and security scanning
+- **Code Quality**: Automated formatting and linting with Ruff
+- **Configuration Management**: Environment-based configuration with Docker Compose
+- **Testing**: Expanded test coverage across API, CLI, and service layers
+
+### Version 1.0.0
+
+- Initial release with core reservation functionality
+- Web interface and CLI tools
+- Comprehensive API with OpenAPI documentation
+- Docker deployment support
+- Complete test suite with high coverage
