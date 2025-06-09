@@ -11,41 +11,31 @@ graph TB
     end
     
     subgraph "Client Layer"
-        WEB[Web Browser]
-        CLI[Command Line Interface]
-        API[External API Clients]
+        WEB[Web Browser<br/>HTML/CSS/JS]
+        CLI[Command Line Interface<br/>Typer + Rich]
+        API[External API Clients<br/>REST/HTTP]
     end
-    
     
     subgraph "Application Layer"
-        APP1[FastAPI Application<br/>Container 1]
-        APP2[FastAPI Application<br/>Container 2]
-        APP3[FastAPI Application<br/>Container N]
+        FASTAPI[FastAPI Application<br/>Single Container]
+        STATIC[Static File Server<br/>Web Assets]
     end
     
-    subgraph "Business Logic"
-        RS[Resource Service]
-        ReS[Reservation Service]
-        US[User Service]
-        AS[Auth Service]
+    subgraph "Business Logic Layer"
+        RS[ResourceService]
+        ReS[ReservationService]  
+        US[UserService]
+        AUTH[Authentication Layer<br/>JWT + bcrypt]
     end
     
     subgraph "Data Layer"
-        DB[(Database<br/>PostgreSQL/MySQL)]
-        FS[File Storage<br/>CSV/Logs]
-        CACHE[Cache<br/>Redis]
+        DB[(SQLite/PostgreSQL/MySQL<br/>SQLAlchemy ORM)]
+        FS[File Storage<br/>CSV Import/Export]
     end
     
-    subgraph "Background Services"
-        CLEANUP[Cleanup Service]
-        MONITOR[Health Monitor]
-        AUDIT[Audit Logger]
-    end
-    
-    subgraph "External Services"
-        LDAP[LDAP/AD]
-        SMTP[Email Service]
-        BACKUP[Backup Service]
+    subgraph "Background Tasks"
+        CLEANUP[Cleanup Task<br/>Asyncio Background]
+        HEALTH[Health Monitoring]
     end
     
     %% User connections
@@ -53,49 +43,30 @@ graph TB
     U2 --> CLI
     U3 --> API
     
-    %% Client to applications
-    WEB --> APP1
-    CLI --> APP1
-    API --> APP1
+    %% Client to application
+    WEB --> FASTAPI
+    WEB --> STATIC
+    CLI --> FASTAPI
+    API --> FASTAPI
     
-    %% Applications to services
-    APP1 --> RS
-    APP1 --> ReS
-    APP1 --> US
-    APP1 --> AS
-    
-    APP2 --> RS
-    APP2 --> ReS
-    APP2 --> US
-    APP2 --> AS
-    
-    APP3 --> RS
-    APP3 --> ReS
-    APP3 --> US
-    APP3 --> AS
+    %% Application to services
+    FASTAPI --> RS
+    FASTAPI --> ReS
+    FASTAPI --> US
+    FASTAPI --> AUTH
     
     %% Services to data
     RS --> DB
     ReS --> DB
     US --> DB
-    AS --> DB
+    AUTH --> DB
     
     RS --> FS
     ReS --> FS
     
-    RS --> CACHE
-    ReS --> CACHE
-    
-    %% Background services
+    %% Background tasks
     CLEANUP --> DB
-    MONITOR --> DB
-    AUDIT --> FS
-    
-    %% External integrations
-    AS --> LDAP
-    CLEANUP --> SMTP
-    BACKUP --> DB
-    BACKUP --> FS
+    HEALTH --> FASTAPI
     
     %% Styling
     classDef userClass fill:#2E86AB,stroke:#fff,stroke-width:2px,color:#fff
@@ -104,182 +75,288 @@ graph TB
     classDef serviceClass fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
     classDef dataClass fill:#C73E1D,stroke:#fff,stroke-width:2px,color:#fff
     classDef bgClass fill:#FFE082,stroke:#333,stroke-width:2px
-    classDef extClass fill:#9E9E9E,stroke:#fff,stroke-width:2px,color:#fff
     
     class U1,U2,U3 userClass
     class WEB,CLI,API clientClass
-    class LB appClass
-    class APP1,APP2,APP3 appClass
-    class RS,ReS,US,AS serviceClass
-    class DB,FS,CACHE dataClass
-    class CLEANUP,MONITOR,AUDIT bgClass
-    class LDAP,SMTP,BACKUP extClass
+    class FASTAPI,STATIC appClass
+    class RS,ReS,US,AUTH serviceClass
+    class DB,FS dataClass
+    class CLEANUP,HEALTH bgClass
 ```
 
 ## Component Details
 
 ### Client Layer
-- **Web Browser**: React/Vue.js SPA or vanilla JavaScript interface
-- **CLI Interface**: Typer-based command-line tool with rich output
-- **API Clients**: External systems integrating via REST API
+- **Web Browser**: Vanilla JavaScript interface with HTML/CSS frontend served as static files
+- **CLI Interface**: Typer-based command-line tool with Rich formatting and interactive features
+- **API Clients**: External systems integrating via REST API with JWT authentication
 
 ### Application Layer
-- **FastAPI Applications**: Horizontally scalable Python web services
-- **Load Balancer**: Nginx for SSL termination and request distribution
-- **Auto-scaling**: Container orchestration with Docker/Kubernetes
+- **FastAPI Application**: Single Python web service handling all API endpoints and web serving
+- **Static File Server**: Integrated static file serving for web interface assets (HTML/CSS/JS)
+- **CORS Middleware**: Cross-origin resource sharing for web client integration
 
-### Business Logic
-- **Resource Service**: CRUD operations for organizational resources
-- **Reservation Service**: Booking logic with conflict detection
-- **User Service**: Account management and authentication
-- **Auth Service**: JWT token management and authorization
+### Business Logic Layer
+- **ResourceService**: CRUD operations, availability checking, CSV import/export
+- **ReservationService**: Booking logic with conflict detection and history tracking  
+- **UserService**: User account creation and management
+- **Authentication Layer**: JWT token generation/validation with bcrypt password hashing
 
 ### Data Layer
-- **Primary Database**: PostgreSQL/MySQL for transactional data
-- **File Storage**: Local/cloud storage for CSV imports and logs
-- **Cache**: Redis for session storage and performance optimization
+- **Database**: SQLAlchemy ORM with support for SQLite (dev), PostgreSQL/MySQL (prod)
+- **File Storage**: Local filesystem for CSV import/export and application logs
+- **Models**: SQLAlchemy models with proper relationships and timezone-aware datetime handling
 
-### Background Services
-- **Cleanup Service**: Automated removal of expired reservations
-- **Health Monitor**: System status and performance metrics
-- **Audit Logger**: Compliance and activity tracking
+### Background Tasks
+- **Cleanup Task**: Asyncio background task for automatic expired reservation cleanup
+- **Health Monitoring**: Built-in health check endpoints for container orchestration
 
 ## Data Flow Architecture
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant WebApp
-    participant LoadBalancer
+    participant Client[Web/CLI Client]
     participant FastAPI
-    participant Services
+    participant Services[Business Services]
     participant Database
-    participant Cache
+    participant BackgroundTask[Cleanup Task]
     
-    User->>WebApp: Create Reservation Request
-    WebApp->>LoadBalancer: HTTP POST /reservations
-    LoadBalancer->>FastAPI: Route to Available Instance
-    FastAPI->>Services: Validate & Process Request
+    User->>Client: Create Reservation Request
+    Client->>FastAPI: HTTP POST /reservations + JWT
+    FastAPI->>FastAPI: Validate JWT Token
+    FastAPI->>Services: Call ReservationService.create()
     
-    Services->>Cache: Check Resource Availability
-    alt Cache Miss
-        Services->>Database: Query Resource Status
-        Database-->>Services: Resource Data
-        Services->>Cache: Update Cache
+    Services->>Database: Check Resource Availability
+    Database-->>Services: Resource Status
+    
+    Services->>Database: Query Existing Reservations
+    Database-->>Services: Time Conflict Check
+    
+    alt No Conflicts
+        Services->>Database: Create Reservation Record
+        Services->>Database: Create History Entry
+        Database-->>Services: Reservation Created
+        Services-->>FastAPI: Success Response
+        FastAPI-->>Client: HTTP 201 + Reservation Data
+        Client-->>User: Confirmation Display
+    else Time Conflict
+        Services-->>FastAPI: Conflict Error
+        FastAPI-->>Client: HTTP 409 Conflict
+        Client-->>User: Error Message
     end
     
-    Services->>Database: Check Time Conflicts
-    Database-->>Services: Availability Confirmed
-    
-    Services->>Database: Create Reservation Record
-    Database-->>Services: Reservation Created
-    
-    Services->>Cache: Invalidate Related Cache
-    Services-->>FastAPI: Success Response
-    FastAPI-->>LoadBalancer: HTTP 201 Created
-    LoadBalancer-->>WebApp: Response
-    WebApp-->>User: Confirmation Display
+    Note over BackgroundTask: Runs every 5 minutes
+    BackgroundTask->>Database: Query Expired Reservations
+    Database-->>BackgroundTask: Expired Records
+    BackgroundTask->>Database: Update Status to 'expired'
+    BackgroundTask->>Database: Create History Entries
 ```
 
 ## Deployment Architecture
 
 ```mermaid
-graph LR
+graph TB
+    subgraph "Development Environment"
+        DEV[Docker Container<br/>:8001 with hot reload]
+        DEVDB[(SQLite Dev DB)]
+        DEV --> DEVDB
+    end
+    
     subgraph "Production Environment"
-        subgraph "Load Balancer Tier"
-            LB1[Nginx LB 1]
-            LB2[Nginx LB 2]
+        subgraph "Container Layer"
+            DOCKER[FastAPI Container<br/>:8000]
+            HEALTH[Health Check<br/>curl /health]
         end
         
-        subgraph "Application Tier"
-            APP1[FastAPI Pod 1]
-            APP2[FastAPI Pod 2]
-            APP3[FastAPI Pod 3]
+        subgraph "Data Layer"
+            PRODDB[(PostgreSQL/MySQL<br/>Production DB)]
+            VOLUME[Data Volume<br/>./data:/app/data]
         end
         
-        subgraph "Data Tier"
-            DB1[(Primary DB)]
-            DB2[(Replica DB)]
-            REDIS[(Redis Cluster)]
-        end
-        
-        subgraph "Storage Tier"
-            S3[File Storage]
-            BACKUP[Backup Storage]
+        subgraph "External Access"
+            WEB[Web Interface<br/>Static Files]
+            CLI[CLI Interface<br/>External Access]
+            REST[REST API<br/>External Clients]
         end
     end
     
-    Internet --> LB1
-    Internet --> LB2
+    subgraph "Scaling Options"
+        LB[Load Balancer<br/>Optional]
+        REPLICA[Container Replicas<br/>Horizontal Scaling]
+        DBCLUSTER[(Database Cluster<br/>High Availability)]
+    end
     
-    LB1 --> APP1
-    LB1 --> APP2
-    LB2 --> APP2
-    LB2 --> APP3
+    %% Development connections
+    DEV -.-> DEVDB
     
-    APP1 --> DB1
-    APP2 --> DB1
-    APP3 --> DB1
+    %% Production connections
+    DOCKER --> PRODDB
+    DOCKER --> VOLUME
+    HEALTH -.-> DOCKER
     
-    DB1 --> DB2
+    WEB --> DOCKER
+    CLI --> DOCKER
+    REST --> DOCKER
     
-    APP1 --> REDIS
-    APP2 --> REDIS
-    APP3 --> REDIS
+    %% Scaling connections (optional)
+    LB -.-> REPLICA
+    REPLICA -.-> DBCLUSTER
     
-    APP1 --> S3
-    APP2 --> S3
-    APP3 --> S3
-    
-    DB1 --> BACKUP
-    S3 --> BACKUP
-    
-    classDef lbClass fill:#81C784,stroke:#fff,stroke-width:2px,color:#fff
-    classDef appClass fill:#FFB74D,stroke:#fff,stroke-width:2px,color:#fff
+    %% Styling
+    classDef devClass fill:#81C784,stroke:#fff,stroke-width:2px,color:#fff
+    classDef prodClass fill:#FFB74D,stroke:#fff,stroke-width:2px,color:#fff
     classDef dataClass fill:#F06292,stroke:#fff,stroke-width:2px,color:#fff
-    classDef storageClass fill:#9575CD,stroke:#fff,stroke-width:2px,color:#fff
+    classDef scaleClass fill:#9575CD,stroke:#fff,stroke-width:2px,color:#fff
+    classDef clientClass fill:#64B5F6,stroke:#fff,stroke-width:2px,color:#fff
     
-    class LB1,LB2 lbClass
-    class APP1,APP2,APP3 appClass
-    class DB1,DB2,REDIS dataClass
-    class S3,BACKUP storageClass
+    class DEV,DEVDB devClass
+    class DOCKER,HEALTH,VOLUME prodClass
+    class PRODDB dataClass
+    class LB,REPLICA,DBCLUSTER scaleClass
+    class WEB,CLI,REST clientClass
 ```
 
 ## Security Architecture
 
 ```mermaid
 graph TD
-    subgraph "Security Layers"
-        WAF[Web Application Firewall]
-        SSL[SSL/TLS Termination]
-        AUTH[JWT Authentication]
-        AUTHZ[Authorization Layer]
-        VALID[Input Validation]
-        ENCRYPT[Data Encryption]
+    subgraph "Application Security"
+        CORS[CORS Middleware<br/>Origin Validation]
+        JWT[JWT Authentication<br/>Bearer Tokens]
+        HASH[Password Hashing<br/>bcrypt]
+        VALID[Input Validation<br/>Pydantic Schemas]
     end
     
-    subgraph "Security Controls"
-        RATE[Rate Limiting]
-        AUDIT[Audit Logging]
-        MONITOR[Security Monitoring]
-        BACKUP[Secure Backup]
+    subgraph "Data Security"
+        ORM[SQL Injection Prevention<br/>SQLAlchemy ORM]
+        TZ[Timezone-aware Datetime<br/>UTC Handling]
+        AUDIT[Audit Trail<br/>Reservation History]
     end
     
-    Internet --> WAF
-    WAF --> SSL
-    SSL --> AUTH
-    AUTH --> AUTHZ
-    AUTHZ --> VALID
-    VALID --> ENCRYPT
+    subgraph "Container Security"
+        USER[Non-root User<br/>appuser]
+        HEALTH[Health Checks<br/>Container Monitoring]
+        ENV[Environment Variables<br/>Configuration]
+    end
     
-    RATE -.-> WAF
-    AUDIT -.-> AUTH
-    MONITOR -.-> AUTHZ
-    BACKUP -.-> ENCRYPT
+    subgraph "Development Security"
+        LINT[Code Linting<br/>Ruff + Flake8]
+        TEST[Security Testing<br/>Bandit SAST]
+        DEPS[Dependency Scanning<br/>Safety Checks]
+    end
     
-    classDef secClass fill:#E57373,stroke:#fff,stroke-width:2px,color:#fff
-    classDef controlClass fill:#81C784,stroke:#fff,stroke-width:2px,color:#fff
+    %% Security flow
+    CORS --> JWT
+    JWT --> HASH
+    HASH --> VALID
+    VALID --> ORM
     
-    class WAF,SSL,AUTH,AUTHZ,VALID,ENCRYPT secClass
-    class RATE,AUDIT,MONITOR,BACKUP controlClass
+    %% Data protection
+    ORM --> TZ
+    TZ --> AUDIT
+    
+    %% Container protection
+    USER --> HEALTH
+    HEALTH --> ENV
+    
+    %% Development flow
+    LINT --> TEST
+    TEST --> DEPS
+    
+    classDef appSecClass fill:#E57373,stroke:#fff,stroke-width:2px,color:#fff
+    classDef dataSecClass fill:#FFB74D,stroke:#fff,stroke-width:2px,color:#fff
+    classDef containerSecClass fill:#81C784,stroke:#fff,stroke-width:2px,color:#fff
+    classDef devSecClass fill:#9575CD,stroke:#fff,stroke-width:2px,color:#fff
+    
+    class CORS,JWT,HASH,VALID appSecClass
+    class ORM,TZ,AUDIT dataSecClass
+    class USER,HEALTH,ENV containerSecClass
+    class LINT,TEST,DEPS devSecClass
 ```
+
+## Technology Stack
+
+### Core Framework
+- **FastAPI**: Modern Python web framework with automatic OpenAPI documentation
+- **SQLAlchemy**: Database ORM with support for multiple database backends
+- **Pydantic**: Data validation and serialization with type hints
+
+### Authentication & Security
+- **JWT (JSON Web Tokens)**: Stateless authentication with python-jose
+- **bcrypt**: Secure password hashing algorithm
+- **CORS**: Cross-origin resource sharing middleware
+
+### CLI & User Interface
+- **Typer**: Modern CLI framework built on Click
+- **Rich**: Enhanced terminal output with colors and formatting
+- **Vanilla JavaScript**: Frontend web interface without frameworks
+
+### Development & Testing
+- **pytest**: Python testing framework with fixtures and plugins
+- **Ruff**: Fast Python linter and formatter
+- **Docker**: Containerization for consistent deployments
+- **GitHub Actions**: CI/CD pipeline with automated testing
+
+### Database Support
+- **SQLite**: Development and testing database
+- **PostgreSQL**: Recommended production database
+- **MySQL**: Alternative production database option
+
+## File Structure
+
+```
+resource-reserver/
+├── app/                          # FastAPI backend application
+│   ├── main.py                   # Application entry point and endpoints
+│   ├── models.py                 # SQLAlchemy database models
+│   ├── schemas.py                # Pydantic request/response schemas
+│   ├── services.py               # Business logic layer
+│   ├── auth.py                   # Authentication and JWT handling
+│   └── database.py               # Database configuration and session
+├── cli/                          # Command-line interface
+│   ├── main.py                   # CLI entry point with Typer commands
+│   ├── client.py                 # API client for CLI operations
+│   ├── config.py                 # CLI configuration management
+│   └── utils.py                  # Utility functions for CLI
+├── web/                          # Web interface static files
+│   ├── index.html                # Single-page application
+│   ├── css/styles.css            # Stylesheet
+│   └── js/script.js              # Client-side JavaScript
+├── tests/                        # Comprehensive test suite
+│   ├── test_api/                 # API endpoint tests
+│   ├── test_cli/                 # CLI command tests
+│   └── test_services/            # Business logic tests
+├── .github/workflows/            # CI/CD pipeline configuration
+│   └── ci.yml                    # GitHub Actions workflow
+├── docker-compose.yml            # Container orchestration
+├── Dockerfile                    # Container image definition
+├── pyproject.toml               # Python project configuration
+└── requirements.txt             # Python dependencies
+```
+
+## Deployment Options
+
+### Docker Compose (Recommended)
+```bash
+# Production deployment
+docker compose up -d api
+
+# Development with hot reload  
+docker compose --profile dev up -d api-dev
+```
+
+### Manual Installation
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run application
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### Environment Configuration
+- **DATABASE_URL**: Database connection string
+- **ENVIRONMENT**: Application environment (development/production)
+- **CLI_CONFIG_DIR**: CLI configuration directory
+- **PORT**: Application server port (default: 8000)
