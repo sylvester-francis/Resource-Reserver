@@ -51,7 +51,9 @@ class TestAuthCLI:
         mock_inputs["getpass"].return_value = "wrongpass"
 
         with patch("cli.main.client") as mock_client:
-            mock_client.login.side_effect = requests.exceptions.HTTPError("Invalid credentials")
+            mock_client.login.side_effect = requests.exceptions.HTTPError(
+                "Invalid credentials"
+            )
             result = runner.invoke(app, ["auth", "login"])
 
         assert result.exit_code == 1

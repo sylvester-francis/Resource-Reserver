@@ -32,7 +32,9 @@ class TestResourcesCLI:
         assert "Conference Room A" in result.stdout
         mock_api_success.search_resources.assert_called_once()
 
-    def test_search_resources_with_time_filter(self, runner, mock_api_success, mock_auth_config, mock_inputs):
+    def test_search_resources_with_time_filter(
+        self, runner, mock_api_success, mock_auth_config, mock_inputs
+    ):
         """Test searching resources with time filter"""
         mock_inputs["confirm"].return_value = False  # Don't make reservation
 
@@ -90,7 +92,10 @@ class TestResourcesCLI:
 
     def test_create_resource_not_authenticated(self, runner):
         """Test creating resource without authentication"""
-        with patch("cli.config.config.get_auth_headers", side_effect=ValueError("Not authenticated")):
+        with patch(
+            "cli.config.config.get_auth_headers",
+            side_effect=ValueError("Not authenticated"),
+        ):
             result = runner.invoke(app, ["resources", "create", "Test Room"])
 
         assert result.exit_code == 1
@@ -116,7 +121,9 @@ Test Room 2,"conference,large",true"""
         finally:
             os.unlink(csv_path)
 
-    def test_upload_csv_with_preview(self, runner, mock_api_success, mock_auth_config, mock_inputs):
+    def test_upload_csv_with_preview(
+        self, runner, mock_api_success, mock_auth_config, mock_inputs
+    ):
         """Test CSV upload with preview"""
         csv_content = """name,tags,available
 Preview Room 1,"test,preview",true

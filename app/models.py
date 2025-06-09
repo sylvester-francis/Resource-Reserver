@@ -77,7 +77,9 @@ class ReservationHistory(Base):
     __tablename__ = "reservation_history"
 
     id = Column(Integer, primary_key=True, index=True)
-    reservation_id = Column(Integer, ForeignKey("reservations.id"), nullable=False)  # noqa : E501
+    reservation_id = Column(
+        Integer, ForeignKey("reservations.id"), nullable=False
+    )  # noqa : E501
     action = Column(String(50), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     timestamp = Column(DateTime(timezone=True), default=utcnow)

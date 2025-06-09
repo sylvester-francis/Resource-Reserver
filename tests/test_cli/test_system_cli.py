@@ -42,7 +42,9 @@ class TestSystemCLI:
         assert "System Availability Summary" in result.stdout
         mock_api_success.get_availability_summary.assert_called_once()
 
-    def test_manual_cleanup_success(self, runner, mock_api_success, mock_auth_config, mock_inputs):
+    def test_manual_cleanup_success(
+        self, runner, mock_api_success, mock_auth_config, mock_inputs
+    ):
         """Test manual cleanup of expired reservations"""
         mock_inputs["confirm"].return_value = True
 

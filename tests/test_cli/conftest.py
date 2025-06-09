@@ -52,12 +52,22 @@ def mock_api_success():
 
         # Resource responses
         mock_client.list_resources.return_value = [
-            {"id": 1, "name": "Conference Room A", "tags": ["meeting"], "available": True},
-            {"id": 2, "name": "Lab Equipment", "tags": ["lab"], "available": True}
+            {
+                "id": 1,
+                "name": "Conference Room A",
+                "tags": ["meeting"],
+                "available": True,
+            },
+            {"id": 2, "name": "Lab Equipment", "tags": ["lab"], "available": True},
         ]
         mock_client.create_resource.return_value = {"id": 3, "name": "New Resource"}
-        mock_client.search_resources.return_value = [{"id": 1, "name": "Conference Room A"}]
-        mock_client.upload_resources_csv.return_value = {"created_count": 2, "errors": []}
+        mock_client.search_resources.return_value = [
+            {"id": 1, "name": "Conference Room A"}
+        ]
+        mock_client.upload_resources_csv.return_value = {
+            "created_count": 2,
+            "errors": [],
+        }
 
         # Reservation responses
         mock_client.get_my_reservations.return_value = [
@@ -98,13 +108,13 @@ def mock_api_success():
             "available_now": 3,
             "unavailable_now": 2,
             "currently_in_use": 1,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         mock_client.manual_cleanup_expired.return_value = {
             "expired_count": 0,
             "cleaned_reservations": [],
             "message": "Successfully cleaned up 0 expired reservations",
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         yield mock_client
@@ -113,17 +123,15 @@ def mock_api_success():
 @pytest.fixture
 def mock_inputs():
     """Mock all user input methods consistently"""
-    with patch("typer.prompt") as mock_prompt, \
-         patch("cli.main.getpass") as mock_getpass, \
-         patch("typer.confirm") as mock_confirm:
+    with (
+        patch("typer.prompt") as mock_prompt,
+        patch("cli.main.getpass") as mock_getpass,
+        patch("typer.confirm") as mock_confirm,
+    ):
 
         # Default return values
         mock_prompt.return_value = "testuser"
         mock_getpass.return_value = "password123"
         mock_confirm.return_value = True
 
-        yield {
-            "prompt": mock_prompt,
-            "getpass": mock_getpass,
-            "confirm": mock_confirm
-        }
+        yield {"prompt": mock_prompt, "getpass": mock_getpass, "confirm": mock_confirm}

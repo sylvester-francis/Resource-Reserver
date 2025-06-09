@@ -81,20 +81,18 @@ def mock_api_success():
 @pytest.fixture
 def mock_inputs():
     """Mock all user input methods consistently"""
-    with patch("typer.prompt") as mock_prompt, \
-         patch("cli.main.getpass") as mock_getpass, \
-         patch("typer.confirm") as mock_confirm:
+    with (
+        patch("typer.prompt") as mock_prompt,
+        patch("cli.main.getpass") as mock_getpass,
+        patch("typer.confirm") as mock_confirm,
+    ):
 
         # Default return values
         mock_prompt.return_value = "testuser"
         mock_getpass.return_value = "password123"
         mock_confirm.return_value = True
 
-        yield {
-            "prompt": mock_prompt,
-            "getpass": mock_getpass,
-            "confirm": mock_confirm
-        }
+        yield {"prompt": mock_prompt, "getpass": mock_getpass, "confirm": mock_confirm}
 
 
 @pytest.fixture
@@ -111,7 +109,9 @@ def mock_auth_config():
 class TestReservationsCLI:
     """Test CLI reservation management commands"""
 
-    def test_create_reservation_success(self, runner, mock_api_success, mock_auth_config):
+    def test_create_reservation_success(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test creating a reservation via CLI"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(
@@ -129,7 +129,9 @@ class TestReservationsCLI:
         assert "Reservation created successfully" in result.stdout
         mock_api_success.create_reservation.assert_called_once()
 
-    def test_create_reservation_with_end_time(self, runner, mock_api_success, mock_auth_config):
+    def test_create_reservation_with_end_time(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test creating reservation with explicit end time"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(
@@ -151,13 +153,19 @@ class TestReservationsCLI:
         """Test creating reservation with invalid duration"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(
-                app, ["reservations", "create", "1", "2025-06-08 14:00", "invalid-duration"]
+                app,
+                ["reservations", "create", "1", "2025-06-08 14:00", "invalid-duration"],
             )
 
         assert result.exit_code == 1
-        assert "End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)" in result.stdout
+        assert (
+            "End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"
+            in result.stdout
+        )
 
-    def test_create_reservation_past_time(self, runner, mock_api_success, mock_auth_config):
+    def test_create_reservation_past_time(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test creating reservation with past time"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(
@@ -187,7 +195,9 @@ class TestReservationsCLI:
         assert result.exit_code == 1
         assert "Please login first" in result.stdout
 
-    def test_list_reservations_success(self, runner, mock_api_success, mock_auth_config):
+    def test_list_reservations_success(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test listing reservations"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(app, ["reservations", "list"])
@@ -207,7 +217,9 @@ class TestReservationsCLI:
         assert result.exit_code == 0
         mock_api_success.get_my_reservations.assert_called_once()
 
-    def test_list_upcoming_reservations(self, runner, mock_api_success, mock_auth_config):
+    def test_list_upcoming_reservations(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test listing only upcoming reservations"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(app, ["reservations", "list", "--upcoming"])
@@ -215,7 +227,9 @@ class TestReservationsCLI:
         assert result.exit_code == 0
         assert "Your Reservations" in result.stdout
 
-    def test_cancel_reservation_success(self, runner, mock_api_success, mock_auth_config):
+    def test_cancel_reservation_success(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test cancelling a reservation"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(
@@ -249,7 +263,9 @@ class TestReservationsCLI:
         assert result.exit_code == 0
         assert "cancelled successfully" in result.stdout
 
-    def test_cancel_reservation_abort(self, runner, mock_api_success, mock_auth_config, mock_inputs):
+    def test_cancel_reservation_abort(
+        self, runner, mock_api_success, mock_auth_config, mock_inputs
+    ):
         """Test aborting reservation cancellation"""
         mock_inputs["confirm"].return_value = False
 
@@ -278,7 +294,9 @@ class TestReservationsCLI:
         assert "Cancelled" in result.stdout
         mock_api_success.get_reservation_history.assert_called_once_with(1)
 
-    def test_show_reservation_history_detailed(self, runner, mock_api_success, mock_auth_config):
+    def test_show_reservation_history_detailed(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test showing detailed reservation history"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(app, ["reservations", "history", "1", "--detailed"])
@@ -303,7 +321,9 @@ class TestReservationsCLI:
         assert "Quick reservation created" in result.stdout
         mock_api_success.create_reservation.assert_called_once()
 
-    def test_upcoming_command_shortcut(self, runner, mock_api_success, mock_auth_config):
+    def test_upcoming_command_shortcut(
+        self, runner, mock_api_success, mock_auth_config
+    ):
         """Test upcoming reservations shortcut command"""
         with patch("cli.main.config", mock_auth_config):
             result = runner.invoke(app, ["upcoming"])

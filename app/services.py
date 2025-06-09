@@ -436,5 +436,7 @@ class UserService:
         # Normalize username to lowercase for case-insensitive search
         normalized_username = username.lower()
         return (
-            self.db.query(models.User).filter(models.User.username == normalized_username).first()
+            self.db.query(models.User)
+            .filter(models.User.username == normalized_username)
+            .first()
         )
