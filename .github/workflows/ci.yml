@@ -75,6 +75,7 @@ jobs:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
 
   docker:
@@ -123,6 +124,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Create required directories
+      run: |
+        mkdir -p data
+        chmod 755 data
+
     - name: Start services with docker compose
       run: |
         docker compose up -d api
@@ -134,7 +140,8 @@ jobs:
         curl -f http://localhost:8000/health
         curl -f http://localhost:8000/docs
         
-        # Test CLI in Docker
+        # Test CLI in Docker (create config dir first)
+        docker compose exec -T api mkdir -p /tmp/.reservation-cli
         docker compose exec -T api python -m cli.main auth --help
 
     - name: Check logs
