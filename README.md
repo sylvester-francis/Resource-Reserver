@@ -282,9 +282,6 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Initialize database
-mkdir -p data
-
 # Start development server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
