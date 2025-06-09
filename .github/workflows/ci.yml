@@ -153,9 +153,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Start services with docker-compose
+    - name: Start services with docker compose
       run: |
-        docker-compose up -d api
+        docker compose up -d api
         sleep 15  # Wait for services to be ready
 
     - name: Run integration tests
@@ -165,14 +165,14 @@ jobs:
         curl -f http://localhost:8000/docs
         
         # Test CLI in Docker
-        docker-compose exec -T api python -m cli.main auth --help
+        docker compose exec -T api python -m cli.main auth --help
 
     - name: Check logs
       if: failure()
       run: |
-        docker-compose logs api
+        docker compose logs api
 
     - name: Cleanup
       if: always()
       run: |
-        docker-compose down --volumes
+        docker compose down --volumes
