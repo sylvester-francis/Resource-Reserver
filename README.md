@@ -2,10 +2,26 @@
 
 **Enterprise Resource Management and Booking System**
 
-[![CI/CD Pipeline](https://github.com/username/resource-reserver/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/username/resource-reserver/actions)
-[![Test Coverage](https://codecov.io/gh/username/resource-reserver/branch/main/graph/badge.svg)](https://codecov.io/gh/username/resource-reserver)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<!-- Core Technologies -->
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Typer](https://img.shields.io/badge/CLI-Typer-0277bd?style=flat&logo=python&logoColor=white)](https://typer.tiangolo.com/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+
+<!-- Code Quality & CI/CD -->
+[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=github-actions&logoColor=white)](https://github.com/features/actions)
+[![Ruff](https://img.shields.io/badge/Linter-Ruff-D7FF64?style=flat&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
+[![Code style: black](https://img.shields.io/badge/Code%20Style-Black-000000?style=flat&logo=python&logoColor=white)](https://github.com/psf/black)
+
+<!-- Documentation & Diagrams -->
+[![Mermaid](https://img.shields.io/badge/Diagrams-Mermaid-FF3670?style=flat&logo=mermaid&logoColor=white)](https://mermaid.js.org/)
+[![Swagger](https://img.shields.io/badge/API%20Docs-Swagger-85EA2D?style=flat&logo=swagger&logoColor=black)](http://localhost:8000/docs)
+
+<!-- Containerization -->
+[![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+
+[![Test Coverage](https://codecov.io/gh/username/resource-reserver/branch/main/graph/badge.svg)](https://codecov.io/gh/username/resource-reserver)
 
 ## Overview
 
@@ -206,6 +222,7 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 ### Functional Requirements
 
 #### Core System Capabilities
+
 - Resource registration and categorization with custom attributes
 - Real-time availability verification and conflict prevention
 - User authentication and session management
@@ -214,12 +231,14 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 - Bulk data operations with validation and error handling
 
 #### User Interface Requirements
+
 - Responsive web interface supporting modern browsers
 - Command-line interface for automation and power users
 - REST API for system integrations
 - Mobile-responsive design for tablet and smartphone access
 
 #### Data Management Requirements
+
 - Reliable data persistence with backup capabilities
 - Time zone handling for global deployments
 - CSV import/export for legacy system integration
@@ -228,12 +247,14 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 ### Non-Functional Requirements
 
 #### Performance Standards
+
 - API response times under 200ms for 95th percentile
 - Support for 1,000+ concurrent users
 - Database query optimization with proper indexing
 - Horizontal scaling capabilities
 
 #### Security Requirements
+
 - JWT-based authentication with secure token management
 - bcrypt password hashing with configurable salt rounds
 - SQL injection prevention through parameterized queries
@@ -241,12 +262,14 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 - Secure session management
 
 #### Reliability Standards
+
 - 99.9% uptime capability with proper configuration
 - ACID-compliant database transactions
 - Graceful error handling and recovery
 - Automated backup and restore procedures
 
 #### Compliance and Audit
+
 - Complete activity logging for all user actions
 - Configurable data retention policies
 - Export capabilities for compliance reporting
@@ -266,7 +289,7 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 
 ```bash
 # Clone repository
-git clone https://github.com/username/resource-reserver.git
+git clone https://github.com/sylvester-francis/Resource-Reserver.git
 cd resource-reserver
 
 # Create virtual environment
@@ -378,16 +401,19 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:8080
 ### Database Configuration
 
 #### SQLite (Development)
+
 ```bash
 DATABASE_URL=sqlite:///./data/resource_reserver.db
 ```
 
 #### PostgreSQL (Production)
+
 ```bash
 DATABASE_URL=postgresql://user:password@host:5432/database
 ```
 
 #### MySQL (Production)
+
 ```bash
 DATABASE_URL=mysql+pymysql://user:password@host:3306/database
 ```
@@ -603,6 +629,7 @@ pytest tests/test_services/ # Business logic tests
 ### Review Process
 
 All contributions require:
+
 - Code review by project maintainers
 - Passing CI/CD pipeline checks
 - Maintained test coverage
@@ -618,35 +645,12 @@ All contributions require:
 - **User Guide**: See Usage section above
 - **Developer Guide**: See Development section above
 
-### Issue Reporting
-
-Report bugs and feature requests through GitHub Issues. Include:
-
-- Operating system and Python version
-- Steps to reproduce the issue
-- Expected vs actual behavior
-- Relevant error messages or logs
-
-### Security
-
-For security-related concerns, contact the maintainers directly rather than using public issue tracking.
-
----
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for complete terms.
-
-**Commercial Use**: Permitted  
-**Modification**: Permitted  
-**Distribution**: Permitted  
-**Private Use**: Permitted  
-
 ---
 
 ## Acknowledgments
 
 Built with:
+
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
 - [SQLAlchemy](https://www.sqlalchemy.org/) - Database toolkit
 - [Typer](https://typer.tiangolo.com/) - CLI framework
