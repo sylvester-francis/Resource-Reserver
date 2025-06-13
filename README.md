@@ -54,11 +54,31 @@ graph TB
     end
     
     subgraph "Client Layer"
-        WEB[Web Browser]
+        WEB[Modern TypeScript Web App]
         CLI[Command Line Interface]
         API[External API Clients]
     end
     
+    subgraph "Frontend Architecture"
+        subgraph "Components"
+            LOGIN[LoginComponent]
+            DASH[DashboardComponent]
+            TABS[Tab Components]
+        end
+        
+        subgraph "Services"
+            AUTH_SVC[AuthService]
+            RES_SVC[ResourceService]
+            RESV_SVC[ReservationService]
+            SYS_SVC[SystemService]
+        end
+        
+        subgraph "Core"
+            STORE[AppStore]
+            API_CLIENT[ApiClient]
+            UTILS[DOM Utilities]
+        end
+    end
     
     subgraph "Application Layer"
         APP1[FastAPI Application<br/>Container 1]
@@ -66,7 +86,7 @@ graph TB
         APP3[FastAPI Application<br/>Container N]
     end
     
-    subgraph "Business Logic"
+    subgraph "Backend Services"
         RS[Resource Service]
         ReS[Reservation Service]
         US[User Service]
@@ -90,8 +110,27 @@ graph TB
     U2 --> CLI
     U3 --> API
     
+    %% Frontend internal connections
+    WEB --> LOGIN
+    WEB --> DASH
+    WEB --> TABS
+    
+    DASH --> AUTH_SVC
+    DASH --> RES_SVC
+    DASH --> RESV_SVC
+    DASH --> SYS_SVC
+    
+    AUTH_SVC --> API_CLIENT
+    RES_SVC --> API_CLIENT
+    RESV_SVC --> API_CLIENT
+    SYS_SVC --> API_CLIENT
+    
+    LOGIN --> STORE
+    DASH --> STORE
+    TABS --> STORE
+    
     %% Client to applications
-    WEB --> APP1
+    API_CLIENT --> APP1
     CLI --> APP1
     API --> APP1
     
@@ -118,6 +157,7 @@ graph TB
     %% Styling
     classDef userClass fill:#2E86AB,stroke:#fff,stroke-width:2px,color:#fff
     classDef clientClass fill:#A23B72,stroke:#fff,stroke-width:2px,color:#fff
+    classDef frontendClass fill:#9C27B0,stroke:#fff,stroke-width:2px,color:#fff
     classDef appClass fill:#F18F01,stroke:#fff,stroke-width:2px,color:#fff
     classDef serviceClass fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
     classDef dataClass fill:#C73E1D,stroke:#fff,stroke-width:2px,color:#fff
@@ -125,6 +165,7 @@ graph TB
     
     class U1,U2,U3 userClass
     class WEB,CLI,API clientClass
+    class LOGIN,DASH,TABS,AUTH_SVC,RES_SVC,RESV_SVC,SYS_SVC,STORE,API_CLIENT,UTILS frontendClass
     class APP1,APP2,APP3 appClass
     class RS,ReS,US,AS serviceClass
     class DB,FS,CACHE dataClass
@@ -264,7 +305,8 @@ For detailed architecture documentation, see [architecture.md](architecture.md).
 ### Prerequisites
 
 - Python 3.11 or higher
-- pip package manager
+- Node.js 18 or higher
+- npm package manager
 - Git version control system
 
 ### Local Development Setup
@@ -278,9 +320,13 @@ cd Resource-Reserver
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install dependencies
+# Install Python dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
+
+# Install Node.js dependencies and build frontend
+npm install
+npm run build
 
 # Start development server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -449,7 +495,7 @@ curl -X GET "http://localhost:8000/resources/" \
 
 ### Web Application
 
-The web interface provides a complete user experience for resource management:
+The web interface provides a complete user experience for resource management built with modern TypeScript architecture:
 
 1. **User Registration and Authentication**: Secure account creation and login
 2. **Resource Discovery**: Browse and search available resources
@@ -457,6 +503,185 @@ The web interface provides a complete user experience for resource management:
 4. **Dashboard**: Personal reservation overview and system status
 
 Access the web application at `http://localhost:8000` when using Docker deployment.
+
+#### Frontend Architecture
+
+The web application has been completely modernized with a TypeScript-based architecture:
+
+**Key Improvements:**
+- **TypeScript**: Full type safety and modern development experience
+- **Modular Architecture**: Component-based design with clear separation of concerns
+- **Modern DOM Manipulation**: Replaced `document.getElementById` with utility functions
+- **State Management**: Centralized application state with reactive updates
+- **Service Layer**: Clean API integration with proper error handling
+
+**Architecture Components:**
+- **Components**: Reusable UI components with TypeScript classes
+- **Services**: Business logic abstraction (Auth, Resource, Reservation, System)
+- **Stores**: Application state management with localStorage persistence
+- **Utils**: DOM manipulation, formatting, and notification utilities
+- **Types**: Comprehensive TypeScript interfaces and type definitions
+
+**Build System:**
+```bash
+# Development server with hot reload
+npm run dev
+
+# Production build
+npm run build
+
+# Type checking
+npm run typecheck
+```
+
+#### Frontend Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph "TypeScript Frontend Architecture"
+        subgraph "Entry Point"
+            MAIN[main.ts<br/>Application Bootstrap]
+            CONTROLLER[AppController<br/>Application Orchestration]
+        end
+        
+        subgraph "Component Layer"
+            BASE[BaseComponent<br/>Abstract Base Class]
+            LOGIN[LoginComponent<br/>Authentication UI]
+            DASHBOARD[DashboardComponent<br/>Main Application]
+            
+            subgraph "Tab Components"
+                RESOURCES_TAB[ResourcesTabComponent]
+                RESERVATIONS_TAB[ReservationsTabComponent]
+                UPCOMING_TAB[UpcomingTabComponent]
+            end
+        end
+        
+        subgraph "Service Layer"
+            AUTH_SERVICE[AuthService<br/>Authentication Logic]
+            RESOURCE_SERVICE[ResourceService<br/>Resource Management]
+            RESERVATION_SERVICE[ReservationService<br/>Booking Logic]
+            SYSTEM_SERVICE[SystemService<br/>System Status]
+        end
+        
+        subgraph "Data & State"
+            STORE[AppStore<br/>Centralized State]
+            API_CLIENT[ApiClient<br/>HTTP Communication]
+            TYPES[TypeScript Interfaces<br/>Type Definitions]
+        end
+        
+        subgraph "Utilities"
+            DOM_UTILS[DOM Utilities<br/>Modern DOM Manipulation]
+            NOTIFICATIONS[Notification System<br/>Toast Messages]
+            FORMATTING[Data Formatting<br/>Date/Time/Display]
+        end
+        
+        subgraph "Build System"
+            VITE[Vite<br/>Build Tool]
+            TYPESCRIPT[TypeScript Compiler<br/>Type Checking]
+            OUTPUT[Compiled JavaScript<br/>web/dist/]
+        end
+    end
+    
+    %% Entry connections
+    MAIN --> CONTROLLER
+    CONTROLLER --> LOGIN
+    CONTROLLER --> DASHBOARD
+    
+    %% Component hierarchy
+    BASE --> LOGIN
+    BASE --> DASHBOARD
+    BASE --> RESOURCES_TAB
+    BASE --> RESERVATIONS_TAB
+    BASE --> UPCOMING_TAB
+    
+    DASHBOARD --> RESOURCES_TAB
+    DASHBOARD --> RESERVATIONS_TAB
+    DASHBOARD --> UPCOMING_TAB
+    
+    %% Service connections
+    LOGIN --> AUTH_SERVICE
+    DASHBOARD --> AUTH_SERVICE
+    RESOURCES_TAB --> RESOURCE_SERVICE
+    RESERVATIONS_TAB --> RESERVATION_SERVICE
+    UPCOMING_TAB --> RESERVATION_SERVICE
+    DASHBOARD --> SYSTEM_SERVICE
+    
+    %% Data flow
+    AUTH_SERVICE --> API_CLIENT
+    RESOURCE_SERVICE --> API_CLIENT
+    RESERVATION_SERVICE --> API_CLIENT
+    SYSTEM_SERVICE --> API_CLIENT
+    
+    LOGIN --> STORE
+    DASHBOARD --> STORE
+    RESOURCES_TAB --> STORE
+    RESERVATIONS_TAB --> STORE
+    UPCOMING_TAB --> STORE
+    
+    %% Utilities usage
+    LOGIN --> DOM_UTILS
+    DASHBOARD --> DOM_UTILS
+    RESOURCES_TAB --> DOM_UTILS
+    RESERVATIONS_TAB --> DOM_UTILS
+    UPCOMING_TAB --> DOM_UTILS
+    
+    AUTH_SERVICE --> NOTIFICATIONS
+    RESOURCE_SERVICE --> NOTIFICATIONS
+    RESERVATION_SERVICE --> NOTIFICATIONS
+    
+    RESOURCES_TAB --> FORMATTING
+    RESERVATIONS_TAB --> FORMATTING
+    UPCOMING_TAB --> FORMATTING
+    
+    %% Build process
+    MAIN --> VITE
+    CONTROLLER --> VITE
+    LOGIN --> VITE
+    DASHBOARD --> VITE
+    RESOURCES_TAB --> VITE
+    RESERVATIONS_TAB --> VITE
+    UPCOMING_TAB --> VITE
+    AUTH_SERVICE --> VITE
+    RESOURCE_SERVICE --> VITE
+    RESERVATION_SERVICE --> VITE
+    SYSTEM_SERVICE --> VITE
+    STORE --> VITE
+    API_CLIENT --> VITE
+    DOM_UTILS --> VITE
+    NOTIFICATIONS --> VITE
+    FORMATTING --> VITE
+    
+    VITE --> TYPESCRIPT
+    TYPESCRIPT --> OUTPUT
+    
+    %% Type checking
+    TYPES --> LOGIN
+    TYPES --> DASHBOARD
+    TYPES --> RESOURCES_TAB
+    TYPES --> RESERVATIONS_TAB
+    TYPES --> UPCOMING_TAB
+    TYPES --> AUTH_SERVICE
+    TYPES --> RESOURCE_SERVICE
+    TYPES --> RESERVATION_SERVICE
+    TYPES --> SYSTEM_SERVICE
+    TYPES --> STORE
+    TYPES --> API_CLIENT
+    
+    %% Styling
+    classDef entryClass fill:#E91E63,stroke:#fff,stroke-width:2px,color:#fff
+    classDef componentClass fill:#9C27B0,stroke:#fff,stroke-width:2px,color:#fff
+    classDef serviceClass fill:#3F51B5,stroke:#fff,stroke-width:2px,color:#fff
+    classDef dataClass fill:#009688,stroke:#fff,stroke-width:2px,color:#fff
+    classDef utilClass fill:#FF9800,stroke:#fff,stroke-width:2px,color:#fff
+    classDef buildClass fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
+    
+    class MAIN,CONTROLLER entryClass
+    class BASE,LOGIN,DASHBOARD,RESOURCES_TAB,RESERVATIONS_TAB,UPCOMING_TAB componentClass
+    class AUTH_SERVICE,RESOURCE_SERVICE,RESERVATION_SERVICE,SYSTEM_SERVICE serviceClass
+    class STORE,API_CLIENT,TYPES dataClass
+    class DOM_UTILS,NOTIFICATIONS,FORMATTING utilClass
+    class VITE,TYPESCRIPT,OUTPUT buildClass
+```
 
 #### Web Interface Screenshots
 
@@ -578,17 +803,34 @@ name,tags,available
 
 ### Development Environment Setup
 
+#### Backend Development
+
 ```bash
-# Install development dependencies
+# Install Python dependencies
 pip install ruff black isort mypy flake8 bandit safety pytest-cov
 
 # Run development server with auto-reload
 uvicorn app.main:app --reload
 ```
 
+#### Frontend Development
+
+```bash
+# Install Node.js dependencies
+npm install
+
+# Start development server with hot reload
+npm run dev
+
+# Run in parallel with backend
+uvicorn app.main:app --reload --port 8000 & npm run dev
+```
+
 ### Code Quality Standards
 
 The project maintains high code quality through automated tooling:
+
+#### Backend Quality Checks
 
 ```bash
 # Code formatting and linting
@@ -596,6 +838,15 @@ ruff format .                    # Format code
 ruff check .                     # Lint code
 pytest                           # Run tests
 bandit -r app/ cli/              # Security checks
+```
+
+#### Frontend Quality Checks
+
+```bash
+# TypeScript compilation and type checking
+npm run typecheck               # TypeScript type checking
+npm run build                   # Build for production
+npm run lint                    # Code linting (when configured)
 ```
 
 ### Project Architecture
@@ -614,10 +865,17 @@ resource-reserver/
 │   ├── client.py         # API client
 │   ├── config.py         # Configuration management
 │   └── utils.py          # Utility functions
-├── web/                  # Web interface
+├── src/                  # Modern TypeScript frontend
+│   ├── components/       # Component-based architecture
+│   ├── services/         # Business logic services
+│   ├── stores/           # Application state management
+│   ├── utils/            # Utility functions
+│   ├── types/            # TypeScript type definitions
+│   └── main.ts           # Application entry point
+├── web/                  # Static web assets
 │   ├── index.html        # Application shell
 │   ├── css/styles.css    # Styling
-│   └── js/script.js      # Client-side logic
+│   └── dist/             # Compiled TypeScript output
 ├── tests/                # Test suite
 │   ├── test_api/         # API tests
 │   ├── test_cli/         # CLI tests

@@ -11,7 +11,7 @@ graph TB
     end
     
     subgraph "Client Layer"
-        WEB[Web Browser<br/>HTML/CSS/JS]
+        WEB[Modern TypeScript Web App<br/>Component-based Architecture]
         CLI[Command Line Interface<br/>Typer + Rich]
         API[External API Clients<br/>REST/HTTP]
     end
@@ -87,13 +87,13 @@ graph TB
 ## Component Details
 
 ### Client Layer
-- **Web Browser**: Vanilla JavaScript interface with HTML/CSS frontend served as static files
+- **TypeScript Web App**: Modern component-based frontend with TypeScript, Vite build system, and modular architecture
 - **CLI Interface**: Typer-based command-line tool with Rich formatting and interactive features
 - **API Clients**: External systems integrating via REST API with JWT authentication
 
 ### Application Layer
 - **FastAPI Application**: Single Python web service handling all API endpoints and web serving
-- **Static File Server**: Integrated static file serving for web interface assets (HTML/CSS/JS)
+- **Static File Server**: Integrated static file serving for compiled TypeScript assets and static files
 - **CORS Middleware**: Cross-origin resource sharing for web client integration
 
 ### Business Logic Layer
@@ -290,7 +290,7 @@ graph TD
 ### CLI & User Interface
 - **Typer**: Modern CLI framework built on Click
 - **Rich**: Enhanced terminal output with colors and formatting
-- **Vanilla JavaScript**: Frontend web interface without frameworks
+- **TypeScript**: Frontend web interface with modern component architecture and build system
 
 ### Development & Testing
 - **pytest**: Python testing framework with fixtures and plugins
@@ -319,10 +319,17 @@ resource-reserver/
 │   ├── client.py                 # API client for CLI operations
 │   ├── config.py                 # CLI configuration management
 │   └── utils.py                  # Utility functions for CLI
+├── src/                          # TypeScript frontend source
+│   ├── components/               # UI components and tabs
+│   ├── services/                 # Business logic services
+│   ├── stores/                   # State management
+│   ├── utils/                    # Utility functions
+│   ├── types/                    # TypeScript type definitions
+│   └── main.ts                   # Application entry point
 ├── web/                          # Web interface static files
-│   ├── index.html                # Single-page application
+│   ├── index.html                # Single-page application shell
 │   ├── css/styles.css            # Stylesheet
-│   └── js/script.js              # Client-side JavaScript
+│   └── dist/                     # Compiled TypeScript output
 ├── tests/                        # Comprehensive test suite
 │   ├── test_api/                 # API endpoint tests
 │   ├── test_cli/                 # CLI command tests
@@ -330,7 +337,12 @@ resource-reserver/
 ├── .github/workflows/            # CI/CD pipeline configuration
 │   └── ci.yml                    # GitHub Actions workflow
 ├── docker-compose.yml            # Container orchestration
-├── Dockerfile                    # Container image definition
+├── Dockerfile                    # Production container with multi-stage build
+├── Dockerfile.dev               # Development container with Node.js
+├── Dockerfile.ci                # CI-specific container for pre-built assets
+├── package.json                 # Node.js dependencies and scripts
+├── tsconfig.json                # TypeScript configuration
+├── vite.config.ts               # Vite build tool configuration
 ├── pyproject.toml               # Python project configuration
 └── requirements.txt             # Python dependencies
 ```
@@ -348,8 +360,12 @@ docker compose --profile dev up -d api-dev
 
 ### Manual Installation
 ```bash
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
+
+# Install Node.js dependencies and build frontend
+npm install
+npm run build
 
 # Run application
 uvicorn app.main:app --host 0.0.0.0 --port 8000

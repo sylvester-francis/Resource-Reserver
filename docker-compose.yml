@@ -24,9 +24,10 @@ services:
   api-dev:
     build: 
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "8001:8000"
+      - "3001:3000"  # Frontend dev server
     environment:
       - ENVIRONMENT=development
       - DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
@@ -34,6 +35,7 @@ services:
     volumes:
       - .:/app
       - /app/venv  # Exclude virtual environment from mount
+      - /app/node_modules  # Exclude node_modules from mount
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     profiles:
       - dev

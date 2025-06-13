@@ -1,0 +1,61 @@
+# Development Dockerfile with hot reload for both frontend and backend
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PORT=8000
+
+# Install system dependencies including Node.js
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    ca-certificates \
+    gnupg \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set work directory
+WORKDIR /app
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy and install Node.js dependencies
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY vite.config.ts ./
+RUN npm install
+
+# Copy application code
+COPY . .
+
+# Build frontend initially
+RUN npm run build
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/data && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose ports (8000 for backend, 3000 for frontend dev server)
+EXPOSE 8000 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Default command for development
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
