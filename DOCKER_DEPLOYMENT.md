@@ -1,163 +1,210 @@
 # Docker Deployment Guide
 
-This guide covers all Docker deployment scenarios for the Resource Reserver application with the modernized TypeScript frontend.
+This guide covers all Docker deployment scenarios for the Resource Reserver application with the Express.js + Alpine.js frontend architecture.
 
 ## Docker Images Overview
 
-The project includes three Docker configurations:
+The project includes multiple Docker configurations:
 
-1. **Dockerfile** - Production multi-stage build with frontend compilation
-2. **Dockerfile.dev** - Development environment with Node.js and hot reload
-3. **Dockerfile.ci** - CI-specific build expecting pre-built frontend assets
+1. **Dockerfile.backend** - FastAPI backend service
+2. **Dockerfile.frontend** - Express.js frontend service  
+3. **Dockerfile.dev** - Development environment with hot reload
+4. **docker-compose.yml** - Multi-service orchestration
 
 ## Production Deployment
 
-### Multi-stage Production Build
+### Multi-Service Architecture
 
-The production Dockerfile uses a multi-stage build to compile the TypeScript frontend and create an optimized Python backend container.
+The production deployment uses separate containers for frontend and backend services with Docker Compose orchestration.
 
 ```bash
-# Build and run production container
-docker build -t resource-reserver .
-docker run -d -p 8000:8000 resource-reserver
+# Start production services
+docker-compose up -d
 
-# Or use docker-compose (recommended)
-docker compose up -d api
+# Or start specific services
+docker-compose up -d backend frontend
+
+# Check service status
+docker-compose ps
 ```
 
 ### Production Features
-- ✅ TypeScript compilation in frontend stage
-- ✅ Optimized build with tree shaking
-- ✅ Multi-stage build for smaller final image
+- ✅ Separated frontend (Express.js) and backend (FastAPI) services
+- ✅ No build process required - direct deployment
+- ✅ Independent service scaling
 - ✅ Non-root user security
 - ✅ Health checks included
-- ✅ All frontend assets bundled
+- ✅ Session management with cookies
 
 ## Development Deployment
 
-### Development Container with Hot Reload
+### Development Environment
 
-The development Dockerfile includes both Node.js and Python for full development workflow.
+Run both frontend and backend services in development mode with hot reload.
 
 ```bash
-# Build and run development container
-docker build -f Dockerfile.dev -t resource-reserver-dev .
-docker run -d -p 8000:8000 -p 3000:3000 -v $(pwd):/app resource-reserver-dev
+# Start all development services
+docker-compose --profile dev up -d
 
-# Or use docker-compose profiles (recommended)
-docker compose --profile dev up -d api-dev
+# Or manually start each service
+docker-compose up -d backend
+docker-compose up -d frontend
+
+# Monitor logs
+docker-compose logs -f frontend backend
 ```
 
 ### Development Features
-- ✅ Node.js 18 and Python 3.11
-- ✅ Frontend and backend hot reload
+- ✅ Express.js frontend with nodemon auto-restart
+- ✅ FastAPI backend with uvicorn reload
 - ✅ Volume mounts for live editing
-- ✅ Frontend dev server on port 3000
-- ✅ Backend dev server on port 8000
-- ✅ All development tools included
+- ✅ Frontend on port 3000, Backend on port 8000
+- ✅ Immediate code changes reflected
+- ✅ No build process required
 
 ## CI/CD Deployment
 
 ### GitHub Actions Integration
 
-The CI pipeline builds the frontend separately and uses the CI-specific Dockerfile.
+The CI pipeline tests both frontend and backend services and builds Docker containers.
 
 ```yaml
-# Frontend build stage
-- name: Build frontend
-  run: npm run build
+# Frontend quality checks
+- name: Set up Node.js
+  uses: actions/setup-node@v4
+- name: Install frontend dependencies
+  run: cd frontend && npm ci
+- name: Test frontend
+  run: cd frontend && npm test
 
-# Docker build with pre-built assets
-- name: Build Docker image
-  uses: docker/build-push-action@v5
-  with:
-    file: ./Dockerfile.ci
+# Backend quality checks
+- name: Set up Python
+  uses: actions/setup-python@v5
+- name: Run backend tests
+  run: pytest
+
+# Docker build and test
+- name: Build Docker services
+  run: docker-compose build
 ```
 
 ### CI Features
-- ✅ Parallel frontend and backend builds
-- ✅ Pre-built frontend assets
-- ✅ Faster CI build times
-- ✅ Comprehensive testing integration
+- ✅ Separated frontend and backend testing
+- ✅ No complex build process required
+- ✅ Multi-service Docker testing
+- ✅ Session management testing
 
 ## Docker Compose Configurations
 
-### Production Service
+### Production Services
 
 ```yaml
 services:
-  api:
-    build: 
+  # FastAPI Backend Service
+  backend:
+    build:
       context: .
-      dockerfile: Dockerfile  # Multi-stage production build
+      dockerfile: Dockerfile.backend
     ports:
       - "8000:8000"
     environment:
       - ENVIRONMENT=production
-      - DATABASE_URL=postgresql://user:pass@db:5432/resource_reserver
+      - DATABASE_URL=sqlite:///./data/resource_reserver.db
     volumes:
       - ./data:/app/data
     restart: unless-stopped
+
+  # Express.js Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
 ```
 
-### Development Service
+### Development Services
 
 ```yaml
 services:
-  api-dev:
-    build: 
+  backend:
+    build:
       context: .
-      dockerfile: Dockerfile.dev  # Development with Node.js
+      dockerfile: Dockerfile.backend
     ports:
-      - "8001:8000"  # Backend
-      - "3001:3000"  # Frontend dev server
+      - "8000:8000"
     environment:
       - ENVIRONMENT=development
-      - DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
     volumes:
       - .:/app
-      - /app/venv
-      - /app/node_modules
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://backend:8000
+    volumes:
+      - ./frontend:/app
+    command: npm run dev
+    depends_on:
+      - backend
     profiles:
       - dev
 ```
 
 ## Build Process Details
 
-### Frontend Build Process
+### Frontend Architecture
 
-1. **TypeScript Compilation**: `tsc` compiles TypeScript to JavaScript
-2. **Vite Bundling**: Vite bundles modules with optimizations
-3. **Asset Output**: Compiled assets go to `web/dist/`
-4. **Size Optimization**: Tree shaking and minification applied
+1. **Express.js Server**: Handles routing, authentication, and API proxying
+2. **EJS Templates**: Server-side rendered HTML templates
+3. **Alpine.js**: Client-side reactivity and DOM manipulation
+4. **Static Assets**: CSS and JavaScript served directly
 
 ```bash
-# Manual frontend build
+# Frontend development
+cd frontend
 npm install
-npm run typecheck  # TypeScript compilation check
-npm run build      # Full build with bundling
+npm start  # Starts Express.js server on port 3000
 ```
 
 ### Backend Integration
 
-The FastAPI backend serves the compiled frontend assets from `/static/dist/`:
+The Express.js frontend communicates with the FastAPI backend via HTTP API calls:
 
-```python
-# Static file serving in FastAPI
-app.mount("/static", StaticFiles(directory="web"), name="static")
+```javascript
+// API proxy in Express.js server
+app.post('/api/resources', requireAuth, async (req, res) => {
+  const result = await apiCall('/resources', {
+    method: 'POST',
+    data: req.body
+  }, req.token);
+  res.json({ success: true, data: result });
+});
 ```
 
-### Build Verification
+### Service Verification
 
 ```bash
-# Verify build artifacts
-ls -la web/dist/
-# Expected output:
-# css/main.css     (~0.67 kB)
-# js/main.js       (~34.52 kB)
+# Test backend service
+curl -f http://localhost:8000/health
 
-# Test build locally
-npm run build && uvicorn app.main:app --reload
+# Test frontend service  
+curl -f http://localhost:3000
+
+# Test end-to-end flow
+curl -f http://localhost:3000/login
 ```
 
 ## Environment Variables
@@ -165,14 +212,15 @@ npm run build && uvicorn app.main:app --reload
 ### Development Environment
 
 ```bash
-# Backend configuration
+# Backend configuration (.env in root)
 ENVIRONMENT=development
 DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
-CLI_CONFIG_DIR=/tmp/.reservation-cli
+SECRET_KEY=dev-secret-key
 
-# Frontend development (optional)
+# Frontend configuration (frontend/.env)
 NODE_ENV=development
-VITE_API_BASE_URL=http://localhost:8000
+PORT=3000
+API_BASE_URL=http://localhost:8000
 ```
 
 ### Production Environment
@@ -181,48 +229,54 @@ VITE_API_BASE_URL=http://localhost:8000
 # Backend configuration
 ENVIRONMENT=production
 DATABASE_URL=postgresql://user:password@host:5432/database
-SECRET_KEY=your-secret-key-here
-PORT=8000
+SECRET_KEY=your-secure-secret-key-here
 
-# Frontend (compiled, no runtime config needed)
+# Frontend configuration
 NODE_ENV=production
+PORT=3000
+API_BASE_URL=http://backend:8000
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Frontend Build Fails
+#### Frontend Service Issues
 ```bash
-# Clear cache and rebuild
-npm run clean
-rm -rf node_modules package-lock.json
+# Check frontend dependencies
+cd frontend
 npm install
-npm run build
+
+# Restart frontend service
+docker-compose restart frontend
+
+# Check frontend logs
+docker-compose logs frontend
 ```
 
-#### Docker Build Fails
+#### Backend Service Issues
 ```bash
-# Check Docker daemon
-docker info
+# Check backend dependencies
+pip install -r requirements.txt
 
-# Clear Docker cache
-docker system prune -a
+# Restart backend service
+docker-compose restart backend
 
-# Rebuild with no cache
-docker build --no-cache -t resource-reserver .
+# Check backend logs
+docker-compose logs backend
 ```
 
-#### Development Hot Reload Not Working
+#### Service Communication Issues
 ```bash
-# Check volume mounts
-docker compose --profile dev up -d api-dev
-docker compose exec api-dev ls -la /app
+# Check all services
+docker-compose ps
 
-# Verify ports
-docker compose ps
-curl http://localhost:8001/health  # Backend
-curl http://localhost:3001         # Frontend dev server (if applicable)
+# Test backend from frontend container
+docker-compose exec frontend curl http://backend:8000/health
+
+# Check network connectivity
+docker network ls
+docker network inspect resource-reserver_default
 ```
 
 ### Health Checks
@@ -239,27 +293,30 @@ curl -f http://localhost:8000/health
 
 #### Frontend Assets
 ```bash
-# Verify frontend assets are served
-curl -f http://localhost:8000/static/dist/js/main.js
-curl -f http://localhost:8000/static/dist/css/main.css
-curl -f http://localhost:8000/  # Should load the app
+# Verify frontend service is running
+curl -f http://localhost:3000/
+curl -f http://localhost:3000/login
+
+# Check static assets
+curl -f http://localhost:3000/css/styles.css
+curl -f http://localhost:3000/js/app.js
 ```
 
 ## Performance Optimization
 
 ### Production Optimizations
 
-1. **Multi-stage Build**: Reduces final image size
-2. **Frontend Bundling**: Tree shaking and minification
-3. **Static Asset Serving**: Efficient file serving
+1. **Service Separation**: Independent frontend and backend scaling
+2. **No Build Process**: Direct deployment without compilation
+3. **Session Management**: Efficient cookie-based authentication
 4. **Health Checks**: Container orchestration support
 
 ### Development Optimizations
 
 1. **Volume Mounts**: Live code editing
-2. **Hot Reload**: Instant feedback
-3. **Parallel Servers**: Frontend and backend development
-4. **Cache Mounting**: Faster rebuilds
+2. **Hot Reload**: Auto-restart on file changes
+3. **Service Independence**: Frontend and backend can be developed separately
+4. **Simplified Architecture**: No complex build tools or compilation
 
 ## Security Considerations
 
@@ -319,4 +376,4 @@ services:
       - postgres_data:/var/lib/postgresql/data
 ```
 
-This comprehensive Docker deployment setup ensures the modernized TypeScript frontend is properly built and integrated across all deployment scenarios while maintaining optimal performance and security.
+This comprehensive Docker deployment setup ensures the Express.js + Alpine.js frontend architecture is properly deployed and integrated across all deployment scenarios while maintaining optimal performance, security, and developer experience with no build complexity.
