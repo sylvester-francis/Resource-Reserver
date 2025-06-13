@@ -238,14 +238,11 @@ class ResourceService:
             time_slots = []
             for hour in range(9, 17):  # 9 AM to 4 PM (last slot is 4-5 PM)
                 slot_time = f"{hour:02d}:00"
+                # Create timezone-aware slot times in UTC
                 slot_datetime_start = datetime.combine(
-                    current_date, datetime.min.time()
+                    current_date, datetime.min.time(), tzinfo=UTC
                 ) + timedelta(hours=hour)
                 slot_datetime_end = slot_datetime_start + timedelta(hours=1)
-
-                # Convert to UTC for comparison
-                slot_start_utc = slot_datetime_start.replace(tzinfo=UTC)
-                slot_end_utc = slot_datetime_end.replace(tzinfo=UTC)
 
                 # Check if this time slot conflicts with any reservation
                 is_available = True
@@ -253,9 +250,20 @@ class ResourceService:
                     is_available = False
                 else:
                     for res in reservations:
+                        # Ensure database times are timezone-aware (assume they're UTC)
+                        res_start = res.start_time
+                        res_end = res.end_time
+                        
+                        # If database times are timezone-naive, assume they're UTC
+                        if res_start.tzinfo is None:
+                            res_start = res_start.replace(tzinfo=UTC)
+                        if res_end.tzinfo is None:
+                            res_end = res_end.replace(tzinfo=UTC)
+                        
+                        # Check overlap: slot overlaps if slot_start < res_end AND slot_end > res_start
                         if (
-                            res.start_time < slot_end_utc
-                            and res.end_time > slot_start_utc
+                            slot_datetime_start < res_end
+                            and slot_datetime_end > res_start
                         ):
                             is_available = False
                             break
