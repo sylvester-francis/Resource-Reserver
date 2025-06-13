@@ -324,6 +324,25 @@ The application is **fully functional** with all features tested and working:
 
 The production deployment uses separate containers for frontend and backend services with Docker Compose orchestration.
 
+**Option 1: Using Pre-built Registry Images (Recommended)**
+
+```bash
+# Download registry compose file
+wget https://raw.githubusercontent.com/sylvester-francis/Resource-Reserver/main/docker-compose.registry.yml
+
+# Set environment variables
+echo "SECRET_KEY=your-secure-secret-key" > .env
+echo "POSTGRES_PASSWORD=your-postgres-password" >> .env
+
+# Start production services with registry images
+docker compose -f docker-compose.registry.yml up -d
+
+# Check service status
+docker compose -f docker-compose.registry.yml ps
+```
+
+**Option 2: Building from Source**
+
 ```bash
 # Clone and navigate to project
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
@@ -333,7 +352,7 @@ cd Resource-Reserver
 echo "SECRET_KEY=your-secure-secret-key" > .env
 echo "POSTGRES_PASSWORD=your-postgres-password" >> .env
 
-# Start production services
+# Start production services (builds locally)
 docker compose up -d
 
 # Or start specific services
