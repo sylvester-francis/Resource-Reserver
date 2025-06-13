@@ -10,32 +10,33 @@ graph TB
         U3[External Systems]
     end
     
-    subgraph "Client Layer"
-        WEB[Web Browser<br/>HTML/CSS/JS]
+    subgraph "Docker Infrastructure"
+        subgraph "Frontend Container"
+            WEB[Express.js Server<br/>Port 3000]
+            EJS[EJS Templates]
+            ALPINE[Alpine.js Components]
+            STATIC[Static Assets<br/>CSS/JS]
+        end
+        
+        subgraph "Backend Container"
+            API[FastAPI Server<br/>Port 8000]
+            AUTH[JWT Authentication<br/>Cookie-based]
+            ROUTES[API Routes]
+            BG[Background Tasks]
+        end
+        
         CLI[Command Line Interface<br/>Typer + Rich]
-        API[External API Clients<br/>REST/HTTP]
-    end
-    
-    subgraph "Application Layer"
-        FASTAPI[FastAPI Application<br/>Single Container]
-        STATIC[Static File Server<br/>Web Assets]
     end
     
     subgraph "Business Logic Layer"
         RS[ResourceService]
         ReS[ReservationService]  
         US[UserService]
-        AUTH[Authentication Layer<br/>JWT + bcrypt]
     end
     
     subgraph "Data Layer"
-        DB[(SQLite/PostgreSQL/MySQL<br/>SQLAlchemy ORM)]
-        FS[File Storage<br/>CSV Import/Export]
-    end
-    
-    subgraph "Background Tasks"
-        CLEANUP[Cleanup Task<br/>Asyncio Background]
-        HEALTH[Health Monitoring]
+        DB[(SQLite/PostgreSQL<br/>SQLAlchemy ORM)]
+        FS[File Storage<br/>CSV/Uploads/Logs]
     end
     
     %% User connections
@@ -43,58 +44,68 @@ graph TB
     U2 --> CLI
     U3 --> API
     
-    %% Client to application
-    WEB --> FASTAPI
+    %% Frontend architecture
+    WEB --> EJS
+    WEB --> ALPINE
     WEB --> STATIC
-    CLI --> FASTAPI
-    API --> FASTAPI
+    EJS --> ALPINE
     
-    %% Application to services
-    FASTAPI --> RS
-    FASTAPI --> ReS
-    FASTAPI --> US
-    FASTAPI --> AUTH
+    %% Frontend to Backend communication
+    WEB -.->|API Proxy<br/>HTTP Calls| API
+    ALPINE -.->|AJAX Requests<br/>Session Validation| API
+    CLI --> API
+    
+    %% Backend internal
+    API --> AUTH
+    API --> ROUTES
+    API --> BG
+    ROUTES --> RS
+    ROUTES --> ReS
+    ROUTES --> US
     
     %% Services to data
     RS --> DB
     ReS --> DB
     US --> DB
-    AUTH --> DB
     
     RS --> FS
     ReS --> FS
     
     %% Background tasks
-    CLEANUP --> DB
-    HEALTH --> FASTAPI
+    BG --> DB
+    BG --> FS
+    
+    %% Session management
+    WEB -.->|Cookie Storage<br/>Session Management| AUTH
     
     %% Styling
     classDef userClass fill:#2E86AB,stroke:#fff,stroke-width:2px,color:#fff
-    classDef clientClass fill:#A23B72,stroke:#fff,stroke-width:2px,color:#fff
-    classDef appClass fill:#F18F01,stroke:#fff,stroke-width:2px,color:#fff
+    classDef containerClass fill:#A23B72,stroke:#fff,stroke-width:2px,color:#fff
+    classDef backendClass fill:#F18F01,stroke:#fff,stroke-width:2px,color:#fff
     classDef serviceClass fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
     classDef dataClass fill:#C73E1D,stroke:#fff,stroke-width:2px,color:#fff
-    classDef bgClass fill:#FFE082,stroke:#333,stroke-width:2px
+    classDef cliClass fill:#FFE082,stroke:#333,stroke-width:2px
     
     class U1,U2,U3 userClass
-    class WEB,CLI,API clientClass
-    class FASTAPI,STATIC appClass
-    class RS,ReS,US,AUTH serviceClass
+    class WEB,EJS,ALPINE,STATIC containerClass
+    class API,AUTH,ROUTES,BG backendClass
+    class RS,ReS,US serviceClass
     class DB,FS dataClass
-    class CLEANUP,HEALTH bgClass
+    class CLI cliClass
 ```
 
 ## Component Details
 
-### Client Layer
-- **Web Browser**: Vanilla JavaScript interface with HTML/CSS frontend served as static files
-- **CLI Interface**: Typer-based command-line tool with Rich formatting and interactive features
-- **API Clients**: External systems integrating via REST API with JWT authentication
+### Frontend Container (Express.js + Alpine.js)
+- **Express.js Server**: Server-side rendering with EJS templates and API proxy functionality
+- **Alpine.js Components**: Lightweight reactive client-side interactions without build complexity
+- **EJS Templates**: Clean, maintainable HTML generation with server-side data injection
+- **Static Assets**: Direct serving of CSS and JavaScript files without compilation
 
-### Application Layer
-- **FastAPI Application**: Single Python web service handling all API endpoints and web serving
-- **Static File Server**: Integrated static file serving for web interface assets (HTML/CSS/JS)
-- **CORS Middleware**: Cross-origin resource sharing for web client integration
+### Backend Container (FastAPI)
+- **FastAPI Application**: REST API service with automatic OpenAPI documentation
+- **Cookie-based Authentication**: Secure session management with JWT tokens stored in HTTP-only cookies
+- **API Routes**: Comprehensive endpoints for resources, reservations, and user management
 
 ### Business Logic Layer
 - **ResourceService**: CRUD operations, availability checking, CSV import/export
@@ -287,10 +298,12 @@ graph TD
 - **bcrypt**: Secure password hashing algorithm
 - **CORS**: Cross-origin resource sharing middleware
 
-### CLI & User Interface
+### Frontend & User Interface
+- **Express.js**: Fast, minimalist web framework for Node.js with server-side rendering
+- **EJS**: Embedded JavaScript templating for clean HTML generation  
+- **Alpine.js**: Lightweight reactive framework for client-side interactions
 - **Typer**: Modern CLI framework built on Click
 - **Rich**: Enhanced terminal output with colors and formatting
-- **Vanilla JavaScript**: Frontend web interface without frameworks
 
 ### Development & Testing
 - **pytest**: Python testing framework with fixtures and plugins
@@ -307,52 +320,71 @@ graph TD
 
 ```
 resource-reserver/
-├── app/                          # FastAPI backend application
-│   ├── main.py                   # Application entry point and endpoints
-│   ├── models.py                 # SQLAlchemy database models
-│   ├── schemas.py                # Pydantic request/response schemas
-│   ├── services.py               # Business logic layer
-│   ├── auth.py                   # Authentication and JWT handling
-│   └── database.py               # Database configuration and session
+├── app/                          # FastAPI backend service
+│   ├── main.py                   # Application entry point & API routes
+│   ├── auth.py                   # JWT authentication logic
+│   ├── database.py               # Database configuration & connection
+│   ├── models.py                 # SQLAlchemy data models
+│   ├── schemas.py                # Pydantic API schemas
+│   └── services.py               # Business logic layer
+├── frontend/                     # Express.js frontend service
+│   ├── server.js                 # Express server with API proxy
+│   ├── package.json              # Node.js dependencies
+│   ├── views/                    # EJS templates
+│   │   ├── dashboard.ejs         # Main application dashboard
+│   │   ├── login.ejs             # Authentication pages
+│   │   └── partials/             # Reusable template components
+│   │       └── modals.ejs        # Modal dialogs
+│   ├── public/                   # Static assets (served directly)
+│   │   ├── css/                  # Stylesheets
+│   │   │   └── styles.css        # Main application styles
+│   │   └── js/                   # Client-side JavaScript
+│   │       └── app.js            # Alpine.js application logic
+│   └── uploads/                  # File upload storage
 ├── cli/                          # Command-line interface
 │   ├── main.py                   # CLI entry point with Typer commands
 │   ├── client.py                 # API client for CLI operations
 │   ├── config.py                 # CLI configuration management
 │   └── utils.py                  # Utility functions for CLI
-├── web/                          # Web interface static files
-│   ├── index.html                # Single-page application
-│   ├── css/styles.css            # Stylesheet
-│   └── js/script.js              # Client-side JavaScript
 ├── tests/                        # Comprehensive test suite
 │   ├── test_api/                 # API endpoint tests
 │   ├── test_cli/                 # CLI command tests
 │   └── test_services/            # Business logic tests
 ├── .github/workflows/            # CI/CD pipeline configuration
 │   └── ci.yml                    # GitHub Actions workflow
-├── docker-compose.yml            # Container orchestration
-├── Dockerfile                    # Container image definition
-├── pyproject.toml               # Python project configuration
-└── requirements.txt             # Python dependencies
+├── Dockerfile.backend            # Backend container configuration
+├── Dockerfile.frontend           # Frontend container configuration
+├── docker-compose.yml            # Multi-service orchestration
+├── requirements.txt              # Python dependencies
+├── pyproject.toml                # Python project configuration
+└── README.md                     # Complete documentation
 ```
 
 ## Deployment Options
 
 ### Docker Compose (Recommended)
 ```bash
-# Production deployment
-docker compose up -d api
+# Production deployment (both services)
+docker compose up -d backend frontend
 
 # Development with hot reload  
-docker compose --profile dev up -d api-dev
+docker compose --profile dev up -d
+
+# Individual services
+docker compose up -d backend  # FastAPI only
+docker compose up -d frontend # Express.js only
 ```
 
 ### Manual Installation
 ```bash
-# Install dependencies
+# Backend setup
 pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 
-# Run application
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Frontend setup (separate terminal)
+cd frontend
+npm install
+npm start
 ```
 
 ### Environment Configuration

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<div x-data="dashboardApp()" x-init="init()">
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-calendar-alt"></i>
+                    Resource Reservation System
+                </div>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <i class="fas fa-user"></i>
+                        Welcome, <%= username %>
+                    </div>
+                    <button class="btn btn-outline btn-sm" @click="showSystemStatus()">
+                        <i class="fas fa-chart-line"></i> Status
+                    </button>
+                    <form action="/auth/logout" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-sign-out-alt"></i> Sign Out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+        <div class="container">
+            <div class="nav-content">
+                <a href="#" 
+                   class="nav-tab" 
+                   :class="{ 'active': activeTab === 'resources' }"
+                   @click.prevent="activeTab = 'resources'">
+                    <i class="fas fa-cube"></i> Resources
+                </a>
+                <a href="#" 
+                   class="nav-tab" 
+                   :class="{ 'active': activeTab === 'reservations' }"
+                   @click.prevent="activeTab = 'reservations'">
+                    <i class="fas fa-calendar-check"></i> My Reservations
+                </a>
+                <a href="#" 
+                   class="nav-tab" 
+                   :class="{ 'active': activeTab === 'upcoming' }"
+                   @click.prevent="activeTab = 'upcoming'">
+                    <i class="fas fa-clock"></i> Upcoming
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number"><%= stats.totalResources %></span>
+                <div class="stat-label">Total Resources</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number"><%= stats.availableResources %></span>
+                <div class="stat-label">Available Now</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number"><%= stats.activeReservations %></span>
+                <div class="stat-label">Active Bookings</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number"><%= stats.upcomingReservations %></span>
+                <div class="stat-label">Upcoming</div>
+            </div>
+        </div>
+
+        <!-- Resources Tab -->
+        <div x-show="activeTab === 'resources'">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Resources</h2>
+                    <div class="flex gap-2">
+                        <button class="btn btn-success btn-sm" @click="showCreateResourceModal()">
+                            <i class="fas fa-plus"></i> Add Resource
+                        </button>
+                        <button class="btn btn-primary btn-sm" @click="showUploadModal()">
+                            <i class="fas fa-upload"></i> Upload CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="search-container">
+                    <div class="search-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <input type="text" 
+                           class="form-input search-input" 
+                           placeholder="Search resources..."
+                           x-model="searchQuery"
+                           @input="filterResources()">
+                </div>
+
+                <div class="filters">
+                    <button class="filter-chip" 
+                            :class="{ 'active': currentFilter === 'all' }"
+                            @click="setFilter('all')">
+                        All Resources
+                    </button>
+                    <button class="filter-chip" 
+                            :class="{ 'active': currentFilter === 'available' }"
+                            @click="setFilter('available')">
+                        Available Only
+                    </button>
+                    <button class="filter-chip" 
+                            :class="{ 'active': currentFilter === 'unavailable' }"
+                            @click="setFilter('unavailable')">
+                        Unavailable
+                    </button>
+                </div>
+
+                <!-- Resources List -->
+                <div class="resources-list">
+                    <template x-for="resource in filteredResources" :key="resource.id">
+                        <div class="resource-list-item">
+                            <div class="resource-list-avatar" x-text="resource.name.charAt(0).toUpperCase()"></div>
+                            <div class="resource-list-content">
+                                <div class="resource-list-header">
+                                    <h3 class="resource-list-title" x-text="resource.name"></h3>
+                                    <span class="resource-list-id" x-text="'#' + resource.id"></span>
+                                </div>
+                                <div class="resource-list-meta">
+                                    <span class="resource-list-status" 
+                                          :class="resource.available ? 'available' : 'unavailable'">
+                                        <i class="fas" :class="resource.available ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                        <span x-text="resource.available ? 'Available' : 'Unavailable'"></span>
+                                    </span>
+                                    <div class="resource-list-tags">
+                                        <template x-for="tag in resource.tags" :key="tag">
+                                            <span class="resource-tag" x-text="tag"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="resource-list-actions">
+                                <button class="btn btn-outline btn-sm" 
+                                        @click="showAvailabilityModal(resource)">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Schedule
+                                </button>
+                                <button class="btn-list-reserve" 
+                                        :disabled="!resource.available"
+                                        @click="showReservationModal(resource)">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    Reserve
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservations Tab -->
+        <div x-show="activeTab === 'reservations'">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">My Reservations</h2>
+                </div>
+                
+                <template x-for="reservation in reservations" :key="reservation.id">
+                    <div class="reservation-item">
+                        <div class="reservation-info">
+                            <h3 x-text="reservation.resource.name"></h3>
+                            <div class="reservation-time">
+                                <i class="fas fa-clock"></i>
+                                <span x-text="formatDateTime(reservation.start_time)"></span>
+                                - 
+                                <span x-text="formatDateTime(reservation.end_time)"></span>
+                            </div>
+                            <div class="reservation-badges">
+                                <span class="resource-list-status" 
+                                      :class="reservation.status === 'active' ? 'available' : 'unavailable'">
+                                    <span x-text="reservation.status"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="reservation-actions">
+                            <button class="btn btn-outline btn-sm" @click="showHistoryModal(reservation)">
+                                <i class="fas fa-history"></i> History
+                            </button>
+                            <button x-show="reservation.status === 'active' && new Date(reservation.start_time) > new Date()" 
+                                    class="btn btn-danger btn-sm" @click="cancelReservation(reservation.id)">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Upcoming Tab -->
+        <div x-show="activeTab === 'upcoming'">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Upcoming Reservations</h2>
+                </div>
+                
+                <template x-for="reservation in upcomingReservations" :key="reservation.id">
+                    <div class="reservation-item">
+                        <div class="reservation-info">
+                            <h3 x-text="reservation.resource.name"></h3>
+                            <div class="reservation-time">
+                                <i class="fas fa-clock"></i>
+                                <span x-text="formatDateTime(reservation.start_time)"></span>
+                                - 
+                                <span x-text="formatDateTime(reservation.end_time)"></span>
+                            </div>
+                        </div>
+                        <div class="reservation-actions">
+                            <button class="btn btn-outline btn-sm" @click="showHistoryModal(reservation)">
+                                <i class="fas fa-history"></i> History
+                            </button>
+                            <button class="btn btn-danger btn-sm" @click="cancelReservation(reservation.id)">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <%- include('partials/modals') %>
+</div>
+
+<script>
+// Pass server data to Alpine.js
+window.initialResources = <%- JSON.stringify(resources) %>;
+window.initialReservations = <%- JSON.stringify(reservations) %>;
+</script>
+
+<!-- Notification Container -->
+<div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,26 +1,5 @@
-# Multi-stage Dockerfile for Resource Reserver application
-
-# Frontend build stage
-FROM node:18-alpine as frontend-builder
-
-WORKDIR /app
-
-# Copy frontend dependencies
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY vite.config.ts ./
-
-# Install Node.js dependencies
-RUN npm ci --only=production
-
-# Copy frontend source code
-COPY src/ ./src/
-
-# Build frontend
-RUN npm run build
-
-# Python backend stage
-FROM python:3.11-slim as base
+# CI-specific Dockerfile that expects pre-built frontend assets
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -47,9 +26,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY . .
-
-# Copy built frontend from frontend-builder stage
-COPY --from=frontend-builder /app/web/dist ./web/dist
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/data && \
