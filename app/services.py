@@ -253,13 +253,13 @@ class ResourceService:
                         # Ensure database times are timezone-aware (assume they're UTC)
                         res_start = res.start_time
                         res_end = res.end_time
-                        
+
                         # If database times are timezone-naive, assume they're UTC
                         if res_start.tzinfo is None:
                             res_start = res_start.replace(tzinfo=UTC)
                         if res_end.tzinfo is None:
                             res_end = res_end.replace(tzinfo=UTC)
-                        
+
                         # Check overlap: slot overlaps if slot_start < res_end AND slot_end > res_start
                         if (
                             slot_datetime_start < res_end
