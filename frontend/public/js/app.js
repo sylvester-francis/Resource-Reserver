@@ -179,15 +179,20 @@ function dashboardApp() {
         },
 
         async showAvailabilityModal(resource) {
+            console.log('showAvailabilityModal called with resource:', resource);
             this.selectedResource = resource;
             this.showAvailability = true;
+            console.log('Modal should be visible now, showAvailability:', this.showAvailability);
             
             try {
+                console.log('Making API call to:', `/api/resources/${resource.id}/availability`);
                 const response = await apiCall(`/api/resources/${resource.id}/availability`);
                 const result = await response.json();
+                console.log('API response:', result);
                 
                 if (result.success) {
                     this.availabilityData = result.data;
+                    console.log('Availability data set:', this.availabilityData);
                 } else {
                     console.error('Failed to load availability:', result.error);
                     this.availabilityData = null;
