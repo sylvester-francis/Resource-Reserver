@@ -258,13 +258,13 @@ echo "SECRET_KEY=your-secure-secret-key" > .env
 echo "POSTGRES_PASSWORD=your-postgres-password" >> .env
 
 # Start production services
-docker-compose up -d
+docker compose up -d
 
 # Or start specific services
-docker-compose up -d backend frontend
+docker compose up -d backend frontend
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 #### Development with Docker
@@ -273,14 +273,14 @@ Run both frontend and backend services in development mode with hot reload.
 
 ```bash
 # Start all development services
-docker-compose --profile dev up -d
+docker compose --profile dev up -d
 
 # Or manually start each service
-docker-compose up -d backend
-docker-compose up -d frontend
+docker compose up -d backend
+docker compose up -d frontend
 
 # Monitor logs
-docker-compose logs -f frontend backend
+docker compose logs -f frontend backend
 ```
 
 #### Docker Services
@@ -377,10 +377,10 @@ cd frontend
 npm install
 
 # Restart frontend service
-docker-compose restart frontend
+docker compose restart frontend
 
 # Check frontend logs
-docker-compose logs frontend
+docker compose logs frontend
 ```
 
 **Backend Service Issues:**
@@ -389,19 +389,19 @@ docker-compose logs frontend
 pip install -r requirements.txt
 
 # Restart backend service
-docker-compose restart backend
+docker compose restart backend
 
 # Check backend logs
-docker-compose logs backend
+docker compose logs backend
 ```
 
 **Service Communication Issues:**
 ```bash
 # Check all services
-docker-compose ps
+docker compose ps
 
 # Test backend from frontend container
-docker-compose exec frontend curl http://backend:8000/health
+docker compose exec frontend curl http://backend:8000/health
 
 # Check network connectivity
 docker network ls
