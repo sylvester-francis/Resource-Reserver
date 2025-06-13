@@ -245,6 +245,9 @@ The application is **fully functional** with all features tested and working:
 ### Docker Deployment
 
 #### Production Deployment
+
+The production deployment uses separate containers for frontend and backend services with Docker Compose orchestration.
+
 ```bash
 # Clone and navigate to project
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
@@ -254,42 +257,178 @@ cd Resource-Reserver
 echo "SECRET_KEY=your-secure-secret-key" > .env
 echo "POSTGRES_PASSWORD=your-postgres-password" >> .env
 
-# Start with PostgreSQL database
-docker-compose --profile postgres up -d
-
-# Or start with SQLite (simpler for small deployments)
+# Start production services
 docker-compose up -d
+
+# Or start specific services
+docker-compose up -d backend frontend
+
+# Check service status
+docker-compose ps
 ```
 
 #### Development with Docker
+
+Run both frontend and backend services in development mode with hot reload.
+
 ```bash
-# Start development environment with hot reload
+# Start all development services
 docker-compose --profile dev up -d
 
-# Access points:
-# - Frontend Dev: http://localhost:3001
-# - Backend Dev: http://localhost:8001 
-# - Production Frontend: http://localhost:3000
-# - Production Backend: http://localhost:8000
+# Or manually start each service
+docker-compose up -d backend
+docker-compose up -d frontend
+
+# Monitor logs
+docker-compose logs -f frontend backend
 ```
 
 #### Docker Services
-- **backend**: FastAPI application (Port 8000) ✅
-- **frontend**: Express.js application (Port 3000) ✅
-- **postgres**: PostgreSQL database (Port 5432, optional) ✅
-- **backend-dev**: Development backend with hot reload (Port 8001) ✅
-- **frontend-dev**: Development frontend with hot reload (Port 3001) ✅
 
-#### Quick Docker Start
+**Production Services:**
+- **backend**: FastAPI application (Port 8000)
+- **frontend**: Express.js application (Port 3000)
+- **postgres**: PostgreSQL database (Port 5432, optional)
+
+**Development Services:**
+- **backend**: FastAPI with uvicorn reload (Port 8000)
+- **frontend**: Express.js with nodemon auto-restart (Port 3000)
+
+#### Docker Images
+
+The project includes multiple Docker configurations:
+
+1. **Dockerfile.backend** - FastAPI backend service
+2. **Dockerfile.frontend** - Express.js frontend service  
+3. **Dockerfile.dev** - Development environment with hot reload
+4. **docker-compose.yml** - Multi-service orchestration
+
+#### Service Configuration
+
+**Production Services Configuration:**
+
+```yaml
+services:
+  # FastAPI Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./data/resource_reserver.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Express.js Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+```
+
+#### Environment Variables
+
+**Development Environment:**
+
 ```bash
-# Start production stack
-docker-compose up -d
+# Backend configuration (.env in root)
+ENVIRONMENT=development
+DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
+SECRET_KEY=dev-secret-key
 
-# Or start development stack
-docker-compose --profile dev up -d
+# Frontend configuration (frontend/.env)
+NODE_ENV=development
+PORT=3000
+API_BASE_URL=http://localhost:8000
+```
 
-# Check status
+**Production Environment:**
+
+```bash
+# Backend configuration
+ENVIRONMENT=production
+DATABASE_URL=postgresql://user:password@host:5432/database
+SECRET_KEY=your-secure-secret-key-here
+
+# Frontend configuration
+NODE_ENV=production
+PORT=3000
+API_BASE_URL=http://backend:8000
+```
+
+#### Troubleshooting
+
+**Frontend Service Issues:**
+```bash
+# Check frontend dependencies
+cd frontend
+npm install
+
+# Restart frontend service
+docker-compose restart frontend
+
+# Check frontend logs
+docker-compose logs frontend
+```
+
+**Backend Service Issues:**
+```bash
+# Check backend dependencies
+pip install -r requirements.txt
+
+# Restart backend service
+docker-compose restart backend
+
+# Check backend logs
+docker-compose logs backend
+```
+
+**Service Communication Issues:**
+```bash
+# Check all services
 docker-compose ps
+
+# Test backend from frontend container
+docker-compose exec frontend curl http://backend:8000/health
+
+# Check network connectivity
+docker network ls
+docker network inspect resource-reserver_default
+```
+
+#### Health Checks
+
+**Container Health:**
+```bash
+# Check container health
+docker ps
+docker logs <container-id>
+
+# Test health endpoint
+curl -f http://localhost:8000/health
+```
+
+**Frontend Assets:**
+```bash
+# Verify frontend service is running
+curl -f http://localhost:3000/
+curl -f http://localhost:3000/login
+
+# Check static assets
+curl -f http://localhost:3000/css/styles.css
+curl -f http://localhost:3000/js/app.js
 ```
 
 ---
