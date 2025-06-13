@@ -123,12 +123,12 @@ jobs:
 
     - name: Build Docker services
       run: |
-        docker-compose build backend frontend
+        docker compose build backend frontend
 
     - name: Test Docker services
       run: |
         # Start the services
-        docker-compose up -d backend frontend
+        docker compose up -d backend frontend
         
         # Wait for services to be ready
         sleep 15
@@ -140,7 +140,7 @@ jobs:
         curl -f http://localhost:3000/login || exit 1
         
         # Stop services
-        docker-compose down
+        docker compose down
 
   integration:
     name: Integration Tests
