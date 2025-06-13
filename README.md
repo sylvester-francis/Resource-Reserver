@@ -52,31 +52,31 @@ graph TB
         U3[External Systems]
     end
     
-    subgraph "Frontend Layer - Express.js + Alpine.js"
-        WEB[Express.js Server<br/>Port 3000]
-        EJS[EJS Templates]
-        ALPINE[Alpine.js Components]
-        STATIC[Static Assets<br/>CSS/JS]
-    end
-    
-    subgraph "Backend Layer - FastAPI"
-        API[FastAPI Server<br/>Port 8000]
-        AUTH[JWT Authentication]
-        ROUTES[API Routes]
-        BG[Background Tasks]
-    end
-    
-    subgraph "Business Logic"
-        RS[Resource Service]
-        ReS[Reservation Service]
-        US[User Service]
-        AS[Auth Service]
-    end
-    
-    subgraph "Data Layer"
-        DB[(Database<br/>SQLite/PostgreSQL)]
-        FS[File Storage<br/>CSV/Logs]
-        CACHE[Session Storage]
+    subgraph "Docker Infrastructure"
+        subgraph "Frontend Container"
+            WEB[Express.js Server<br/>Port 3000]
+            EJS[EJS Templates<br/>views/]
+            ALPINE[Alpine.js<br/>public/js/]
+            CSS[Static CSS<br/>public/css/]
+        end
+        
+        subgraph "Backend Container"
+            API[FastAPI Server<br/>Port 8000]
+            AUTH[JWT Authentication<br/>Cookie-based]
+            ROUTES[API Routes<br/>app/main.py]
+            BG[Background Tasks<br/>Cleanup]
+        end
+        
+        subgraph "Business Logic Layer"
+            RS[Resource Service<br/>app/services.py]
+            ReS[Reservation Service<br/>app/services.py]
+            US[User Service<br/>app/services.py]
+        end
+        
+        subgraph "Data Layer"
+            DB[(Database<br/>SQLite/PostgreSQL<br/>data/)]
+            FS[File Storage<br/>CSV/Logs<br/>uploads/]
+        end
     end
     
     %% User connections
@@ -87,12 +87,12 @@ graph TB
     %% Frontend architecture
     WEB --> EJS
     WEB --> ALPINE
-    WEB --> STATIC
+    WEB --> CSS
     EJS --> ALPINE
     
-    %% Frontend to Backend
-    WEB --> API
-    ALPINE --> API
+    %% Frontend to Backend communication
+    WEB -.->|API Proxy<br/>HTTP Calls| API
+    ALPINE -.->|AJAX Requests<br/>Session Validation| API
     
     %% Backend internal
     API --> AUTH
@@ -101,34 +101,34 @@ graph TB
     ROUTES --> RS
     ROUTES --> ReS
     ROUTES --> US
-    ROUTES --> AS
     
     %% Services to data
     RS --> DB
     ReS --> DB
     US --> DB
-    AS --> DB
     
     RS --> FS
     ReS --> FS
-    WEB --> CACHE
     
     %% Background services
     BG --> DB
     BG --> FS
     
+    %% Session management
+    WEB -.->|Cookie Storage<br/>Session Management| AUTH
+    
     %% Styling
     classDef userClass fill:#2E86AB,stroke:#fff,stroke-width:2px,color:#fff
-    classDef frontendClass fill:#A23B72,stroke:#fff,stroke-width:2px,color:#fff
+    classDef containerClass fill:#A23B72,stroke:#fff,stroke-width:2px,color:#fff
     classDef backendClass fill:#F18F01,stroke:#fff,stroke-width:2px,color:#fff
     classDef serviceClass fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
     classDef dataClass fill:#C73E1D,stroke:#fff,stroke-width:2px,color:#fff
     
     class U1,U2,U3 userClass
-    class WEB,EJS,ALPINE,STATIC frontendClass
+    class WEB,EJS,ALPINE,CSS containerClass
     class API,AUTH,ROUTES,BG backendClass
-    class RS,ReS,US,AS serviceClass
-    class DB,FS,CACHE dataClass
+    class RS,ReS,US serviceClass
+    class DB,FS dataClass
 ```
 
 ### Architecture Components
@@ -580,26 +580,44 @@ npm start
 
 ```
 resource-reserver/
-├── app/                     # FastAPI backend
-│   ├── main.py             # Application entry point
-│   ├── auth.py             # Authentication logic
-│   ├── database.py         # Database configuration
-│   ├── models.py           # Data models
-│   ├── schemas.py          # API schemas
-│   └── services.py         # Business logic
-├── frontend/               # Express.js frontend
-│   ├── server.js          # Express server
-│   ├── views/             # EJS templates
-│   │   ├── login.ejs      # Login page
-│   │   ├── dashboard.ejs  # Main dashboard
-│   │   └── partials/      # Reusable components
-│   ├── public/            # Static assets
-│   │   ├── css/           # Stylesheets
-│   │   └── js/            # Client-side JavaScript
-│   └── package.json       # Node.js dependencies
-├── cli/                   # Command-line interface
-├── tests/                 # Test suite
-└── .github/workflows/     # CI/CD pipeline
+├── app/                          # FastAPI backend service
+│   ├── main.py                  # Application entry point & API routes
+│   ├── auth.py                  # JWT authentication logic
+│   ├── database.py              # Database configuration & connection
+│   ├── models.py                # SQLAlchemy data models
+│   ├── schemas.py               # Pydantic API schemas
+│   └── services.py              # Business logic layer
+├── frontend/                     # Express.js frontend service
+│   ├── server.js               # Express server with API proxy
+│   ├── package.json            # Node.js dependencies
+│   ├── views/                  # EJS templates
+│   │   ├── dashboard.ejs       # Main application dashboard
+│   │   ├── login.ejs           # Authentication pages
+│   │   └── partials/           # Reusable template components
+│   │       └── modals.ejs      # Modal dialogs
+│   ├── public/                 # Static assets (served directly)
+│   │   ├── css/                # Stylesheets
+│   │   │   └── styles.css      # Main application styles
+│   │   └── js/                 # Client-side JavaScript
+│   │       └── app.js          # Alpine.js application logic
+│   └── uploads/                # File upload storage
+├── cli/                         # Command-line interface
+│   ├── main.py                 # CLI entry point
+│   ├── client.py               # API client
+│   ├── config.py               # Configuration management
+│   └── utils.py                # Utility functions
+├── tests/                       # Comprehensive test suite
+│   ├── test_api/               # API endpoint tests
+│   ├── test_cli/               # CLI interface tests
+│   └── test_services/          # Business logic tests
+├── .github/workflows/          # CI/CD pipeline
+│   └── ci.yml                  # GitHub Actions workflow
+├── Dockerfile.backend          # Backend container configuration
+├── Dockerfile.frontend         # Frontend container configuration
+├── docker-compose.yml          # Multi-service orchestration
+├── requirements.txt            # Python dependencies
+├── pyproject.toml             # Python project configuration
+└── README.md                  # Complete documentation
 ```
 
 ### Development Workflow
