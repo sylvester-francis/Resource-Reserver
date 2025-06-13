@@ -2,7 +2,7 @@
 
 """Business logic layer with clear separation of concerns."""
 
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -233,37 +233,38 @@ class ResourceService:
         schedule = []
         for day_offset in range(days_ahead):
             current_date = (now + timedelta(days=day_offset)).date()
-            
+
             # Generate time slots for each day (9 AM to 5 PM)
             time_slots = []
             for hour in range(9, 17):  # 9 AM to 4 PM (last slot is 4-5 PM)
                 slot_time = f"{hour:02d}:00"
-                slot_datetime_start = datetime.combine(current_date, datetime.min.time()) + timedelta(hours=hour)
+                slot_datetime_start = datetime.combine(
+                    current_date, datetime.min.time()
+                ) + timedelta(hours=hour)
                 slot_datetime_end = slot_datetime_start + timedelta(hours=1)
-                
+
                 # Convert to UTC for comparison
-                slot_start_utc = slot_datetime_start.replace(tzinfo=timezone.utc)
-                slot_end_utc = slot_datetime_end.replace(tzinfo=timezone.utc)
-                
+                slot_start_utc = slot_datetime_start.replace(tzinfo=UTC)
+                slot_end_utc = slot_datetime_end.replace(tzinfo=UTC)
+
                 # Check if this time slot conflicts with any reservation
                 is_available = True
                 if not resource.available:  # Base availability check
                     is_available = False
                 else:
                     for res in reservations:
-                        if (res.start_time < slot_end_utc and res.end_time > slot_start_utc):
+                        if (
+                            res.start_time < slot_end_utc
+                            and res.end_time > slot_start_utc
+                        ):
                             is_available = False
                             break
-                
-                time_slots.append({
-                    "time": slot_time,
-                    "available": is_available
-                })
-            
-            schedule.append({
-                "date": current_date.isoformat(),
-                "time_slots": time_slots
-            })
+
+                time_slots.append({"time": slot_time, "available": is_available})
+
+            schedule.append(
+                {"date": current_date.isoformat(), "time_slots": time_slots}
+            )
 
         return {
             "success": True,
@@ -286,7 +287,7 @@ class ResourceService:
                     }
                     for res in reservations
                 ],
-            }
+            },
         }
 
 
