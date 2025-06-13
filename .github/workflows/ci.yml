@@ -153,12 +153,6 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
-    - name: Debug publish conditions
-      run: |
-        echo "Branch: ${{ github.ref }}"
-        echo "Event: ${{ github.event_name }}"
-        echo "Should publish: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}"
-        
     - name: Checkout code
       uses: actions/checkout@v4
 
