@@ -1,0 +1,6 @@
+
+> resource-reserver-frontend@1.0.0 start
+> node server.js
+
+Frontend server running on http://localhost:3000
+Backend API URL: http://localhost:8000

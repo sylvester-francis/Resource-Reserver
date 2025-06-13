@@ -9,9 +9,7 @@ from io import StringIO
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -162,15 +160,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files for web interface
-app.mount("/static", StaticFiles(directory="web"), name="static")
-
-
-# Serve the main web application
-@app.get("/")
-def read_root():
-    """Serve the main web application."""
-    return FileResponse("web/index.html")
+# API-only backend - frontend served by Express.js
 
 
 # Enhanced health check endpoint

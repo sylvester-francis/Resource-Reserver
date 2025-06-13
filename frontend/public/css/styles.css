@@ -267,7 +267,7 @@ body {
 
 .card-header {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: var(--space-4);
 }
@@ -956,12 +956,236 @@ body {
     gap: var(--space-4);
 }
 
+.text-success {
+    color: var(--success-color);
+}
+
+.text-danger {
+    color: var(--danger-color);
+}
+
+/* Availability Schedule Styles */
+.availability-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.availability-day {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.availability-day-header {
+    background: var(--background-color);
+    padding: var(--space-2) var(--space-3);
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.875rem;
+}
+
+.availability-slots {
+    display: flex;
+    flex-direction: column;
+}
+
+.availability-slot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.availability-slot:last-child {
+    border-bottom: none;
+}
+
+.availability-slot.available {
+    background: #f0f9ff;
+    color: #0369a1;
+}
+
+.availability-slot.unavailable {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.slot-time {
+    font-weight: 500;
+}
+
+.slot-status {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
 .mb-4 {
     margin-bottom: var(--space-4);
 }
 
+/* History Timeline Styles */
+.history-timeline {
+    position: relative;
+    padding-left: var(--space-4);
+}
+
+.history-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.history-entry {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+}
+
+.history-entry:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.history-icon {
+    position: absolute;
+    left: -23px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    color: white;
+    z-index: 1;
+}
+
+.history-icon-success {
+    background: var(--success-color);
+}
+
+.history-icon-danger {
+    background: var(--danger-color);
+}
+
+.history-icon-warning {
+    background: var(--warning-color);
+}
+
+.history-icon-info {
+    background: var(--primary-color);
+}
+
+.history-content {
+    flex: 1;
+    margin-left: var(--space-3);
+}
+
+.history-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-1);
+}
+
+.history-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: normal;
+}
+
+.history-details {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.py-4 {
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-4);
+}
+
 .mb-6 {
     margin-bottom: var(--space-6);
+}
+
+/* Fixed positioning utilities */
+.fixed {
+    position: fixed;
+}
+
+.top-4 {
+    top: 1rem;
+}
+
+.right-4 {
+    right: 1rem;
+}
+
+.z-50 {
+    z-index: 50;
+}
+
+.space-y-2 > * + * {
+    margin-top: 0.5rem;
+}
+
+/* Alpine.js transition utilities */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Notification animations */
+.notification-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    animation: slideInFromRight 0.3s ease-out;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Modal improvements */
+.modal {
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Responsive */

@@ -1,41 +1,138 @@
+version: '3.8'
+
 services:
-  # Main API application
-  api:
-    build: 
+  # FastAPI Backend Service
+  backend:
+    build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
+    container_name: resource-reserver-backend
     ports:
       - "8000:8000"
     environment:
-      - ENVIRONMENT=development
       - DATABASE_URL=sqlite:///./data/resource_reserver.db
-      - CLI_CONFIG_DIR=/tmp/.reservation-cli
+      - ENVIRONMENT=production
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
     volumes:
-      - ./data:/app/data
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+    networks:
+      - resource-reserver-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    restart: unless-stopped
 
-  # Development environment with hot reload
-  api-dev:
-    build: 
+  # Express.js Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: resource-reserver-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://backend:8000
+      - PORT=3000
+    volumes:
+      - frontend_uploads:/app/uploads
+    networks:
+      - resource-reserver-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database (Optional - for production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: resource-reserver-postgres
+    environment:
+      - POSTGRES_DB=resource_reserver
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - resource-reserver-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "5432:5432"
+    profiles:
+      - postgres
+
+  # Development Backend (with hot reload)
+  backend-dev:
+    build:
       context: .
       dockerfile: Dockerfile.dev
+    container_name: resource-reserver-backend-dev
     ports:
       - "8001:8000"
-      - "3001:3000"  # Frontend dev server
     environment:
-      - ENVIRONMENT=development
       - DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
-      - CLI_CONFIG_DIR=/tmp/.reservation-cli
+      - ENVIRONMENT=development
+      - SECRET_KEY=dev-secret-key
     volumes:
-      - .:/app
-      - /app/venv  # Exclude virtual environment from mount
-      - /app/node_modules  # Exclude node_modules from mount
+      - ./app:/app/app
+      - ./cli:/app/cli
+      - ./data:/app/data
+    networks:
+      - resource-reserver-network
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     profiles:
       - dev
+
+  # Development Frontend (with hot reload)
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    container_name: resource-reserver-frontend-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://backend-dev:8000
+      - PORT=3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - resource-reserver-network
+    depends_on:
+      - backend-dev
+    command: ["npm", "run", "dev"]
+    profiles:
+      - dev
+
+# Named volumes for data persistence
+volumes:
+  backend_data:
+    driver: local
+  backend_logs:
+    driver: local
+  frontend_uploads:
+    driver: local
+  postgres_data:
+    driver: local
+
+# Network for service communication
+networks:
+  resource-reserver-network:
+    driver: bridge
