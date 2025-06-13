@@ -30,6 +30,12 @@ Resource Reserver is a comprehensive resource management platform designed for o
 - **Development Profiles**: Hot reload support for rapid development
 - **Health Monitoring**: Built-in health checks and service status endpoints
 
+**🖥️ Professional Command Line Interface**
+- **Typer Framework**: Modern, type-safe CLI with Rich terminal output
+- **Full Feature Parity**: All web features available via command line
+- **Automation Ready**: Scriptable commands for system administration
+- **Cross-Platform**: Consistent experience on Windows, macOS, and Linux
+
 **⚡ Developer Experience Improvements**
 - **Instant Development**: `npm start` + `uvicorn` - no build steps required
 - **Modern CI/CD**: GitHub Actions with automated testing and Docker publishing
@@ -41,10 +47,12 @@ Resource Reserver is a comprehensive resource management platform designed for o
 | Aspect | Version 1.0 | Version 2.0 |
 |--------|-------------|-------------|
 | **Frontend** | Static HTML/JS | Express.js + EJS + Alpine.js |
+| **Interfaces** | Web only | Web + Professional CLI |
 | **Development** | Complex build process | Zero compilation required |
 | **Deployment** | Manual setup | Docker Compose orchestration |
 | **Architecture** | Monolithic | Clean separation of concerns |
 | **Performance** | Client-side only | Server-side rendering + client reactivity |
+| **Automation** | Limited | Full CLI scripting support |
 | **Maintenance** | Build dependencies | Direct code editing |
 
 ### 📦 Docker Images
@@ -107,6 +115,8 @@ docker compose up -d
 - [Configuration](#configuration)
 - [API Documentation](#api-documentation)
 - [User Interface](#user-interface)
+  - [Web Interface](#-web-interface)
+  - [Command Line Interface (CLI)](#-command-line-interface-cli)
 - [Development](#development)
 - [Testing](#testing)
 - [Contributing](#contributing)
@@ -123,22 +133,32 @@ Resource Reserver follows a modern, clean architecture with separated frontend a
 ```mermaid
 graph TB
     subgraph "User Layer"
-        U1[Business Users]
-        U2[System Administrators]
-        U3[External Systems]
+        U1[Business Users<br/>🌐 Web Interface]
+        U2[System Administrators<br/>🖥️ CLI + Web]
+        U3[External Systems<br/>📡 Direct API]
+        U4[Power Users<br/>⚡ CLI Interface]
     end
     
-    subgraph "Docker Infrastructure"
-        subgraph "Frontend Container"
+    subgraph "Interface Layer"
+        subgraph "Web Frontend Container"
             WEB[Express.js Server<br/>Port 3000]
             EJS[EJS Templates<br/>views/]
             ALPINE[Alpine.js<br/>public/js/]
             CSS[Static CSS<br/>public/css/]
         end
         
+        subgraph "CLI Interface"
+            CLI[Typer CLI Framework<br/>resource-reserver-cli]
+            RICH[Rich Terminal Output<br/>Colored/Interactive]
+            CLIENT[HTTP Client<br/>cli/client.py]
+            CONFIG[Config Management<br/>~/.reservation-cli/]
+        end
+    end
+    
+    subgraph "Docker Infrastructure"
         subgraph "Backend Container"
             API[FastAPI Server<br/>Port 8000]
-            AUTH[JWT Authentication<br/>Cookie-based]
+            AUTH[JWT Authentication<br/>Token + Cookie]
             ROUTES[API Routes<br/>app/main.py]
             BG[Background Tasks<br/>Cleanup]
         end
@@ -158,17 +178,25 @@ graph TB
     %% User connections
     U1 --> WEB
     U2 --> WEB
+    U2 --> CLI
     U3 --> API
+    U4 --> CLI
     
-    %% Frontend architecture
+    %% Web Frontend architecture
     WEB --> EJS
     WEB --> ALPINE
     WEB --> CSS
     EJS --> ALPINE
     
-    %% Frontend to Backend communication
+    %% CLI architecture
+    CLI --> RICH
+    CLI --> CLIENT
+    CLI --> CONFIG
+    
+    %% Interface to Backend communication
     WEB -.->|API Proxy<br/>HTTP Calls| API
     ALPINE -.->|AJAX Requests<br/>Session Validation| API
+    CLIENT -.->|HTTP Requests<br/>JWT Authentication| API
     
     %% Backend internal
     API --> AUTH
@@ -192,15 +220,18 @@ graph TB
     
     %% Session management
     WEB -.->|Cookie Storage<br/>Session Management| AUTH
+    CONFIG -.->|JWT Token<br/>Persistence| AUTH
     
     %% Styling
     classDef userClass fill:#2E86AB,stroke:#fff,stroke-width:2px,color:#fff
+    classDef interfaceClass fill:#9B59B6,stroke:#fff,stroke-width:2px,color:#fff
     classDef containerClass fill:#A23B72,stroke:#fff,stroke-width:2px,color:#fff
     classDef backendClass fill:#F18F01,stroke:#fff,stroke-width:2px,color:#fff
     classDef serviceClass fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
     classDef dataClass fill:#C73E1D,stroke:#fff,stroke-width:2px,color:#fff
     
-    class U1,U2,U3 userClass
+    class U1,U2,U3,U4 userClass
+    class CLI,RICH,CLIENT,CONFIG interfaceClass
     class WEB,EJS,ALPINE,CSS containerClass
     class API,AUTH,ROUTES,BG backendClass
     class RS,ReS,US serviceClass
@@ -211,23 +242,35 @@ graph TB
 
 | Layer | Technology | Responsibility |
 |-------|------------|----------------|
-| **Frontend** | Express.js + EJS + Alpine.js | Server-side rendering, user interface, client-side reactivity |
-| **Backend** | FastAPI + Python | REST API, business logic, authentication |
+| **Web Frontend** | Express.js + EJS + Alpine.js | Server-side rendering, user interface, client-side reactivity |
+| **CLI Interface** | Typer + Rich + Python | Command-line automation, power user tools, scripting |
+| **Backend API** | FastAPI + Python | REST API, business logic, authentication |
 | **Database** | SQLite/PostgreSQL | Data persistence and integrity |
 | **Background** | AsyncIO Tasks | Automated cleanup and maintenance |
 
 ### Key Architectural Decisions
 
-**Frontend**: 
+**Dual Interface Strategy**: 
+- **Web Interface** for general users with visual interaction and guided workflows
+- **CLI Interface** for power users, automation, and system administration
+- **Shared API** ensures feature parity and data consistency across interfaces
+
+**Web Frontend**: 
 - **Express.js** for server-side rendering and session management
 - **EJS templating** for clean, maintainable HTML generation
 - **Alpine.js** for reactive client-side interactions without build complexity
 - **No build process** - direct development and deployment
 
-**Backend**:
+**CLI Interface**:
+- **Typer framework** for modern, type-safe command-line interface
+- **Rich library** for enhanced terminal output with colors and formatting
+- **JWT token persistence** for seamless authentication across sessions
+- **Configuration management** with user-specific settings storage
+
+**Backend API**:
 - **FastAPI** for high-performance API with automatic documentation
 - **SQLAlchemy** for database abstraction and migrations
-- **JWT authentication** with secure token management
+- **JWT authentication** with secure token management (supports both cookie and header auth)
 - **Background tasks** for automated system maintenance
 
 ---
@@ -246,10 +289,13 @@ graph TB
 - **CSV Upload**: Bulk resource creation with validation, error reporting, and success feedback
 - **Real-time Updates**: Immediate UI updates without page refreshes
 - **Session Management**: Enhanced session validation with automatic login redirects on token expiration
+- **Command Line Interface**: Professional CLI built with Typer for automation and power users
+- **Dual Interface Support**: Seamless integration between web and CLI interfaces
 
 ### ✅ Verified Technical Features
 
 - **Modern Web Interface**: Server-side rendered EJS templates with Alpine.js reactive components
+- **Professional CLI**: Typer-based command-line interface with Rich terminal output
 - **REST API**: Complete OpenAPI documentation with interactive testing at `/docs`
 - **Database Abstraction**: Support for SQLite (development) and PostgreSQL (production)
 - **Background Processing**: Automated cleanup and maintenance tasks
@@ -257,6 +303,7 @@ graph TB
 - **Security**: Input validation, SQL injection prevention, and secure session management
 - **Docker Ready**: Complete containerization with production and development profiles
 - **No Build Process**: Direct development and deployment without compilation steps
+- **Cross-Platform CLI**: Works on Windows, macOS, and Linux with consistent experience
 
 ---
 
@@ -299,8 +346,12 @@ cd frontend
 npm install
 npm start
 
+# Install CLI (Terminal 3) - Optional
+pip install -e .  # Installs CLI as 'resource-reserver-cli'
+
 # Access the application
-# Frontend: http://localhost:3000
+# Web Interface: http://localhost:3000
+# CLI Interface: resource-reserver-cli --help
 # Backend API: http://localhost:8000/docs
 ```
 
@@ -612,11 +663,19 @@ curl -X GET "http://localhost:8000/resources/" \
 
 ## User Interface
 
-### Web Application
+Resource Reserver provides **two powerful interfaces** for different user needs:
+
+### 🌐 Web Interface
 
 The web interface provides a complete user experience built with modern technologies:
 
 **Access URL**: `http://localhost:3000`
+
+![Login Screen](screenshots/Web%20Interface/login-web.png)
+*Secure authentication with modern login interface*
+
+![User Registration](screenshots/Web%20Interface/register-web.png)
+*Streamlined user registration process*
 
 #### ✅ Verified Key Features
 
@@ -628,6 +687,27 @@ The web interface provides a complete user experience built with modern technolo
 6. **CSV Import**: Bulk resource creation with validation, error reporting, and success feedback
 7. **Advanced Search**: Backend-powered search with query parameters and filtering
 8. **Real-time Updates**: All actions provide immediate feedback without page refreshes
+
+![Resource List](screenshots/Web%20Interface/resourcelist-web.png)
+*Resource discovery with real-time filtering and search*
+
+![Create Resource](screenshots/Web%20Interface/createresource-web.png)
+*Resource creation with tag management*
+
+![Create Reservation](screenshots/Web%20Interface/createreservation-web.png)
+*Interactive reservation booking with datetime selection*
+
+![My Reservations](screenshots/Web%20Interface/myreservations-web.png)
+*Personal reservation management dashboard*
+
+![Resource History](screenshots/Web%20Interface/resourcehistory-web.png)
+*Comprehensive audit trail and reservation history*
+
+![Upload Resources](screenshots/Web%20Interface/uploadresource-web.png)
+*Bulk CSV upload with validation and feedback*
+
+![System Status](screenshots/Web%20Interface/systemstatus-web.png)
+*System health monitoring and statistics*
 
 #### Technology Stack
 
@@ -643,6 +723,121 @@ The web interface provides a complete user experience built with modern technolo
 3. **Resource Management** → Browse, search, filter, and create resources
 4. **Reservation System** → Book resources with conflict detection
 5. **Profile Management** → View and cancel personal reservations
+
+### 🖥️ Command Line Interface (CLI)
+
+A comprehensive CLI built with **Typer** framework for power users, automation, and system administration.
+
+![CLI Main Interface](screenshots/CLI%20Interface/cli-main.png)
+*CLI main interface with available command groups*
+
+![CLI Authentication](screenshots/CLI%20Interface/cli-auth.png)
+*Secure CLI authentication and session management*
+
+#### Installation
+
+```bash
+# Install CLI as part of the project
+pip install -e .
+
+# Access CLI
+resource-reserver-cli --help
+
+# Or run directly during development
+python -m cli.main --help
+```
+
+#### Command Groups
+
+**🔐 Authentication Commands**
+```bash
+cli auth register      # Register a new user account  
+cli auth login         # Login to your account
+cli auth logout        # Logout from your account
+cli auth status        # Check authentication status
+```
+
+**📦 Resource Management Commands**
+```bash
+cli resources list                    # List all available resources
+cli resources search                  # Advanced resource search with filtering
+cli resources availability <id>       # Get availability schedule for a resource
+cli resources enable <id>            # Enable a resource (maintenance mode)
+cli resources disable <id>           # Disable a resource (maintenance mode)  
+cli resources create <name>          # Create a new resource
+cli resources upload <csv_file>      # Upload resources from CSV file
+```
+
+![CLI Resources](screenshots/CLI%20Interface/cli-resources.png)
+*Resource management commands with rich terminal output*
+
+**📅 Reservation Management Commands**
+```bash
+cli reservations create <resource_id> <start> <end>  # Create a new reservation
+cli reservations list                                # List your reservations
+cli reservations cancel <id>                        # Cancel a reservation
+cli reservations history <id>                       # Show reservation history
+```
+
+![CLI Reservations](screenshots/CLI%20Interface/cli-reservation.png)
+*Reservation management with interactive prompts*
+
+**⚙️ System Commands**
+```bash
+cli system status       # Check system status and connectivity
+cli system summary      # Get system-wide availability summary
+cli system cleanup      # Manually trigger cleanup of expired reservations
+cli system config       # Show current configuration
+```
+
+![CLI System](screenshots/CLI%20Interface/cli-system.png)
+*System monitoring and administration commands*
+
+**⚡ Quick Action Commands**
+```bash
+cli reserve <resource_id> <start> <duration>  # Quick reserve with duration
+cli upcoming                                  # Show upcoming reservations
+```
+
+#### CLI Features
+
+- **🎨 Rich Terminal Experience**: Colored output, interactive prompts, and structured data display
+- **🔒 Secure Authentication**: JWT token management with automatic session handling
+- **📊 Advanced Search**: Query-based search with time-based filtering
+- **⏰ Flexible Time Input**: Multiple datetime formats and natural language durations
+- **📁 File Operations**: CSV upload with validation and error reporting
+- **🔄 Real-time Integration**: Changes sync immediately with web interface
+- **⚙️ Configuration Management**: Stores settings in `~/.reservation-cli/`
+- **🧪 Full Test Coverage**: Comprehensive test suite for all CLI functionality
+
+#### CLI Configuration
+
+```bash
+# Configuration directory (customizable via CLI_CONFIG_DIR)
+~/.reservation-cli/
+├── auth.json          # JWT token storage
+└── config.json        # CLI preferences
+
+# Environment variables
+API_URL=http://localhost:8000           # Backend API endpoint
+CLI_CONFIG_DIR=~/.reservation-cli/      # Configuration directory
+```
+
+### Interface Comparison
+
+| Feature | Web Interface | CLI Interface |
+|---------|---------------|---------------|
+| **Target Users** | General users, visual interaction | Power users, automation, admin |
+| **Authentication** | Cookie-based sessions | JWT token management |
+| **Resource Management** | ✅ Visual forms and modals | ✅ Command-driven with validation |
+| **Search & Filtering** | ✅ Real-time UI filtering | ✅ Advanced query parameters |
+| **Reservation Booking** | ✅ Interactive calendar | ✅ Flexible datetime formats |
+| **Bulk Operations** | ✅ CSV upload modal | ✅ Scriptable CSV processing |
+| **System Monitoring** | ✅ Dashboard widgets | ✅ Rich terminal output |
+| **Automation** | ❌ Manual interaction only | ✅ Scriptable, automation-ready |
+| **Mobile Support** | ✅ Responsive design | ❌ Terminal-based |
+| **Learning Curve** | Low - intuitive UI | Medium - command syntax |
+| **Speed (for experts)** | Medium - click navigation | High - direct commands |
 
 ---
 
@@ -696,15 +891,18 @@ resource-reserver/
 │   │   └── js/                 # Client-side JavaScript
 │   │       └── app.js          # Alpine.js application logic
 │   └── uploads/                # File upload storage
-├── cli/                         # Command-line interface
-│   ├── main.py                 # CLI entry point
-│   ├── client.py               # API client
-│   ├── config.py               # Configuration management
-│   └── utils.py                # Utility functions
+├── cli/                         # Command-line interface (Typer framework)
+│   ├── main.py                 # CLI entry point with command groups
+│   ├── client.py               # HTTP API client with session management
+│   ├── config.py               # Configuration and auth token storage
+│   └── utils.py                # DateTime parsing and formatting utilities
 ├── tests/                       # Comprehensive test suite
-│   ├── test_api/               # API endpoint tests
-│   ├── test_cli/               # CLI interface tests
-│   └── test_services/          # Business logic tests
+│   ├── test_api/               # API endpoint tests (FastAPI routes)
+│   ├── test_cli/               # CLI interface tests (Typer commands)
+│   └── test_services/          # Business logic tests (service layer)
+├── screenshots/                 # Application screenshots
+│   ├── CLI Interface/          # CLI command examples and output
+│   └── Web Interface/          # Web UI screenshots
 ├── .github/workflows/          # CI/CD pipeline
 │   └── ci.yml                  # GitHub Actions workflow
 ├── Dockerfile.backend          # Backend container configuration
@@ -862,14 +1060,25 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 Built with:
 
+**Backend & API:**
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [SQLAlchemy](https://www.sqlalchemy.org/) - Database toolkit
+- [pytest](https://pytest.org/) - Testing framework
+
+**Web Frontend:**
 - [Express.js](https://expressjs.com/) - Fast, minimalist web framework for Node.js
 - [Alpine.js](https://alpinejs.dev/) - Lightweight reactive framework
 - [EJS](https://ejs.co/) - Effective JavaScript templating
-- [SQLAlchemy](https://www.sqlalchemy.org/) - Database toolkit
-- [pytest](https://pytest.org/) - Testing framework
-- [Ruff](https://docs.astral.sh/ruff/) - Fast Python linter
+
+**Command Line Interface:**
+- [Typer](https://typer.tiangolo.com/) - Modern CLI framework for Python
+- [Rich](https://rich.readthedocs.io/) - Rich text and beautiful formatting
+- [Requests](https://requests.readthedocs.io/) - HTTP library for Python
+
+**Development & Deployment:**
+- [Ruff](https://docs.astral.sh/ruff/) - Fast Python linter and formatter
 - [Docker](https://www.docker.com/) - Containerization platform
+- [GitHub Actions](https://github.com/features/actions) - CI/CD automation
 
 ---
 
@@ -901,18 +1110,21 @@ Built with:
 - **Simple Deployment**: Easy to understand and deploy with Docker
 
 **Enhanced Features**
+- **Dual Interface Support**: Professional CLI alongside modern web interface
 - **Real-time UI Updates**: Immediate feedback without page refreshes
 - **Advanced Search**: Backend-powered search with filtering capabilities
 - **Resource Scheduling**: Interactive 7-day availability calendar
 - **Better Error Handling**: User-friendly error messages and validation
 - **Improved Performance**: Server-side rendering and optimized assets
 - **Mobile Responsive**: Works perfectly on all device sizes
+- **Automation Ready**: Scriptable CLI for power users and system automation
 
 #### 📊 Technical Improvements
 
 **Architecture**
-- Frontend: Express.js + EJS + Alpine.js
-- Backend: FastAPI + SQLAlchemy + JWT
+- Web Frontend: Express.js + EJS + Alpine.js
+- CLI Interface: Typer + Rich + Python
+- Backend API: FastAPI + SQLAlchemy + JWT
 - Database: SQLite (dev) / PostgreSQL (prod)
 - Containerization: Docker + Docker Compose
 - No build tools or complex configurations required

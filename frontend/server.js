@@ -231,6 +231,7 @@ app.get('/api/resources/search', async (req, res) => {
       method: 'GET',
       params: req.query
     });
+    // Return the result directly since backend returns the raw array
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -254,7 +255,8 @@ app.get('/api/resources/:id/availability', async (req, res) => {
       method: 'GET',
       params: req.query
     });
-    res.json({ success: true, data: result });
+    // Return the result directly since the backend already returns {success: true, data: {...}}
+    res.json(result);
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
@@ -277,6 +279,7 @@ app.get('/api/reservations/:id/history', requireAuth, async (req, res) => {
     const result = await apiCall(`/reservations/${req.params.id}/history`, {
       method: 'GET'
     }, req.token);
+    // Return the result directly since backend returns the raw array
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
