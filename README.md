@@ -10,6 +10,80 @@ Resource Reserver is a comprehensive resource management platform designed for o
 
 **✨ Version 2.0** features a completely rewritten architecture with **Express.js + Alpine.js frontend** and **FastAPI backend**, delivering superior performance, maintainability, and user experience.
 
+---
+
+## 🎉 Version 2.0 Release Notes
+
+**Resource Reserver v2.0** represents a complete architectural transformation with modern technologies and enhanced developer experience.
+
+### 🔥 What's New in Version 2.0
+
+**🏗️ Complete Architecture Overhaul**
+- **Express.js + Alpine.js Frontend**: Modern server-side rendering with reactive components
+- **Zero Build Process**: Direct development and deployment without compilation complexity
+- **Clean Separation**: Independent frontend and backend services with Docker orchestration
+- **Enhanced Performance**: Server-side rendering for better SEO and faster initial page loads
+
+**🐳 Production-Ready Containerization**
+- **Docker Images**: Available on GitHub Container Registry (`ghcr.io/sylvester-francis/resource-reserver`)
+- **Multi-Service Architecture**: Separate containers for frontend, backend, and database
+- **Development Profiles**: Hot reload support for rapid development
+- **Health Monitoring**: Built-in health checks and service status endpoints
+
+**⚡ Developer Experience Improvements**
+- **Instant Development**: `npm start` + `uvicorn` - no build steps required
+- **Modern CI/CD**: GitHub Actions with automated testing and Docker publishing
+- **Comprehensive Documentation**: Updated architecture diagrams and deployment guides
+- **Quality Assurance**: Automated linting, testing, and code quality checks
+
+### 🛠️ Migration Benefits
+
+| Aspect | Version 1.0 | Version 2.0 |
+|--------|-------------|-------------|
+| **Frontend** | Static HTML/JS | Express.js + EJS + Alpine.js |
+| **Development** | Complex build process | Zero compilation required |
+| **Deployment** | Manual setup | Docker Compose orchestration |
+| **Architecture** | Monolithic | Clean separation of concerns |
+| **Performance** | Client-side only | Server-side rendering + client reactivity |
+| **Maintenance** | Build dependencies | Direct code editing |
+
+### 📦 Docker Images
+
+Resource Reserver provides pre-built Docker images published to GitHub Container Registry for easy deployment:
+
+```bash
+# Pull latest images directly
+docker pull ghcr.io/sylvester-francis/resource-reserver/backend:latest
+docker pull ghcr.io/sylvester-francis/resource-reserver/frontend:latest
+
+# Use pre-built images with Docker Compose (Recommended)
+wget https://raw.githubusercontent.com/sylvester-francis/Resource-Reserver/main/docker-compose.registry.yml
+docker compose -f docker-compose.registry.yml up -d
+
+# Or clone and use registry images
+git clone https://github.com/sylvester-francis/Resource-Reserver.git
+cd Resource-Reserver
+docker compose -f docker-compose.registry.yml up -d
+```
+
+**Available Image Tags:**
+- `latest` - Latest stable release from main branch
+- `feature-refactor-frontend` - Latest development from feature branch
+- `<branch>-<sha>` - Specific commit builds
+
+### 🚀 Quick Start Version 2.0
+
+```bash
+# Using Docker (Recommended)
+git clone https://github.com/sylvester-francis/Resource-Reserver.git
+cd Resource-Reserver
+docker compose up -d
+
+# Access application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000/docs
+```
+
 ### Business Value
 
 **Cost Reduction**: Eliminates scheduling conflicts and reduces administrative overhead through automated resource management.
@@ -248,6 +322,25 @@ The application is **fully functional** with all features tested and working:
 
 The production deployment uses separate containers for frontend and backend services with Docker Compose orchestration.
 
+**Option 1: Using Pre-built Registry Images (Recommended)**
+
+```bash
+# Download registry compose file
+wget https://raw.githubusercontent.com/sylvester-francis/Resource-Reserver/main/docker-compose.registry.yml
+
+# Set environment variables
+echo "SECRET_KEY=your-secure-secret-key" > .env
+echo "POSTGRES_PASSWORD=your-postgres-password" >> .env
+
+# Start production services with registry images
+docker compose -f docker-compose.registry.yml up -d
+
+# Check service status
+docker compose -f docker-compose.registry.yml ps
+```
+
+**Option 2: Building from Source**
+
 ```bash
 # Clone and navigate to project
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
@@ -257,7 +350,7 @@ cd Resource-Reserver
 echo "SECRET_KEY=your-secure-secret-key" > .env
 echo "POSTGRES_PASSWORD=your-postgres-password" >> .env
 
-# Start production services
+# Start production services (builds locally)
 docker compose up -d
 
 # Or start specific services

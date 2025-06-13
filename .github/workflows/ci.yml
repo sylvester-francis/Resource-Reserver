@@ -142,10 +142,126 @@ jobs:
         # Stop services
         docker compose down
 
+  publish:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    needs: [docker]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/refactor-frontend'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for backend
+      id: meta-backend
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}/backend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Extract metadata for frontend
+      id: meta-frontend
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}/frontend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.backend
+        push: true
+        tags: ${{ steps.meta-backend.outputs.tags }}
+        labels: ${{ steps.meta-backend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.frontend
+        push: true
+        tags: ${{ steps.meta-frontend.outputs.tags }}
+        labels: ${{ steps.meta-frontend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Update Docker Compose for registry images
+      run: |
+        # Create docker-compose.registry.yml for easy registry usage
+        cat > docker-compose.registry.yml << 'EOF'
+        version: '3.8'
+        services:
+          backend:
+            image: ghcr.io/${{ github.repository }}/backend:latest
+            container_name: resource-reserver-backend
+            ports:
+              - "8000:8000"
+            environment:
+              - DATABASE_URL=sqlite:///./data/resource_reserver.db
+              - ENVIRONMENT=production
+              - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+            volumes:
+              - backend_data:/app/data
+              - backend_logs:/app/logs
+            networks:
+              - resource-reserver-network
+            restart: unless-stopped
+
+          frontend:
+            image: ghcr.io/${{ github.repository }}/frontend:latest
+            container_name: resource-reserver-frontend
+            ports:
+              - "3000:3000"
+            environment:
+              - NODE_ENV=production
+              - API_BASE_URL=http://backend:8000
+              - PORT=3000
+            volumes:
+              - frontend_uploads:/app/uploads
+            networks:
+              - resource-reserver-network
+            depends_on:
+              - backend
+            restart: unless-stopped
+
+        volumes:
+          backend_data:
+            driver: local
+          backend_logs:
+            driver: local
+          frontend_uploads:
+            driver: local
+
+        networks:
+          resource-reserver-network:
+            driver: bridge
+        EOF
+
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [docker]
+    needs: [publish]
     
     steps:
     - name: Checkout code
