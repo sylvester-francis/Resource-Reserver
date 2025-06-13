@@ -2,7 +2,7 @@
 
 """Business logic layer with clear separation of concerns."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -229,24 +229,64 @@ class ResourceService:
             .all()
         )
 
+        # Generate 7-day schedule with hourly time slots
+        schedule = []
+        for day_offset in range(days_ahead):
+            current_date = (now + timedelta(days=day_offset)).date()
+            
+            # Generate time slots for each day (9 AM to 5 PM)
+            time_slots = []
+            for hour in range(9, 17):  # 9 AM to 4 PM (last slot is 4-5 PM)
+                slot_time = f"{hour:02d}:00"
+                slot_datetime_start = datetime.combine(current_date, datetime.min.time()) + timedelta(hours=hour)
+                slot_datetime_end = slot_datetime_start + timedelta(hours=1)
+                
+                # Convert to UTC for comparison
+                slot_start_utc = slot_datetime_start.replace(tzinfo=timezone.utc)
+                slot_end_utc = slot_datetime_end.replace(tzinfo=timezone.utc)
+                
+                # Check if this time slot conflicts with any reservation
+                is_available = True
+                if not resource.available:  # Base availability check
+                    is_available = False
+                else:
+                    for res in reservations:
+                        if (res.start_time < slot_end_utc and res.end_time > slot_start_utc):
+                            is_available = False
+                            break
+                
+                time_slots.append({
+                    "time": slot_time,
+                    "available": is_available
+                })
+            
+            schedule.append({
+                "date": current_date.isoformat(),
+                "time_slots": time_slots
+            })
+
         return {
-            "resource_id": resource_id,
-            "resource_name": resource.name,
-            "current_time": now,
-            "is_currently_available": self._is_resource_currently_available(
-                resource_id
-            ),
-            "base_available": resource.available,
-            "reservations": [
-                {
-                    "id": res.id,
-                    "start_time": res.start_time,
-                    "end_time": res.end_time,
-                    "user_id": res.user_id,
-                    "status": res.status,
-                }
-                for res in reservations
-            ],
+            "success": True,
+            "data": {
+                "resource_id": resource_id,
+                "resource_name": resource.name,
+                "current_time": now.isoformat(),
+                "is_currently_available": self._is_resource_currently_available(
+                    resource_id
+                ),
+                "base_available": resource.available,
+                "schedule": schedule,
+                "reservations": [
+                    {
+                        "id": res.id,
+                        "start_time": res.start_time.isoformat(),
+                        "end_time": res.end_time.isoformat(),
+                        "user_id": res.user_id,
+                        "status": res.status,
+                    }
+                    for res in reservations
+                ],
+            }
         }
 
 
