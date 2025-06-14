@@ -7,8 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from io import StringIO
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
-from fastapi import status
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -316,7 +315,7 @@ def list_resources(db: Session = Depends(get_db)):
 def search_resources(
     q: str | None = Query(None, description="Search query for resource names"),
     status_filter: str | None = Query(
-        None, 
+        None,
         description="Filter by resource status: 'available', 'in_use', 'unavailable', or 'all'",
         alias="status"
     ),
