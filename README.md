@@ -1,8 +1,11 @@
 # Resource Reserver
 
-**Eliminate double-bookings and scheduling chaos with intelligent resource management**
+## Eliminate double-bookings and scheduling chaos with intelligent resource management
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Express.js](https://img.shields.io/badge/Express.js-404D59?style=flat&logo=express&logoColor=white)](https://expressjs.com/) [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Express.js](https://img.shields.io/badge/Express.js-404D59?style=flat&logo=express&logoColor=white)](https://expressjs.com/)
+[![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ---
 
@@ -10,10 +13,11 @@
 
 **The Resource Scheduling Nightmare:**
 
-🚨 **Conference Room Chaos** - Two teams show up for the same meeting room at 2 PM  
-🚨 **Equipment Conflicts** - Critical equipment is already booked when you need it  
-🚨 **Admin Overhead** - Manual scheduling spreadsheets and endless email chains  
-🚨 **No Visibility** - You don't know what's available until you check every resource manually  
+🚨 **Conference Room Chaos** - Two teams show up for the same meeting room at 2 PM
+🚨 **Equipment Conflicts** - Critical equipment is already booked when you need it
+🚨 **Admin Overhead** - Manual scheduling spreadsheets and endless email chains
+🚨 **No Visibility** - You don't know what's available until you check every
+resource manually
 🚨 **Compliance Issues** - No audit trail of who used what and when  
 
 **Resource Reserver solves all of these problems in one intelligent platform.**
@@ -46,7 +50,7 @@
 
 ### 🏢 **Corporate Teams**
 
-*"Finally, our meeting rooms actually get used efficiently!"*
+> "Finally, our meeting rooms actually get used efficiently!"
 
 - Meeting rooms, conference facilities, parking spots
 - Equipment checkout (laptops, projectors, vehicles)
@@ -54,7 +58,7 @@
 
 ### 🎓 **Educational Institutions**  
 
-*"Students can book lab time without administrator intervention"*
+> "Students can book lab time without administrator intervention"
 
 - Classrooms, computer labs, research equipment
 - Study rooms, maker spaces, recording studios
@@ -62,7 +66,7 @@
 
 ### 🏥 **Healthcare Facilities**
 
-*"Critical equipment is always available when we need it"*
+> "Critical equipment is always available when we need it"
 
 - Medical equipment, procedure rooms, imaging machines
 - Specialized tools, consultation rooms
@@ -70,7 +74,7 @@
 
 ### 🏭 **Manufacturing & Industrial**
 
-*"Our production schedule runs like clockwork now"*
+> "Our production schedule runs like clockwork now"
 
 - Production equipment, quality testing stations
 - Maintenance tools, safety equipment
@@ -184,7 +188,9 @@ resource-reserver-cli --help
 
 ### Manufacturing Company Case Study
 
-*"Before Resource Reserver, our production line had 3-4 equipment conflicts per week, causing costly delays. Now we have zero conflicts and 23% better equipment utilization."*
+> "Before Resource Reserver, our production line had 3-4 equipment conflicts per
+> week, causing costly delays. Now we have zero conflicts and 23% better
+> equipment utilization."
 
 **Results:**
 
@@ -195,7 +201,8 @@ resource-reserver-cli --help
 
 ### University Research Lab
 
-*"Students can now book lab time 24/7 without administrator approval, while we maintain complete oversight and compliance."*
+> "Students can now book lab time 24/7 without administrator approval, while we
+> maintain complete oversight and compliance."
 
 **Results:**
 

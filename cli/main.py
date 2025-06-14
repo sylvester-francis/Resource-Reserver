@@ -139,7 +139,11 @@ def list_resources(
                 current_status = f"{status_icon} {status_text}"
             else:
                 # Fallback to old logic
-                current_status = "🟢 Available" if resource.get("current_availability", resource["available"]) else "🔴 Unavailable"
+                current_status = (
+                    "🟢 Available"
+                    if resource.get("current_availability", resource["available"])
+                    else "🔴 Unavailable"
+                )
 
             print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")
             print(f"     │ Status: {current_status}")
@@ -400,7 +404,10 @@ def resource_status(
 
         print(f"\n📊 [bold]Status for {status_info['resource_name']}[/bold]")
         print(f"🆔 Resource ID: {status_info['resource_id']}")
-        print(f"🕐 Current time: {format_datetime(datetime.fromisoformat(status_info['current_time'].replace('Z', '')))}")
+        current_time = datetime.fromisoformat(
+            status_info['current_time'].replace('Z', '')
+        )
+        print(f"🕐 Current time: {format_datetime(current_time)}")
 
         # Base availability
         base_status = "🟢 Enabled" if status_info["base_available"] else "🔴 Disabled"
@@ -417,18 +424,28 @@ def resource_status(
         print(f"📊 Current status: {status_icon} {status_text}")
 
         # Additional status info
-        print(f"🎯 Available for reservation: {'✅ Yes' if status_info['is_available_for_reservation'] else '❌ No'}")
-        print(f"🔄 Currently in use: {'✅ Yes' if status_info['is_currently_in_use'] else '❌ No'}")
+        reservation_status = (
+            "✅ Yes" if status_info['is_available_for_reservation'] else "❌ No"
+        )
+        print(f"🎯 Available for reservation: {reservation_status}")
+        in_use_status = (
+            "✅ Yes" if status_info['is_currently_in_use'] else "❌ No"
+        )
+        print(f"🔄 Currently in use: {in_use_status}")
 
         # Unavailable details
         if status_info["is_unavailable"] and "unavailable_since" in status_info:
             unavailable_since = format_datetime(
-                datetime.fromisoformat(status_info["unavailable_since"].replace("Z", ""))
+                datetime.fromisoformat(
+                    status_info["unavailable_since"].replace("Z", "")
+                )
             )
             print("\n🔧 [bold]Maintenance Details:[/bold]")
             print(f"📅 Unavailable since: {unavailable_since}")
-            print(f"⏰ Auto-reset in: {status_info['hours_until_auto_reset']:.1f} hours")
-            print(f"⚙️  Auto-reset configured: {status_info['auto_reset_hours']} hours")
+            reset_hours = status_info['hours_until_auto_reset']
+            print(f"⏰ Auto-reset in: {reset_hours:.1f} hours")
+            config_hours = status_info['auto_reset_hours']
+            print(f"⚙️  Auto-reset configured: {config_hours} hours")
             if status_info.get("will_auto_reset"):
                 print("✅ Will automatically reset to available")
             else:
@@ -437,8 +454,12 @@ def resource_status(
         # Current reservation info
         if "current_reservation" in status_info:
             res = status_info["current_reservation"]
-            start = format_datetime(datetime.fromisoformat(res["start_time"].replace("Z", "")))
-            end = format_datetime(datetime.fromisoformat(res["end_time"].replace("Z", "")))
+            start = format_datetime(
+                datetime.fromisoformat(res["start_time"].replace("Z", ""))
+            )
+            end = format_datetime(
+                datetime.fromisoformat(res["end_time"].replace("Z", ""))
+            )
             print("\n🎯 [bold]Current Reservation:[/bold]")
             print(f"📋 ID: {res['id']}")
             print(f"👤 User ID: {res['user_id']}")
@@ -455,7 +476,9 @@ def resource_status(
 @resource_app.command("maintenance")
 def set_maintenance(
     resource_id: int = typer.Argument(..., help="Resource ID"),
-    auto_reset_hours: int = typer.Option(8, "--hours", "-h", help="Auto-reset after hours (1-168)"),
+    auto_reset_hours: int = typer.Option(
+        8, "--hours", "-h", help="Auto-reset after hours (1-168)"
+    ),
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ):
     """Set resource as unavailable for maintenance with auto-reset."""
@@ -471,14 +494,20 @@ def set_maintenance(
 
     if not force:
         if not confirm_action(
-            f"Set resource {resource_id} to maintenance mode (auto-reset in {auto_reset_hours} hours)?"
+            f"Set resource {resource_id} to maintenance mode "
+            f"(auto-reset in {auto_reset_hours} hours)?"
         ):
             print("Operation cancelled")
             return
 
     try:
-        result = client.set_resource_unavailable(resource_id, auto_reset_hours)
-        print(f"🔧 [bold orange1]Resource {resource_id} set to maintenance mode[/bold orange1]")
+        result = client.set_resource_unavailable(
+            resource_id, auto_reset_hours
+        )
+        print(
+            f"🔧 [bold orange1]Resource {resource_id} set to maintenance mode"
+            "[/bold orange1]"
+        )
         print(f"🏢 Resource: {result['resource']['name']}")
         print(f"⏰ Auto-reset in: {auto_reset_hours} hours")
         print("ℹ️  Resource is now unavailable for new reservations")
@@ -503,13 +532,18 @@ def reset_resource(
         raise typer.Exit(1) from e
 
     if not force:
-        if not confirm_action(f"Reset resource {resource_id} to available status?"):
+        if not confirm_action(
+            f"Reset resource {resource_id} to available status?"
+        ):
             print("Operation cancelled")
             return
 
     try:
         result = client.reset_resource_to_available(resource_id)
-        print(f"✅ [bold green]Resource {resource_id} reset to available[/bold green]")
+        print(
+            f"✅ [bold green]Resource {resource_id} reset to available"
+            "[/bold green]"
+        )
         print(f"🏢 Resource: {result['resource']['name']}")
         print("ℹ️  Resource is now available for reservations")
     except requests.exceptions.HTTPError as e:

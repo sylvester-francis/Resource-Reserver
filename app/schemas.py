@@ -68,7 +68,7 @@ class ResourceResponse(BaseModel):
     id: int
     name: str
     available: bool  # Base availability (manual enable/disable)
-    current_availability: bool | None = None  # Real-time availability (includes reservations)
+    current_availability: bool | None = None  # Real-time availability (includes reservations)  # noqa
     status: str = "available"  # Status: available, in_use, unavailable
     tags: list[str]
 

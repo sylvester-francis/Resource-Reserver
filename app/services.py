@@ -96,7 +96,7 @@ class ResourceService:
         available_from: datetime = None,
         available_until: datetime = None,
     ) -> list[models.Resource]:
-        """Search resources with optional time-based filtering and real-time availability."""
+        """Search resources with optional time-based filtering and real-time availability."""  # noqa
 
         # Ensure timezone awareness for datetime parameters
         if available_from:
@@ -218,7 +218,7 @@ class ResourceService:
     def _has_conflict(
         self, resource_id: int, start_time: datetime, end_time: datetime
     ) -> bool:
-        """Check if resource has conflicting reservations during specified time period."""
+        """Check if resource has conflicting reservations during specified time period."""  # noqa
         # Ensure timezone awareness
         start_time = ensure_timezone_aware(start_time)
         end_time = ensure_timezone_aware(end_time)
@@ -325,16 +325,20 @@ class ResourceService:
         }
 
         if resource.status == "unavailable" and resource.unavailable_since:
-            hours_unavailable = (now - resource.unavailable_since).total_seconds() / 3600
+            hours_unavailable = (
+                now - resource.unavailable_since
+            ).total_seconds() / 3600
             hours_until_reset = max(0, resource.auto_reset_hours - hours_unavailable)
 
-            status_info.update({
-                "unavailable_since": resource.unavailable_since.isoformat(),
-                "auto_reset_hours": resource.auto_reset_hours,
-                "hours_unavailable": round(hours_unavailable, 2),
-                "hours_until_auto_reset": round(hours_until_reset, 2),
-                "will_auto_reset": hours_until_reset > 0
-            })
+            status_info.update(
+                {
+                    "unavailable_since": resource.unavailable_since.isoformat(),
+                    "auto_reset_hours": resource.auto_reset_hours,
+                    "hours_unavailable": round(hours_unavailable, 2),
+                    "hours_until_auto_reset": round(hours_until_reset, 2),
+                    "will_auto_reset": hours_until_reset > 0,
+                }
+            )
 
         if current_reservation:
             status_info["current_reservation"] = {
@@ -407,7 +411,7 @@ class ResourceService:
                         if res_end.tzinfo is None:
                             res_end = res_end.replace(tzinfo=UTC)
 
-                        # Check overlap: slot overlaps if slot_start < res_end AND slot_end > res_start
+                        # Check overlap: slot overlaps if slot_start < res_end AND slot_end > res_start  # noqa
                         if (
                             slot_datetime_start < res_end
                             and slot_datetime_end > res_start
@@ -481,7 +485,7 @@ class ReservationService:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                # Validate resource exists and is available (check each time for concurrent updates)
+                # Validate resource exists and is available (check each time for concurrent updates)  # noqa
                 resource = (
                     self.db.query(models.Resource)
                     .filter(models.Resource.id == reservation_data.resource_id)
@@ -505,10 +509,12 @@ class ReservationService:
                     conflict_times = []
                     for conflict in conflicts:
                         conflict_times.append(
-                            f"{conflict.start_time.strftime('%H:%M')} to {conflict.end_time.strftime('%H:%M')}"
+                            f"{conflict.start_time.strftime('%H:%M')} to "
+                            f"{conflict.end_time.strftime('%H:%M')}"
                         )
                     raise ValueError(
-                        f"Time slot conflicts with existing reservations: {', '.join(conflict_times)}"
+                        f"Time slot conflicts with existing reservations: "
+                        f"{', '.join(conflict_times)}"
                     )
 
                 # Create reservation
@@ -538,7 +544,8 @@ class ReservationService:
                 self.db.rollback()
                 if attempt == max_retries - 1:
                     raise ValueError(
-                        "Failed to create reservation due to conflicts. Please try again."
+                        "Failed to create reservation due to conflicts. "
+                        "Please try again."
                     ) from e
                 # Wait before retry
                 import time

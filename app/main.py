@@ -73,7 +73,8 @@ async def cleanup_expired_reservations():
                         reservation_id=reservation.id,
                         action="expired",
                         user_id=reservation.user_id,
-                        details=f"Reservation automatically expired at {now.isoformat()}",
+                        details=f"Reservation automatically expired at "
+                        f"{now.isoformat()}",
                     )
                     db.add(history)
 
@@ -81,7 +82,8 @@ async def cleanup_expired_reservations():
                     reservation.status = "expired"
 
                     logger.info(
-                        f"Expired reservation {reservation.id} for resource {reservation.resource_id}"
+                        f"Expired reservation {reservation.id} for resource "
+                        f"{reservation.resource_id}"
                     )
 
                 db.commit()
@@ -104,14 +106,17 @@ async def cleanup_expired_reservations():
             for resource in unavailable_resources:
                 if resource.should_auto_reset():
                     logger.info(
-                        f"Auto-resetting resource {resource.id} ({resource.name}) after {resource.auto_reset_hours} hours"
+                        f"Auto-resetting resource {resource.id} ({resource.name}) "
+                        f"after {resource.auto_reset_hours} hours"
                     )
                     resource.set_available()
                     reset_count += 1
 
             if reset_count > 0:
                 db.commit()
-                logger.info(f"Auto-reset {reset_count} unavailable resources to available")
+                logger.info(
+                    f"Auto-reset {reset_count} unavailable resources to available"
+                )
             else:
                 logger.debug("No resources ready for auto-reset")
 
@@ -222,10 +227,13 @@ def health_check(db: Session = Depends(get_db)):
 
     except Exception as e:
         db_status = "unhealthy"
-        api_status = f"error: {str(e)[:100]}"  # Limit error message length
+        api_status = f"error: {str(e)[:100]}"  # Limit error message length  # noqa
         resources_count = 0
 
-    overall_status = "healthy" if db_status == "healthy" and api_status == "healthy" else "unhealthy"
+    overall_status = (
+        "healthy" if db_status == "healthy" and api_status == "healthy"
+        else "unhealthy"
+    )
 
     return {
         "status": overall_status,
@@ -426,23 +434,31 @@ def set_resource_unavailable(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Set resource as unavailable for maintenance/repair with auto-reset."""
+    """Set resource as unavailable for maintenance/repair with auto-reset."""  # noqa
     resource_service = ResourceService(db)
 
     try:
-        resource = resource_service.set_resource_unavailable(resource_id, auto_reset_hours)
+        resource = resource_service.set_resource_unavailable(
+            resource_id, auto_reset_hours
+        )
         return {
-            "message": f"Resource set to unavailable for maintenance (auto-reset in {auto_reset_hours} hours)",
+            "message": f"Resource set to unavailable for maintenance "
+            f"(auto-reset in {auto_reset_hours} hours)",
             "resource": {
                 "id": resource.id,
                 "name": resource.name,
                 "status": resource.status,
                 "auto_reset_hours": resource.auto_reset_hours,
-                "unavailable_since": resource.unavailable_since.isoformat() if resource.unavailable_since else None
+                "unavailable_since": (
+                    resource.unavailable_since.isoformat()
+                    if resource.unavailable_since else None
+                )
             },
         }
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e
 
 
 @app.put("/resources/{resource_id}/status/available")
@@ -498,7 +514,8 @@ def update_resource_availability(
             resource_id, availability_update.available
         )
         return {
-            "message": f"Resource availability updated to {'available' if availability_update.available else 'unavailable'}",
+            "message": f"Resource availability updated to "
+            f"{'available' if availability_update.available else 'unavailable'}",
             "resource": resource,
         }
     except ValueError as e:
@@ -667,7 +684,8 @@ def manual_cleanup_expired_reservations(
                 reservation_id=reservation.id,
                 action="expired",
                 user_id=reservation.user_id,
-                details=f"Reservation manually expired by user {current_user.id} at {now.isoformat()}",
+                details=f"Reservation manually expired by user {current_user.id} "
+                f"at {now.isoformat()}",
             )
             db.add(history)
 

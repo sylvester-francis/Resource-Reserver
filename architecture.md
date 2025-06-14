@@ -97,30 +97,47 @@ graph TB
 ## Component Details
 
 ### Frontend Container (Express.js + Alpine.js)
-- **Express.js Server**: Server-side rendering with EJS templates and API proxy functionality
-- **Alpine.js Components**: Lightweight reactive client-side interactions without build complexity
-- **EJS Templates**: Clean, maintainable HTML generation with server-side data injection
-- **Static Assets**: Direct serving of CSS and JavaScript files without compilation
+
+- **Express.js Server**: Server-side rendering with EJS templates and API proxy
+  functionality
+- **Alpine.js Components**: Lightweight reactive client-side interactions without
+  build complexity
+- **EJS Templates**: Clean, maintainable HTML generation with server-side data
+  injection
+- **Static Assets**: Direct serving of CSS and JavaScript files without
+  compilation
 
 ### Backend Container (FastAPI)
+
 - **FastAPI Application**: REST API service with automatic OpenAPI documentation
-- **Cookie-based Authentication**: Secure session management with JWT tokens stored in HTTP-only cookies
-- **API Routes**: Comprehensive endpoints for resources, reservations, and user management
+- **Cookie-based Authentication**: Secure session management with JWT tokens
+  stored in HTTP-only cookies
+- **API Routes**: Comprehensive endpoints for resources, reservations, and user
+  management
 
 ### Business Logic Layer
+
 - **ResourceService**: CRUD operations, availability checking, CSV import/export
-- **ReservationService**: Booking logic with conflict detection and history tracking  
+- **ReservationService**: Booking logic with conflict detection and history
+  tracking
 - **UserService**: User account creation and management
-- **Authentication Layer**: JWT token generation/validation with bcrypt password hashing
+- **Authentication Layer**: JWT token generation/validation with bcrypt password
+  hashing
 
 ### Data Layer
-- **Database**: SQLAlchemy ORM with support for SQLite (dev), PostgreSQL/MySQL (prod)
+
+- **Database**: SQLAlchemy ORM with support for SQLite (dev), PostgreSQL/MySQL
+  (prod)
 - **File Storage**: Local filesystem for CSV import/export and application logs
-- **Models**: SQLAlchemy models with proper relationships and timezone-aware datetime handling
+- **Models**: SQLAlchemy models with proper relationships and timezone-aware
+  datetime handling
 
 ### Background Tasks
-- **Cleanup Task**: Asyncio background task for automatic expired reservation cleanup
-- **Health Monitoring**: Built-in health check endpoints for container orchestration
+
+- **Cleanup Task**: Asyncio background task for automatic expired reservation
+  cleanup
+- **Health Monitoring**: Built-in health check endpoints for container
+  orchestration
 
 ## Data Flow Architecture
 
@@ -289,36 +306,42 @@ graph TD
 ## Technology Stack
 
 ### Core Framework
+
 - **FastAPI**: Modern Python web framework with automatic OpenAPI documentation
 - **SQLAlchemy**: Database ORM with support for multiple database backends
 - **Pydantic**: Data validation and serialization with type hints
 
 ### Authentication & Security
+
 - **JWT (JSON Web Tokens)**: Stateless authentication with python-jose
 - **bcrypt**: Secure password hashing algorithm
 - **CORS**: Cross-origin resource sharing middleware
 
 ### Frontend & User Interface
-- **Express.js**: Fast, minimalist web framework for Node.js with server-side rendering
-- **EJS**: Embedded JavaScript templating for clean HTML generation  
+
+- **Express.js**: Fast, minimalist web framework for Node.js with server-side
+  rendering
+- **EJS**: Embedded JavaScript templating for clean HTML generation
 - **Alpine.js**: Lightweight reactive framework for client-side interactions
 - **Typer**: Modern CLI framework built on Click
 - **Rich**: Enhanced terminal output with colors and formatting
 
 ### Development & Testing
+
 - **pytest**: Python testing framework with fixtures and plugins
 - **Ruff**: Fast Python linter and formatter
 - **Docker**: Containerization for consistent deployments
 - **GitHub Actions**: CI/CD pipeline with automated testing
 
 ### Database Support
+
 - **SQLite**: Development and testing database
 - **PostgreSQL**: Recommended production database
 - **MySQL**: Alternative production database option
 
 ## File Structure
 
-```
+```text
 resource-reserver/
 ├── app/                          # FastAPI backend service
 │   ├── main.py                   # Application entry point & API routes
@@ -363,6 +386,7 @@ resource-reserver/
 ## Deployment Options
 
 ### Docker Compose (Recommended)
+
 ```bash
 # Production deployment (both services)
 docker compose up -d backend frontend
@@ -376,6 +400,7 @@ docker compose up -d frontend # Express.js only
 ```
 
 ### Manual Installation
+
 ```bash
 # Backend setup
 pip install -r requirements.txt
@@ -388,6 +413,7 @@ npm start
 ```
 
 ### Environment Configuration
+
 - **DATABASE_URL**: Database connection string
 - **ENVIRONMENT**: Application environment (development/production)
 - **CLI_CONFIG_DIR**: CLI configuration directory

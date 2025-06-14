@@ -3,6 +3,7 @@
 ## 🚀 Get Resource Reserver Running in 5 Minutes
 
 ### Prerequisites
+
 - Docker and Docker Compose installed
 - 2GB RAM available
 - Ports 3000 and 8000 available
@@ -74,7 +75,7 @@ docker-compose exec backend python -c "import shutil; shutil.copy('/app/data/res
 
 ## Troubleshooting
 
-**Problem**: Can't access http://localhost:3000  
+**Problem**: Can't access <http://localhost:3000>  
 **Solution**: Check if ports are available: `netstat -an | grep 3000`
 
 **Problem**: Login fails  
