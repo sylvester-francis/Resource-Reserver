@@ -154,15 +154,23 @@ app.post('/auth/logout', (req, res) => {
 
 app.get('/dashboard', requireAuth, async (req, res) => {
   try {
+    console.log('Dashboard loading...');
     const [resources, reservations, systemStatus] = await Promise.all([
-      apiCall('/resources', { method: 'GET' }, req.token),
+      apiCall('/resources/search?status=available', { method: 'GET' }, req.token),
       apiCall('/reservations/my', { method: 'GET' }, req.token),
       apiCall('/health', { method: 'GET' })
     ]);
+    console.log('Dashboard data loaded:', {
+      resourceCount: resources.length,
+      reservationCount: reservations.length
+    });
+    
+    // Get total count from health endpoint or make separate call
+    const totalResourcesResponse = await apiCall('/resources/search?status=all', { method: 'GET' }, req.token);
     
     const stats = {
-      totalResources: resources.length,
-      availableResources: resources.filter(r => r.available).length,
+      totalResources: totalResourcesResponse.length,
+      availableResources: resources.length, // Since we filtered for available only
       activeReservations: reservations.filter(r => r.status === 'active').length,
       upcomingReservations: reservations.filter(r => r.status === 'active' && new Date(r.start_time) > new Date()).length
     };

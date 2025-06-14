@@ -2,6 +2,7 @@
 <div x-show="showCreateResource" 
      x-transition
      class="modal"
+     :style="showCreateResource ? 'display: flex;' : 'display: none;'"
      @click.self="showCreateResource = false">
     <div class="modal-content">
         <div class="modal-header">
@@ -113,6 +114,7 @@
 <div x-show="showUpload" 
      x-transition
      class="modal"
+     :style="showUpload ? 'display: flex;' : 'display: none;'"
      @click.self="showUpload = false">
     <div class="modal-content">
         <div class="modal-header">

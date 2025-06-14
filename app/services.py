@@ -78,21 +78,18 @@ class ResourceService:
         """Get all resources with real-time availability status."""
         resources = self.db.query(models.Resource).all()
 
-        # Update resource status based on current reservations and auto-reset logic
+        # Add current availability as a computed field (read-only)
         for resource in resources:
-            self._update_resource_status(resource)
-            # Add current availability as a computed field
             resource.current_availability = self._is_resource_currently_available(
                 resource.id
             )
 
-        self.db.commit()
         return resources
 
     def search_resources(
         self,
         query: str = None,
-        available_only: bool = True,
+        status_filter: str = 'available',
         available_from: datetime = None,
         available_until: datetime = None,
     ) -> list[models.Resource]:
@@ -136,15 +133,13 @@ class ResourceService:
         # Get base resources
         resources = db_query.all()
 
-        # Update real-time availability for each resource
+        # Filter resources without changing their status
         filtered_resources = []
         for resource in resources:
-            # Check real-time availability
-            is_currently_available = self._is_resource_currently_available(resource.id)
-
-            # Apply availability filter
-            if available_only and not is_currently_available:
-                continue
+            # Apply status filter (use existing status, don't update it)
+            if status_filter != 'all':
+                if resource.status != status_filter:
+                    continue
 
             # Apply text search filter
             if query:
@@ -155,8 +150,8 @@ class ResourceService:
                 ):
                     continue
 
-            # Set current availability status
-            resource.current_availability = is_currently_available
+            # Set current availability for response (read-only check)
+            resource.current_availability = self._is_resource_currently_available(resource.id)
             filtered_resources.append(resource)
 
         return filtered_resources
@@ -172,8 +167,8 @@ class ResourceService:
         if not resource:
             return False
 
-        # Update resource status first
-        self._update_resource_status(resource)
+        # DO NOT update resource status here to avoid unwanted status resets
+        # Just check current status
 
         # Resource is available if:
         # 1. It's not disabled (base available = True)
@@ -208,10 +203,12 @@ class ResourceService:
 
         # Update status based on reservation state
         if current_reservation:
-            if resource.status != "in_use":
+            # Only change to in_use if not in maintenance mode
+            if resource.status != "unavailable" and resource.status != "in_use":
                 resource.set_in_use()
         else:
-            # No active reservation, set to available if not unavailable for maintenance
+            # No active reservation, set to available only if currently in_use
+            # DO NOT change unavailable (maintenance) status
             if resource.status == "in_use":
                 resource.set_available()
 
@@ -299,6 +296,8 @@ class ResourceService:
         if not resource:
             raise ValueError("Resource not found")
 
+        # Only update status when explicitly requested for status details
+        # This is appropriate since the user is asking for current status info
         self._update_resource_status(resource)
 
         now = utcnow()

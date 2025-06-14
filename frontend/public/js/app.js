@@ -50,6 +50,11 @@ function dashboardApp() {
         currentFilter: 'all',
         loading: false,
         
+        // Time-based search
+        showAdvancedSearch: false,
+        searchTimeFrom: '',
+        searchTimeUntil: '',
+        
         // Pagination
         currentPage: 1,
         itemsPerPage: 10,
@@ -128,13 +133,15 @@ function dashboardApp() {
                 console.warn('Invalid resources data, using empty array');
                 return [];
             }
-            return data.filter(resource => 
+            const validResources = data.filter(resource => 
                 resource && 
                 typeof resource.id === 'number' && 
                 typeof resource.name === 'string' &&
                 typeof resource.available === 'boolean' &&
                 Array.isArray(resource.tags)
             );
+            console.log('Resource validation:', data.length, 'input,', validResources.length, 'valid');
+            return validResources;
         },
 
         // Validate reservation data array
@@ -241,6 +248,7 @@ function dashboardApp() {
             this.stats.upcomingReservations = this.reservations.filter(r => 
                 r.status === 'active' && new Date(r.start_time) > new Date()
             ).length;
+            console.log('Stats updated:', this.stats, 'Resources array length:', this.resources.length);
         },
 
         // Filter and search using backend with robust error handling
@@ -262,16 +270,25 @@ function dashboardApp() {
                     params.q = this.searchQuery.trim().slice(0, 100); // Limit query length
                 }
                 
-                // Apply availability filter
-                if (this.currentFilter === 'available') {
-                    params.available_only = true;
+                // Apply status filter (new API parameter)
+                if (this.currentFilter !== 'all') {
+                    params.status = this.currentFilter;
                 } else {
-                    // For 'all', show all resources (available_only = false)
-                    params.available_only = false;
+                    params.status = 'all';
                 }
                 
-                // Only call backend if we have search query or specific filter
-                if (params.q || this.currentFilter === 'available') {
+                // Add time-based search parameters
+                if (this.searchTimeFrom) {
+                    // Convert to ISO format for API
+                    params.available_from = new Date(this.searchTimeFrom).toISOString();
+                }
+                if (this.searchTimeUntil) {
+                    // Convert to ISO format for API
+                    params.available_until = new Date(this.searchTimeUntil).toISOString();
+                }
+                
+                // Only call backend if we have search query, specific filter, or time parameters
+                if (params.q || this.currentFilter !== 'all' || params.available_from || params.available_until) {
                     const response = await apiCall('/api/resources/search?' + new URLSearchParams(params));
                     
                     // Handle response safety
@@ -327,6 +344,55 @@ function dashboardApp() {
             this.currentFilter = filter;
             this.currentPage = 1; // Reset to first page when filtering
             this.filterResources();
+        },
+
+        // Time-based search functions
+        setTimePreset(preset) {
+            const now = new Date();
+            
+            switch (preset) {
+                case 'now':
+                    // Available from now for the next 2 hours
+                    this.searchTimeFrom = this.formatDateTimeLocal(now);
+                    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+                    this.searchTimeUntil = this.formatDateTimeLocal(twoHoursLater);
+                    break;
+                case 'today':
+                    // Rest of today (current time to end of day)
+                    this.searchTimeFrom = this.formatDateTimeLocal(now);
+                    const endOfDay = new Date(now);
+                    endOfDay.setHours(23, 59, 59, 999);
+                    this.searchTimeUntil = this.formatDateTimeLocal(endOfDay);
+                    break;
+                case 'tomorrow':
+                    // All day tomorrow
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(now.getDate() + 1);
+                    tomorrow.setHours(9, 0, 0, 0); // Start at 9 AM
+                    this.searchTimeFrom = this.formatDateTimeLocal(tomorrow);
+                    tomorrow.setHours(17, 0, 0, 0); // End at 5 PM
+                    this.searchTimeUntil = this.formatDateTimeLocal(tomorrow);
+                    break;
+            }
+            
+            this.filterResources();
+        },
+
+        clearTimeSearch() {
+            this.searchTimeFrom = '';
+            this.searchTimeUntil = '';
+            this.showAdvancedSearch = false;
+            this.filterResources();
+        },
+
+        // Helper function to format datetime for datetime-local input
+        formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
         },
 
         // Pagination methods
@@ -566,15 +632,21 @@ function dashboardApp() {
                 
                 const result = await response.json();
                 
-                if (result.success) {
+                if (response.ok) {
                     this.showUpload = false;
                     this.csvFile = null;
-                    showNotification(`Successfully uploaded! Created ${result.data.created_count} resources.`, 'success');
+                    
+                    // Show success message with details
+                    let message = `Successfully uploaded! Created ${result.created_count} resources.`;
+                    if (result.errors && result.errors.length > 0) {
+                        message += ` ${result.errors.length} errors occurred.`;
+                    }
+                    showNotification(message, 'success');
                     
                     // Refresh resources list and stats without page reload
                     await this.refreshResources();
                 } else {
-                    this.uploadError = result.error || 'Upload failed';
+                    this.uploadError = result.detail || result.error || 'Upload failed';
                     console.error('Upload error:', result);
                 }
             } catch (error) {
@@ -588,15 +660,22 @@ function dashboardApp() {
         // Refresh resources from server
         async refreshResources() {
             try {
-                const response = await apiCall('/api/resources/search?available_only=false');
-                const result = await response.json();
+                const response = await apiCall('/api/resources/search?status=all');
                 
-                if (result.success) {
-                    this.resources = result.data;
+                if (response.ok) {
+                    const result = await response.json();
+                    // Handle wrapped response format from frontend proxy
+                    if (result.success && result.data) {
+                        this.resources = result.data;
+                    } else {
+                        // Fallback for direct API response
+                        this.resources = result;
+                    }
                     this.filterResources();
                     this.updateStats();
+                    console.log('Resources refreshed:', this.resources.length, 'resources loaded');
                 } else {
-                    console.error('Failed to refresh resources:', result.error);
+                    console.error('Failed to refresh resources:', response.status);
                 }
             } catch (error) {
                 console.error('Error refreshing resources:', error);

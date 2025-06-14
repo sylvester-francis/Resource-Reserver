@@ -216,7 +216,8 @@ def health_check(db: Session = Depends(get_db)):
 
     # Test database connectivity
     try:
-        db.execute("SELECT 1")
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
         db_status = "healthy"
 
         # Test basic service functionality
@@ -313,8 +314,12 @@ def list_resources(db: Session = Depends(get_db)):
 @app.get("/resources/search", response_model=list[schemas.ResourceResponse])
 def search_resources(
     q: str | None = Query(None, description="Search query for resource names"),
+    status: str | None = Query(
+        None, 
+        description="Filter by resource status: 'available', 'in_use', 'unavailable', or 'all'"
+    ),
     available_only: bool = Query(
-        True, description="Filter to only available resources"
+        None, description="Legacy parameter - use 'status' instead"
     ),
     available_from: datetime | None = Query(
         None, description="Check availability from this time"
@@ -346,9 +351,27 @@ def search_resources(
                 detail="Start time must be in the future",
             )
 
+    # Handle status filtering with backwards compatibility
+    status_filter = None
+    if status is not None:
+        # Validate status parameter
+        valid_statuses = ['available', 'in_use', 'unavailable', 'all']
+        if status not in valid_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+            )
+        status_filter = status
+    elif available_only is not None:
+        # Legacy parameter support
+        status_filter = 'available' if available_only else 'all'
+    else:
+        # Default behavior - show available resources
+        status_filter = 'available'
+
     resource_service = ResourceService(db)
     return resource_service.search_resources(
-        q, available_only, available_from, available_until
+        q, status_filter, available_from, available_until
     )
 
 

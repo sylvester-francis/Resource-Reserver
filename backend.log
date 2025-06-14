@@ -1,0 +1,641 @@
+INFO:     Will watch for changes in these directories: ['/Users/sylvester/Desktop/Projects/Resource-Reserver']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [30705] using StatReload
+INFO:     Started server process [30708]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:62509 - "GET /health HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [30708]
+INFO:     Started server process [30733]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:62530 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62540 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62559 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62566 - "GET /reservations/my?include_cancelled=False HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:62593 - "GET /reservations/my HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:62599 - "POST /token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62599 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62602 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62599 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62603 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62607 - "GET /resources/1/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62610 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62610 - "POST /reservations HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62613 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62613 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62613 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62628 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62628 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62666 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62666 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62744 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62744 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62804 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62804 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62862 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62862 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62896 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62896 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62911 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62911 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62956 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62956 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63008 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63008 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63041 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63041 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63070 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63070 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63072 - "GET /resources/search?available_from=2025-06-14T06:00:00Z&available_until=2025-06-14T18:00:00Z HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63093 - "GET /resources/search?available_from=2025-06-14T06%3A00%3A00&available_until=2025-06-14T18%3A00%3A00 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63104 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63104 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63136 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63136 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63139 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63139 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63143 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63143 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63147 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63147 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63150 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63150 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63155 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63155 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63159 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63162 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63163 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63159 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63170 - "GET /resources/search?available_only=false&available_from=2025-06-14T05:26:00.000Z&available_until=2025-06-15T03:59:00.000Z HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:63174 - "GET /resources/search?available_only=false&available_from=2025-06-15T13:00:00.000Z&available_until=2025-06-15T21:00:00.000Z HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63174 - "GET /resources/search?available_only=false&available_from=2025-06-14T05:27:00.000Z&available_until=2025-06-15T03:59:00.000Z HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:63174 - "GET /resources/search?available_only=false&available_from=2025-06-14T05:27:00.000Z&available_until=2025-06-14T07:27:00.000Z HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:63178 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63178 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63178 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63178 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63178 - "PUT /resources/2/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63178 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63178 - "PUT /resources/2/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63191 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63191 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63194 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63194 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63215 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63215 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63218 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63218 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63235 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63235 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63238 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63238 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63242 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63242 - "PUT /resources/1/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63253 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63253 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63256 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63256 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63266 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63266 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63266 - "PUT /resources/1/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63273 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63273 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [30733]
+INFO:     Started server process [31571]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:63310 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63310 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31571]
+INFO:     Started server process [31585]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:63351 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63351 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/services.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31585]
+INFO:     Started server process [31611]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/services.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31611]
+INFO:     Started server process [31618]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:63380 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63380 - "POST /resources HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError: UNIQUE constraint failed: resources.name
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/app/services.py", line 53, in create_resource
+    self.db.commit()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+        statement,
+        params,
+        execution_options=execution_options,
+    )
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1637, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2351, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: resources.name
+[SQL: INSERT INTO resources (name, available, tags, status, unavailable_since, auto_reset_hours) VALUES (?, ?, ?, ?, ?, ?)]
+[parameters: ('Test Resource', 1, '["meeting"]', 'available', None, 8)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    raise exc
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/routing.py", line 714, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/routing.py", line 734, in app
+    await route.handle(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/fastapi/routing.py", line 214, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/starlette/concurrency.py", line 37, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 2470, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/app/main.py", line 304, in create_resource
+    return resource_service.create_resource(resource_data)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/sylvester/Desktop/Projects/Resource-Reserver/app/services.py", line 67, in create_resource
+    raise ValueError(f"Resource '{name}' already exists.") from e
+ValueError: Resource 'Test Resource' already exists.
+INFO:     127.0.0.1:63417 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63420 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63417 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63421 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63432 - "GET /resources/search?status=available HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63444 - "GET /resources/search?status=in_use HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63454 - "GET /resources/search?status=unavailable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63465 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63465 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63469 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63482 - "GET /resources/search?available_only=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63493 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63524 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63524 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63551 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63551 - "POST /resources/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63551 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63554 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63554 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63583 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63583 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63649 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63649 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63649 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63649 - "PUT /resources/1/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63649 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63649 - "PUT /resources/1/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63649 - "GET /resources/search?status=in_use HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63700 - "GET /resources/1/availability HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63703 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63703 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63730 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63730 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63788 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63788 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63851 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63851 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63914 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63914 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63962 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63962 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63966 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63966 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63970 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63970 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63974 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63974 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63977 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63977 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63980 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63980 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63985 - "POST /resources HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:64001 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64001 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64004 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64008 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64007 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64004 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64014 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64014 - "POST /resources HTTP/1.1" 201 Created
+INFO:     127.0.0.1:64018 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64018 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64021 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64021 - "POST /resources/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64021 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64021 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64021 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64035 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64035 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64075 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64075 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64110 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64128 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64128 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64184 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64184 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64245 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64245 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64269 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64269 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64272 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64272 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64275 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64275 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64278 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64281 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64278 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64282 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64287 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64287 - "POST /resources/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64287 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64290 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64290 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64315 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64330 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64341 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64341 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64387 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64387 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64391 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64429 - "DELETE /resources/60 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64449 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64449 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64454 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64470 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64470 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64475 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64475 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64478 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64478 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64525 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64525 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64569 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64569 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64596 - "GET /resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64613 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64613 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64619 - "GET /reservations/my HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:64623 - "POST /token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64623 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64627 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64623 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64626 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64631 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64631 - "POST /resources/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64631 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64634 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64634 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64653 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64653 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64670 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64700 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64700 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64755 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64755 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64794 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64794 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64800 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64800 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64804 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64804 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64807 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64807 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64814 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64814 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64817 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64817 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64820 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64820 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64824 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64824 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64828 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64828 - "GET /resources/search?available_only=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64875 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64878 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64875 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64879 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64954 - "GET /reservations/my HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64954 - "POST /resources/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64954 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65005 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65005 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65133 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65133 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65256 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65256 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65389 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65389 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65515 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65515 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49270 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49270 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/services.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31618]
+INFO:     Started server process [32982]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:49423 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49423 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/services.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [32982]
+INFO:     Started server process [32996]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:49587 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49587 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/services.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [32996]
+INFO:     Started server process [33028]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:49720 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49720 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49865 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49865 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/services.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33028]
+INFO:     Started server process [33063]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/services.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:app.main:Shutting down FastAPI application...
+INFO:app.main:Background cleanup task cancelled
+INFO:app.main:Application shutdown complete
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33063]
+INFO:     Started server process [33072]
+INFO:     Waiting for application startup.
+INFO:app.main:Starting FastAPI application...
+INFO:app.main:Database tables verified/created
+INFO:app.main:Background cleanup task started
+INFO:app.main:Starting cleanup task for expired reservations and resource status
+INFO:     Application startup complete.
+INFO:     127.0.0.1:50010 - "GET /resources/search?status=all HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50010 - "GET /resources/search?status=all HTTP/1.1" 200 OK
