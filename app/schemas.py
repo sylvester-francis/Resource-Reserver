@@ -69,6 +69,7 @@ class ResourceResponse(BaseModel):
     name: str
     available: bool  # Base availability (manual enable/disable)
     current_availability: bool | None = None  # Real-time availability (includes reservations)
+    status: str = "available"  # Status: available, in_use, unavailable
     tags: list[str]
 
     model_config = ConfigDict(from_attributes=True)
@@ -135,3 +136,14 @@ class ReservationResponse(BaseModel):
 
 class ReservationCancel(BaseModel):
     reason: str | None = None
+
+
+class ResourceStatusUpdate(BaseModel):
+    auto_reset_hours: int = 8
+
+    @field_validator("auto_reset_hours")
+    @classmethod
+    def validate_auto_reset_hours(cls, v: int) -> int:
+        if v < 1 or v > 168:  # 1 hour to 1 week
+            raise ValueError("Auto reset hours must be between 1 and 168 (1 week)")
+        return v

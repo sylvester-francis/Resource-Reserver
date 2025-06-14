@@ -124,12 +124,30 @@ def list_resources(
         print("─" * 50)
 
         for resource in resources:
-            status = "🟢 Available" if resource["available"] else "🔴 Unavailable"  # noqa : E501
-            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")  # noqa : E501
-            print(f"     │ {status}")
+            # Enhanced status display
+            base_status = "🟢 Enabled" if resource["available"] else "🔴 Disabled"
 
-            if show_details and resource.get("tags"):
-                print(f"     │ Tags: {', '.join(resource['tags'])}")
+            # Show detailed status if available
+            if "status" in resource:
+                status_icons = {
+                    "available": "🟢",
+                    "in_use": "🟡",
+                    "unavailable": "🔴"
+                }
+                status_icon = status_icons.get(resource["status"], "❓")
+                status_text = resource["status"].replace("_", " ").title()
+                current_status = f"{status_icon} {status_text}"
+            else:
+                # Fallback to old logic
+                current_status = "🟢 Available" if resource.get("current_availability", resource["available"]) else "🔴 Unavailable"
+
+            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")
+            print(f"     │ Status: {current_status}")
+
+            if show_details:
+                print(f"     │ Base: {base_status}")
+                if resource.get("tags"):
+                    print(f"     │ Tags: {', '.join(resource['tags'])}")
 
             print()
 
@@ -369,6 +387,136 @@ def disable_resource(
             print("❌ Resource not found")
         else:
             print(f"❌ Failed to disable resource: {e}")
+        raise typer.Exit(1) from e
+
+
+@resource_app.command("status")
+def resource_status(
+    resource_id: int = typer.Argument(..., help="Resource ID"),
+):
+    """Get detailed status information for a resource."""
+    try:
+        status_info = client.get_resource_status(resource_id)
+
+        print(f"\n📊 [bold]Status for {status_info['resource_name']}[/bold]")
+        print(f"🆔 Resource ID: {status_info['resource_id']}")
+        print(f"🕐 Current time: {format_datetime(datetime.fromisoformat(status_info['current_time'].replace('Z', '')))}")
+
+        # Base availability
+        base_status = "🟢 Enabled" if status_info["base_available"] else "🔴 Disabled"
+        print(f"⚙️  Base setting: {base_status}")
+
+        # Current status
+        status_icons = {
+            "available": "🟢",
+            "in_use": "🟡",
+            "unavailable": "🔴"
+        }
+        status_icon = status_icons.get(status_info["status"], "❓")
+        status_text = status_info["status"].replace("_", " ").title()
+        print(f"📊 Current status: {status_icon} {status_text}")
+
+        # Additional status info
+        print(f"🎯 Available for reservation: {'✅ Yes' if status_info['is_available_for_reservation'] else '❌ No'}")
+        print(f"🔄 Currently in use: {'✅ Yes' if status_info['is_currently_in_use'] else '❌ No'}")
+
+        # Unavailable details
+        if status_info["is_unavailable"] and "unavailable_since" in status_info:
+            unavailable_since = format_datetime(
+                datetime.fromisoformat(status_info["unavailable_since"].replace("Z", ""))
+            )
+            print("\n🔧 [bold]Maintenance Details:[/bold]")
+            print(f"📅 Unavailable since: {unavailable_since}")
+            print(f"⏰ Auto-reset in: {status_info['hours_until_auto_reset']:.1f} hours")
+            print(f"⚙️  Auto-reset configured: {status_info['auto_reset_hours']} hours")
+            if status_info.get("will_auto_reset"):
+                print("✅ Will automatically reset to available")
+            else:
+                print("⚠️  Auto-reset period has passed")
+
+        # Current reservation info
+        if "current_reservation" in status_info:
+            res = status_info["current_reservation"]
+            start = format_datetime(datetime.fromisoformat(res["start_time"].replace("Z", "")))
+            end = format_datetime(datetime.fromisoformat(res["end_time"].replace("Z", "")))
+            print("\n🎯 [bold]Current Reservation:[/bold]")
+            print(f"📋 ID: {res['id']}")
+            print(f"👤 User ID: {res['user_id']}")
+            print(f"📅 Time: {start} to {end}")
+
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            print("❌ Resource not found")
+        else:
+            print(f"❌ Failed to get resource status: {e}")
+        raise typer.Exit(1) from e
+
+
+@resource_app.command("maintenance")
+def set_maintenance(
+    resource_id: int = typer.Argument(..., help="Resource ID"),
+    auto_reset_hours: int = typer.Option(8, "--hours", "-h", help="Auto-reset after hours (1-168)"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+):
+    """Set resource as unavailable for maintenance with auto-reset."""
+    try:
+        config.get_auth_headers()  # Check authentication
+    except ValueError as e:
+        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        raise typer.Exit(1) from e
+
+    if auto_reset_hours < 1 or auto_reset_hours > 168:
+        print("❌ Auto-reset hours must be between 1 and 168 (1 week)")
+        raise typer.Exit(1)
+
+    if not force:
+        if not confirm_action(
+            f"Set resource {resource_id} to maintenance mode (auto-reset in {auto_reset_hours} hours)?"
+        ):
+            print("Operation cancelled")
+            return
+
+    try:
+        result = client.set_resource_unavailable(resource_id, auto_reset_hours)
+        print(f"🔧 [bold orange1]Resource {resource_id} set to maintenance mode[/bold orange1]")
+        print(f"🏢 Resource: {result['resource']['name']}")
+        print(f"⏰ Auto-reset in: {auto_reset_hours} hours")
+        print("ℹ️  Resource is now unavailable for new reservations")
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            print("❌ Resource not found")
+        else:
+            print(f"❌ Failed to set maintenance mode: {e}")
+        raise typer.Exit(1) from e
+
+
+@resource_app.command("reset")
+def reset_resource(
+    resource_id: int = typer.Argument(..., help="Resource ID"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+):
+    """Reset resource to available status (from any status)."""
+    try:
+        config.get_auth_headers()  # Check authentication
+    except ValueError as e:
+        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        raise typer.Exit(1) from e
+
+    if not force:
+        if not confirm_action(f"Reset resource {resource_id} to available status?"):
+            print("Operation cancelled")
+            return
+
+    try:
+        result = client.reset_resource_to_available(resource_id)
+        print(f"✅ [bold green]Resource {resource_id} reset to available[/bold green]")
+        print(f"🏢 Resource: {result['resource']['name']}")
+        print("ℹ️  Resource is now available for reservations")
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            print("❌ Resource not found")
+        else:
+            print(f"❌ Failed to reset resource: {e}")
         raise typer.Exit(1) from e
 
 

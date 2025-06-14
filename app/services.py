@@ -33,30 +33,60 @@ class ResourceService:
         self.db = db
 
     def create_resource(self, resource_data: schemas.ResourceCreate) -> models.Resource:
+        # Validate input data
+        if not resource_data.name or not resource_data.name.strip():
+            raise ValueError("Resource name cannot be empty")
+
+        # Sanitize name
+        name = resource_data.name.strip()[:200]  # Limit length
+
         resource = models.Resource(
-            name=resource_data.name,
+            name=name,
             available=resource_data.available,
             tags=resource_data.tags or [],
         )
-        try:
-            self.db.add(resource)
-            self.db.commit()
-            self.db.refresh(resource)
-            return resource
-        except IntegrityError as e:
-            self.db.rollback()
-            raise ValueError(f"Resource '{resource_data.name}' already exists.") from e
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self.db.add(resource)
+                self.db.commit()
+                self.db.refresh(resource)
+                return resource
+            except IntegrityError as e:
+                self.db.rollback()
+                if attempt == max_retries - 1:
+                    raise ValueError(f"Resource '{name}' already exists.") from e
+                # On retry, check if it was created by another process
+                existing = (
+                    self.db.query(models.Resource)
+                    .filter(models.Resource.name == name)
+                    .first()
+                )
+                if existing:
+                    raise ValueError(f"Resource '{name}' already exists.") from e
+            except Exception as e:
+                self.db.rollback()
+                if attempt == max_retries - 1:
+                    raise ValueError(f"Failed to create resource: {str(e)}") from e
+                # Wait a bit before retry
+                import time
+
+                time.sleep(0.1 * (attempt + 1))
 
     def get_all_resources(self) -> list[models.Resource]:
         """Get all resources with real-time availability status."""
         resources = self.db.query(models.Resource).all()
 
-        # Add current availability as a computed field without modifying base availability
+        # Update resource status based on current reservations and auto-reset logic
         for resource in resources:
-            # Keep the original available field (base availability)
-            # Add current_availability as a computed field
-            resource.current_availability = self._is_resource_currently_available(resource.id)
+            self._update_resource_status(resource)
+            # Add current availability as a computed field
+            resource.current_availability = self._is_resource_currently_available(
+                resource.id
+            )
 
+        self.db.commit()
         return resources
 
     def search_resources(
@@ -133,21 +163,6 @@ class ResourceService:
 
     def _is_resource_currently_available(self, resource_id: int) -> bool:
         """Check if a resource is currently available (not in an active reservation)."""
-        now = utcnow()
-
-        # Check if resource has any active reservations right now
-        current_reservation = (
-            self.db.query(models.Reservation)
-            .filter(
-                models.Reservation.resource_id == resource_id,
-                models.Reservation.status == "active",
-                models.Reservation.start_time <= now,
-                models.Reservation.end_time > now,
-            )
-            .first()
-        )
-
-        # Also check the base availability setting
         resource = (
             self.db.query(models.Resource)
             .filter(models.Resource.id == resource_id)
@@ -157,10 +172,48 @@ class ResourceService:
         if not resource:
             return False
 
+        # Update resource status first
+        self._update_resource_status(resource)
+
         # Resource is available if:
         # 1. It's not disabled (base available = True)
-        # 2. It's not currently reserved
-        return resource.available and current_reservation is None
+        # 2. It's not unavailable for maintenance
+        # 3. It's not currently in use
+        return resource.available and resource.status == "available"
+
+    def _update_resource_status(self, resource: models.Resource):
+        """Update resource status based on current reservations and auto-reset logic."""
+        now = utcnow()
+
+        # Check if resource should be auto-reset from unavailable
+        if resource.should_auto_reset():
+            resource.set_available()
+            return
+
+        # If resource is manually disabled, don't change status
+        if not resource.available:
+            return
+
+        # Check if resource has any active reservations right now
+        current_reservation = (
+            self.db.query(models.Reservation)
+            .filter(
+                models.Reservation.resource_id == resource.id,
+                models.Reservation.status == "active",
+                models.Reservation.start_time <= now,
+                models.Reservation.end_time > now,
+            )
+            .first()
+        )
+
+        # Update status based on reservation state
+        if current_reservation:
+            if resource.status != "in_use":
+                resource.set_in_use()
+        else:
+            # No active reservation, set to available if not unavailable for maintenance
+            if resource.status == "in_use":
+                resource.set_available()
 
     def _has_conflict(
         self, resource_id: int, start_time: datetime, end_time: datetime
@@ -200,6 +253,98 @@ class ResourceService:
         self.db.commit()
         self.db.refresh(resource)
         return resource
+
+    def set_resource_unavailable(
+        self, resource_id: int, auto_reset_hours: int = 8
+    ) -> models.Resource:
+        """Set a resource as unavailable for maintenance/repair."""
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+
+        if not resource:
+            raise ValueError("Resource not found")
+
+        resource.set_unavailable(auto_reset_hours)
+        self.db.commit()
+        self.db.refresh(resource)
+        return resource
+
+    def reset_resource_to_available(self, resource_id: int) -> models.Resource:
+        """Reset a resource to available status."""
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+
+        if not resource:
+            raise ValueError("Resource not found")
+
+        resource.set_available()
+        self.db.commit()
+        self.db.refresh(resource)
+        return resource
+
+    def get_resource_status(self, resource_id: int) -> dict:
+        """Get detailed status information for a resource."""
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+
+        if not resource:
+            raise ValueError("Resource not found")
+
+        self._update_resource_status(resource)
+
+        now = utcnow()
+        current_reservation = (
+            self.db.query(models.Reservation)
+            .filter(
+                models.Reservation.resource_id == resource_id,
+                models.Reservation.status == "active",
+                models.Reservation.start_time <= now,
+                models.Reservation.end_time > now,
+            )
+            .first()
+        )
+
+        status_info = {
+            "resource_id": resource_id,
+            "resource_name": resource.name,
+            "base_available": resource.available,
+            "status": resource.status,
+            "is_available_for_reservation": resource.is_available_for_reservation,
+            "is_currently_in_use": resource.is_currently_in_use,
+            "is_unavailable": resource.is_unavailable,
+            "current_time": now.isoformat(),
+        }
+
+        if resource.status == "unavailable" and resource.unavailable_since:
+            hours_unavailable = (now - resource.unavailable_since).total_seconds() / 3600
+            hours_until_reset = max(0, resource.auto_reset_hours - hours_unavailable)
+
+            status_info.update({
+                "unavailable_since": resource.unavailable_since.isoformat(),
+                "auto_reset_hours": resource.auto_reset_hours,
+                "hours_unavailable": round(hours_unavailable, 2),
+                "hours_until_auto_reset": round(hours_until_reset, 2),
+                "will_auto_reset": hours_until_reset > 0
+            })
+
+        if current_reservation:
+            status_info["current_reservation"] = {
+                "id": current_reservation.id,
+                "start_time": current_reservation.start_time.isoformat(),
+                "end_time": current_reservation.end_time.isoformat(),
+                "user_id": current_reservation.user_id,
+            }
+
+        return status_info
 
     def get_resource_availability_schedule(
         self, resource_id: int, days_ahead: int = 7
@@ -310,64 +455,103 @@ class ReservationService:
     def create_reservation(
         self, reservation_data: schemas.ReservationCreate, user_id: int
     ) -> models.Reservation:
-        """Create a new reservation with conflict validation."""
+        """Create a new reservation with conflict validation and retry logic."""
+
+        # Validate input data
+        if not reservation_data.start_time or not reservation_data.end_time:
+            raise ValueError("Start time and end time are required")
 
         # Ensure timezone awareness
         start_time = ensure_timezone_aware(reservation_data.start_time)
         end_time = ensure_timezone_aware(reservation_data.end_time)
 
-        # Validate resource exists and is available
-        resource = (
-            self.db.query(models.Resource)
-            .filter(models.Resource.id == reservation_data.resource_id)
-            .first()
-        )
+        # Validate time range
+        if end_time <= start_time:
+            raise ValueError("End time must be after start time")
 
-        if not resource:
-            raise ValueError("Resource not found")
+        now = utcnow()
+        if start_time <= now:
+            raise ValueError("Cannot create reservations in the past")
 
-        if not resource.available:
-            raise ValueError("Resource is not available for reservations")
+        # Validate reservation duration (max 24 hours)
+        duration = end_time - start_time
+        if duration.total_seconds() > 24 * 3600:
+            raise ValueError("Reservations cannot exceed 24 hours")
 
-        # Check for conflicts
-        conflicts = self._get_conflicts(
-            reservation_data.resource_id,
-            start_time,
-            end_time,
-        )
-
-        if conflicts:
-            conflict_times = []
-            for conflict in conflicts:
-                conflict_times.append(
-                    f"{conflict.start_time.strftime('%H:%M')} to {conflict.end_time.strftime('%H:%M')}"
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Validate resource exists and is available (check each time for concurrent updates)
+                resource = (
+                    self.db.query(models.Resource)
+                    .filter(models.Resource.id == reservation_data.resource_id)
+                    .first()
                 )
-            raise ValueError(
-                f"Time slot conflicts with existing reservations: {', '.join(conflict_times)}"
-            )
 
-        # Create reservation
-        reservation = models.Reservation(
-            user_id=user_id,
-            resource_id=reservation_data.resource_id,
-            start_time=start_time,
-            end_time=end_time,
-            status="active",
-        )
+                if not resource:
+                    raise ValueError("Resource not found")
 
-        self.db.add(reservation)
-        self.db.commit()
-        self.db.refresh(reservation)
+                if not resource.available:
+                    raise ValueError("Resource is not available for reservations")
 
-        # Log the action
-        self._log_action(
-            reservation.id,
-            "created",
-            user_id,
-            f"Reserved {resource.name} from {start_time} to {end_time}",
-        )
+                # Check for conflicts with latest data
+                conflicts = self._get_conflicts(
+                    reservation_data.resource_id,
+                    start_time,
+                    end_time,
+                )
 
-        return reservation
+                if conflicts:
+                    conflict_times = []
+                    for conflict in conflicts:
+                        conflict_times.append(
+                            f"{conflict.start_time.strftime('%H:%M')} to {conflict.end_time.strftime('%H:%M')}"
+                        )
+                    raise ValueError(
+                        f"Time slot conflicts with existing reservations: {', '.join(conflict_times)}"
+                    )
+
+                # Create reservation
+                reservation = models.Reservation(
+                    user_id=user_id,
+                    resource_id=reservation_data.resource_id,
+                    start_time=start_time,
+                    end_time=end_time,
+                    status="active",
+                )
+
+                self.db.add(reservation)
+                self.db.commit()
+                self.db.refresh(reservation)
+
+                # Log the action
+                self._log_action(
+                    reservation.id,
+                    "created",
+                    user_id,
+                    f"Reserved {resource.name} from {start_time} to {end_time}",
+                )
+
+                return reservation
+
+            except IntegrityError as e:
+                self.db.rollback()
+                if attempt == max_retries - 1:
+                    raise ValueError(
+                        "Failed to create reservation due to conflicts. Please try again."
+                    ) from e
+                # Wait before retry
+                import time
+
+                time.sleep(0.1 * (attempt + 1))
+            except Exception:
+                self.db.rollback()
+                if attempt == max_retries - 1:
+                    raise
+                # Wait before retry for other exceptions too
+                import time
+
+                time.sleep(0.1 * (attempt + 1))
 
     def cancel_reservation(
         self,

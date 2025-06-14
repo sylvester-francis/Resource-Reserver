@@ -41,10 +41,10 @@ def utcnow():
 
 
 async def cleanup_expired_reservations():
-    """Background task to clean up expired reservations and update availability."""
+    """Background task to clean up expired reservations and auto-reset unavailable resources."""  # noqa
     from app.database import SessionLocal
 
-    logger.info("Starting cleanup task for expired reservations")
+    logger.info("Starting cleanup task for expired reservations and resource status")
 
     while True:
         try:
@@ -88,6 +88,32 @@ async def cleanup_expired_reservations():
                 logger.info("Expired reservations cleanup completed")
             else:
                 logger.debug("No expired reservations found")
+
+            # Auto-reset unavailable resources that have exceeded their timeout
+
+            unavailable_resources = (
+                db.query(models.Resource)
+                .filter(
+                    models.Resource.status == "unavailable",
+                    models.Resource.unavailable_since.isnot(None)
+                )
+                .all()
+            )
+
+            reset_count = 0
+            for resource in unavailable_resources:
+                if resource.should_auto_reset():
+                    logger.info(
+                        f"Auto-resetting resource {resource.id} ({resource.name}) after {resource.auto_reset_hours} hours"
+                    )
+                    resource.set_available()
+                    reset_count += 1
+
+            if reset_count > 0:
+                db.commit()
+                logger.info(f"Auto-reset {reset_count} unavailable resources to available")
+            else:
+                logger.debug("No resources ready for auto-reset")
 
             db.close()
 
@@ -165,8 +191,10 @@ app.add_middleware(
 
 # Enhanced health check endpoint
 @app.get("/health")
-def health_check():
+def health_check(db: Session = Depends(get_db)):
     """Enhanced health check endpoint for monitoring."""
+
+    # Check background task status
     task_status = "unknown"
     if cleanup_task:
         if cleanup_task.done():
@@ -181,9 +209,30 @@ def health_check():
     else:
         task_status = "not_started"
 
+    # Test database connectivity
+    try:
+        db.execute("SELECT 1")
+        db_status = "healthy"
+
+        # Test basic service functionality
+        from app.services import ResourceService
+        service = ResourceService(db)
+        resources_count = len(service.get_all_resources())
+        api_status = "healthy"
+
+    except Exception as e:
+        db_status = "unhealthy"
+        api_status = f"error: {str(e)[:100]}"  # Limit error message length
+        resources_count = 0
+
+    overall_status = "healthy" if db_status == "healthy" and api_status == "healthy" else "unhealthy"
+
     return {
-        "status": "healthy",
+        "status": overall_status,
         "timestamp": utcnow(),
+        "database": db_status,
+        "api": api_status,
+        "resources_count": resources_count,
         "background_tasks": {"cleanup_task": task_status},
     }
 
@@ -366,6 +415,70 @@ def get_resource_availability(
             resource_id, days_ahead
         )
         return availability
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+
+@app.put("/resources/{resource_id}/status/unavailable")
+def set_resource_unavailable(
+    resource_id: int,
+    auto_reset_hours: int = 8,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Set resource as unavailable for maintenance/repair with auto-reset."""
+    resource_service = ResourceService(db)
+
+    try:
+        resource = resource_service.set_resource_unavailable(resource_id, auto_reset_hours)
+        return {
+            "message": f"Resource set to unavailable for maintenance (auto-reset in {auto_reset_hours} hours)",
+            "resource": {
+                "id": resource.id,
+                "name": resource.name,
+                "status": resource.status,
+                "auto_reset_hours": resource.auto_reset_hours,
+                "unavailable_since": resource.unavailable_since.isoformat() if resource.unavailable_since else None
+            },
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+
+@app.put("/resources/{resource_id}/status/available")
+def reset_resource_to_available(
+    resource_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Reset resource to available status."""
+    resource_service = ResourceService(db)
+
+    try:
+        resource = resource_service.reset_resource_to_available(resource_id)
+        return {
+            "message": "Resource reset to available",
+            "resource": {
+                "id": resource.id,
+                "name": resource.name,
+                "status": resource.status,
+            },
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+
+@app.get("/resources/{resource_id}/status")
+def get_resource_status(
+    resource_id: int,
+    db: Session = Depends(get_db),
+):
+    """Get detailed status information for a resource."""
+    resource_service = ResourceService(db)
+
+    try:
+        status_info = resource_service.get_resource_status(resource_id)
+        return status_info
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 

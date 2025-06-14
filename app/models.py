@@ -40,9 +40,52 @@ class Resource(Base):
     name = Column(String(200), unique=True, nullable=False)
     available = Column(Boolean, default=True, nullable=False)
     tags = Column(JSON, default=list)
+    status = Column(String(20), default="available", nullable=False)
+    unavailable_since = Column(DateTime(timezone=True))
+    auto_reset_hours = Column(Integer, default=8)
 
     # Relationships
     reservations = relationship("Reservation", back_populates="resource")
+
+    @property
+    def is_available_for_reservation(self) -> bool:
+        """Check if resource is available for new reservations."""
+        return self.available and self.status in ["available", "in_use"]
+
+    @property
+    def is_currently_in_use(self) -> bool:
+        """Check if resource is currently in use."""
+        return self.status == "in_use"
+
+    @property
+    def is_unavailable(self) -> bool:
+        """Check if resource is unavailable (maintenance/repair)."""
+        return self.status == "unavailable"
+
+    def set_unavailable(self, auto_reset_hours: int = None):
+        """Set resource as unavailable with optional auto-reset."""
+        self.status = "unavailable"
+        self.unavailable_since = utcnow()
+        if auto_reset_hours is not None:
+            self.auto_reset_hours = auto_reset_hours
+
+    def set_available(self):
+        """Set resource as available."""
+        self.status = "available"
+        self.unavailable_since = None
+
+    def set_in_use(self):
+        """Set resource as in use."""
+        self.status = "in_use"
+
+    def should_auto_reset(self) -> bool:
+        """Check if resource should be automatically reset to available."""
+        if self.status != "unavailable" or not self.unavailable_since:
+            return False
+
+        now = utcnow()
+        hours_since_unavailable = (now - self.unavailable_since).total_seconds() / 3600
+        return hours_since_unavailable >= self.auto_reset_hours
 
 
 class Reservation(Base):

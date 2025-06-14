@@ -189,3 +189,31 @@ class APIClient:
         """Check API health status."""
         response = self.session.get(f"{self.base_url}/health")
         return self._handle_response(response)
+
+    def set_resource_unavailable(
+        self, resource_id: int, auto_reset_hours: int = 8
+    ) -> dict[str, Any]:
+        """Set resource as unavailable for maintenance/repair with auto-reset."""
+        headers = config.get_auth_headers()
+        response = self.session.put(
+            f"{self.base_url}/resources/{resource_id}/status/unavailable",
+            params={"auto_reset_hours": auto_reset_hours},
+            headers=headers,
+        )
+        return self._handle_response(response)
+
+    def reset_resource_to_available(self, resource_id: int) -> dict[str, Any]:
+        """Reset resource to available status."""
+        headers = config.get_auth_headers()
+        response = self.session.put(
+            f"{self.base_url}/resources/{resource_id}/status/available",
+            headers=headers,
+        )
+        return self._handle_response(response)
+
+    def get_resource_status(self, resource_id: int) -> dict[str, Any]:
+        """Get detailed status information for a resource."""
+        response = self.session.get(
+            f"{self.base_url}/resources/{resource_id}/status"
+        )
+        return self._handle_response(response)

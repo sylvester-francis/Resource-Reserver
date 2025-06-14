@@ -6,7 +6,7 @@
 
 ---
 
-## What Problem Does This Solve? 
+## What Problem Does This Solve?
 
 **The Resource Scheduling Nightmare:**
 
@@ -23,16 +23,19 @@
 ## Why Organizations Choose Resource Reserver
 
 ### 💰 **Immediate Cost Savings**
+
 - **Stop Double-Bookings**: Automatic conflict detection prevents scheduling disasters
 - **Reduce Admin Time**: Self-service booking eliminates manual coordination
 - **Maximize Utilization**: See exactly which resources are underused vs. overbooked
 
 ### ⚡ **Instant Efficiency Gains**
+
 - **Book in Seconds**: Find and reserve resources in 3 clicks
 - **Real-Time Availability**: See what's free right now, no guesswork
 - **Automated Notifications**: Everyone knows what's booked when
 
 ### 📊 **Complete Visibility & Control**
+
 - **Full Audit Trail**: Know exactly who booked what and when for compliance
 - **Usage Analytics**: Optimize resource allocation based on real data
 - **Flexible Access**: Web interface for users, CLI for administrators
@@ -42,25 +45,33 @@
 ## Who Benefits From This?
 
 ### 🏢 **Corporate Teams**
+
 *"Finally, our meeting rooms actually get used efficiently!"*
+
 - Meeting rooms, conference facilities, parking spots
 - Equipment checkout (laptops, projectors, vehicles)
 - Shared workspaces and hot desking
 
 ### 🎓 **Educational Institutions**  
+
 *"Students can book lab time without administrator intervention"*
+
 - Classrooms, computer labs, research equipment
 - Study rooms, maker spaces, recording studios
 - Sports facilities and equipment
 
 ### 🏥 **Healthcare Facilities**
+
 *"Critical equipment is always available when we need it"*
+
 - Medical equipment, procedure rooms, imaging machines
 - Specialized tools, consultation rooms
 - Mobile equipment across multiple departments
 
 ### 🏭 **Manufacturing & Industrial**
+
 *"Our production schedule runs like clockwork now"*
+
 - Production equipment, quality testing stations
 - Maintenance tools, safety equipment
 - Training facilities and certification resources
@@ -96,26 +107,32 @@
 ## Key Features That Matter
 
 ### ✅ **Conflict-Free Booking**
+
 **Problem**: "The projector is double-booked again!"  
 **Solution**: Automatic conflict detection prevents overlapping reservations entirely
 
 ### ✅ **Real-Time Availability**
+
 **Problem**: "Is Conference Room B free at 3 PM?"  
 **Solution**: Live availability updates show exactly what's free when
 
 ### ✅ **Smart Resource Management**
+
 **Problem**: "I can't find the equipment I need"  
 **Solution**: Advanced search and filtering across all resources
 
 ### ✅ **Complete Audit Trail**
+
 **Problem**: "Who was using the lab equipment yesterday?"  
 **Solution**: Full activity logs for compliance and accountability
 
 ### ✅ **Bulk Operations**
+
 **Problem**: "Adding 50 new resources will take forever"  
 **Solution**: CSV upload for adding hundreds of resources at once
 
 ### ✅ **Two Interfaces, One System**
+
 - **Web Interface**: Perfect for daily users who need visual booking
 - **CLI Interface**: Ideal for administrators and automation scripts
 
@@ -124,6 +141,7 @@
 ## Quick Start - Get Running in 5 Minutes
 
 ### Option 1: Docker (Recommended)
+
 ```bash
 # Download and run with pre-built images
 curl -O https://raw.githubusercontent.com/sylvester-francis/Resource-Reserver/main/docker-compose.registry.yml
@@ -135,6 +153,7 @@ docker compose -f docker-compose.registry.yml up -d
 ```
 
 ### Option 2: From Source
+
 ```bash
 # Clone and start
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
@@ -145,6 +164,7 @@ docker compose up -d
 ```
 
 ### Option 3: Development Setup
+
 ```bash
 # Backend (Terminal 1)
 pip install -r requirements.txt
@@ -163,18 +183,22 @@ resource-reserver-cli --help
 ## Real-World Impact
 
 ### Manufacturing Company Case Study
+
 *"Before Resource Reserver, our production line had 3-4 equipment conflicts per week, causing costly delays. Now we have zero conflicts and 23% better equipment utilization."*
 
 **Results:**
+
 - ✅ 100% elimination of scheduling conflicts
 - ✅ 23% improvement in equipment utilization  
 - ✅ 40 hours/week saved in manual coordination
 - ✅ Complete compliance audit trail
 
 ### University Research Lab
+
 *"Students can now book lab time 24/7 without administrator approval, while we maintain complete oversight and compliance."*
 
 **Results:**
+
 - ✅ Self-service booking for 200+ students
 - ✅ Zero administrator intervention required
 - ✅ Complete usage tracking for grant reporting
@@ -185,18 +209,21 @@ resource-reserver-cli --help
 ## Technical Excellence
 
 ### 🏗️ **Modern Architecture**
+
 - **Frontend**: Express.js + Alpine.js (no build complexity)
 - **Backend**: FastAPI + Python (high performance, auto-documentation)
 - **CLI**: Typer framework (professional command-line tools)
 - **Database**: SQLite or PostgreSQL (scales from development to enterprise)
 
 ### 🐳 **Production Ready**
+
 - **Docker Images**: Available on GitHub Container Registry
 - **Zero Downtime**: Rolling updates and health checks
 - **Scalable**: Horizontal scaling for enterprise deployments
 - **Secure**: JWT authentication, input validation, audit logging
 
 ### 🔧 **Developer Friendly**
+
 - **No Build Process**: Direct development, no compilation steps
 - **Auto-Documentation**: Interactive API docs at `/docs`
 - **Full Test Suite**: 95%+ code coverage
@@ -207,16 +234,19 @@ resource-reserver-cli --help
 ## System Requirements
 
 ### Minimum (Small Office)
+
 - **Server**: 1 CPU, 1GB RAM, 5GB disk
 - **Users**: Up to 50 concurrent users
 - **Resources**: Up to 1,000 resources
 
 ### Recommended (Enterprise)
+
 - **Server**: 4 CPU, 8GB RAM, 50GB disk  
 - **Users**: 500+ concurrent users
 - **Resources**: Unlimited
 
 ### Supported Platforms
+
 - **Linux** (Ubuntu, CentOS, RHEL)
 - **macOS** (Intel and Apple Silicon)
 - **Windows** (with Docker Desktop)
@@ -228,12 +258,14 @@ resource-reserver-cli --help
 Resource Reserver is built API-first, making it perfect for integration:
 
 ### REST API Features
+
 - **Complete Documentation**: Auto-generated OpenAPI/Swagger docs
 - **Easy Integration**: Standard REST endpoints for all operations
 - **Webhook Support**: Real-time notifications for external systems
 - **Bulk Operations**: Efficient endpoints for mass operations
 
 ### Example Integrations
+
 - **Slack/Teams Bots**: Book resources from chat
 - **Calendar Systems**: Sync with Outlook/Google Calendar  
 - **Access Control**: Integrate with door locks and security systems
@@ -244,17 +276,20 @@ Resource Reserver is built API-first, making it perfect for integration:
 ## Support & Community
 
 ### 📚 **Documentation**
+
 - **User Guide**: Complete web interface walkthrough
 - **Administrator Guide**: CLI and system management
 - **API Reference**: Interactive documentation at `/docs`
 - **Integration Examples**: Sample code for common use cases
 
 ### 🤝 **Getting Help**
+
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Community support and questions
 - **Enterprise Support**: Available for production deployments
 
 ### 🔄 **Stay Updated**
+
 - **Release Notes**: Clear information about new features
 - **Migration Guides**: Smooth upgrades between versions
 - **Security Updates**: Prompt security patches
@@ -264,13 +299,16 @@ Resource Reserver is built API-first, making it perfect for integration:
 ## Ready to Eliminate Scheduling Chaos?
 
 ### Start Free Trial
+
 ```bash
 # Get running in 60 seconds
 docker run -p 3000:3000 -p 8000:8000 ghcr.io/sylvester-francis/resource-reserver:latest
 ```
 
 ### Enterprise Deployment
+
 Contact us for enterprise features:
+
 - Single Sign-On (SSO) integration
 - Advanced reporting and analytics
 - Multi-tenant support
@@ -281,6 +319,7 @@ Contact us for enterprise features:
 ## Version History
 
 ### Version 2.0 (Current) - Modern Architecture
+
 - 🚀 **Complete Frontend Rewrite**: Express.js + Alpine.js for better performance
 - 🐳 **Production Containers**: Docker images on GitHub Container Registry
 - ⚡ **Enhanced CLI**: Improved user experience with Rich terminal output
@@ -288,6 +327,7 @@ Contact us for enterprise features:
 - 📈 **Better Performance**: Server-side rendering + client reactivity
 
 ### Version 1.0 - Foundation
+
 - ✅ Core reservation and resource management
 - ✅ TypeScript frontend with Vite build system
 - ✅ FastAPI backend with comprehensive API
@@ -301,9 +341,10 @@ Contact us for enterprise features:
 **MIT License** - Free for commercial and personal use
 
 **Contributing Welcome!**
+
 1. Fork the repository
 2. Create a feature branch  
 3. Add tests for new features
 4. Submit a pull request
 
-Built with ❤️ using FastAPI, Express.js, Alpine.js, and modern Python tools.
+Built using FastAPI, Express.js, Alpine.js, and modern Python tools.
