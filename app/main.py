@@ -7,7 +7,8 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from io import StringIO
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -314,9 +315,10 @@ def list_resources(db: Session = Depends(get_db)):
 @app.get("/resources/search", response_model=list[schemas.ResourceResponse])
 def search_resources(
     q: str | None = Query(None, description="Search query for resource names"),
-    status: str | None = Query(
+    status_filter: str | None = Query(
         None, 
-        description="Filter by resource status: 'available', 'in_use', 'unavailable', or 'all'"
+        description="Filter by resource status: 'available', 'in_use', 'unavailable', or 'all'",
+        alias="status"
     ),
     available_only: bool = Query(
         None, description="Legacy parameter - use 'status' instead"
@@ -352,26 +354,26 @@ def search_resources(
             )
 
     # Handle status filtering with backwards compatibility
-    status_filter = None
-    if status is not None:
+    final_status_filter = None
+    if status_filter is not None:
         # Validate status parameter
         valid_statuses = ['available', 'in_use', 'unavailable', 'all']
-        if status not in valid_statuses:
+        if status_filter not in valid_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
             )
-        status_filter = status
+        final_status_filter = status_filter
     elif available_only is not None:
         # Legacy parameter support
-        status_filter = 'available' if available_only else 'all'
+        final_status_filter = 'available' if available_only else 'all'
     else:
         # Default behavior - show available resources
-        status_filter = 'available'
+        final_status_filter = 'available'
 
     resource_service = ResourceService(db)
     return resource_service.search_resources(
-        q, status_filter, available_from, available_until
+        q, final_status_filter, available_from, available_until
     )
 
 
