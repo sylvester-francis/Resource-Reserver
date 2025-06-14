@@ -44,6 +44,12 @@ instance/
 *.db
 *.sqlite3
 
+# Logs
+*.log
+logs/
+backend.log
+frontend.log
+
 # TypeScript/Node.js frontend
 node_modules/
 coverage/
@@ -60,6 +66,15 @@ yarn-error.log*
 *.tsbuildinfo
 web/dist/
 
+# npm/yarn
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+.yarn-integrity
+
+# Process files
+*.pid
+
 # Legacy files (can be removed after migration verification)
 web/js/script.js.legacy
 
@@ -73,3 +88,25 @@ web/js/script.js.legacy
 
 # Development tools
 .claude/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Backup files  
+*.bak
+*.backup
+
+# OS generated files
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Test files
+test-*.csv
+*test*.csv
