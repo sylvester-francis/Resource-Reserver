@@ -69,6 +69,7 @@ function dashboardApp() {
         showAvailability: false,
         showHistory: false,
         showHealthStatus: false,
+        showResourceStatus: false,
         
         // Forms
         newResource: {
@@ -664,6 +665,17 @@ function dashboardApp() {
 
         // Get display text for resource status
         getResourceStatusText(resource) {
+            // Use new status field if available
+            if (resource.status) {
+                const statusMap = {
+                    'available': 'Available',
+                    'in_use': 'In Use',
+                    'unavailable': 'Maintenance'
+                };
+                return statusMap[resource.status] || resource.status;
+            }
+            
+            // Fallback to old logic
             if (!resource.available) {
                 return 'Disabled';
             }
@@ -671,6 +683,113 @@ function dashboardApp() {
                 return 'In Use';
             }
             return 'Available';
+        },
+
+        // Get status icon for resource
+        getResourceStatusIcon(resource) {
+            if (resource.status) {
+                const iconMap = {
+                    'available': '🟢',
+                    'in_use': '🟡',
+                    'unavailable': '🔴'
+                };
+                return iconMap[resource.status] || '❓';
+            }
+            
+            // Fallback to old logic
+            if (!resource.available) {
+                return '🔴';
+            }
+            if (resource.current_availability === false) {
+                return '🟡';
+            }
+            return '🟢';
+        },
+
+        // Set resource to maintenance mode
+        async setResourceMaintenance(resource, hours = 8) {
+            try {
+                const response = await apiCall(`/api/resources/${resource.id}/status/unavailable?auto_reset_hours=${hours}`, {
+                    method: 'PUT'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update resource in local state
+                    const resourceIndex = this.resources.findIndex(r => r.id === resource.id);
+                    if (resourceIndex !== -1) {
+                        this.resources[resourceIndex].status = 'unavailable';
+                    }
+                    
+                    const filteredIndex = this.filteredResources.findIndex(r => r.id === resource.id);
+                    if (filteredIndex !== -1) {
+                        this.filteredResources[filteredIndex].status = 'unavailable';
+                    }
+                    
+                    this.updateStats();
+                    showNotification(`Resource set to maintenance mode (auto-reset in ${hours} hours)`, 'success');
+                } else {
+                    showNotification(result.error || 'Failed to set maintenance mode', 'error');
+                }
+            } catch (error) {
+                console.error('Error setting maintenance mode:', error);
+                showNotification('Failed to set maintenance mode', 'error');
+            }
+        },
+
+        // Reset resource to available
+        async resetResourceToAvailable(resource) {
+            try {
+                const response = await apiCall(`/api/resources/${resource.id}/status/available`, {
+                    method: 'PUT'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update resource in local state
+                    const resourceIndex = this.resources.findIndex(r => r.id === resource.id);
+                    if (resourceIndex !== -1) {
+                        this.resources[resourceIndex].status = 'available';
+                    }
+                    
+                    const filteredIndex = this.filteredResources.findIndex(r => r.id === resource.id);
+                    if (filteredIndex !== -1) {
+                        this.filteredResources[filteredIndex].status = 'available';
+                    }
+                    
+                    this.updateStats();
+                    showNotification('Resource reset to available', 'success');
+                } else {
+                    showNotification(result.error || 'Failed to reset resource', 'error');
+                }
+            } catch (error) {
+                console.error('Error resetting resource:', error);
+                showNotification('Failed to reset resource', 'error');
+            }
+        },
+
+        // Show resource status details modal
+        async showResourceStatusModal(resource) {
+            this.selectedResource = resource;
+            
+            try {
+                const response = await apiCall(`/api/resources/${resource.id}/status`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.selectedResource.statusDetails = result.data;
+                } else {
+                    console.error('Failed to load status details:', result.error);
+                    this.selectedResource.statusDetails = null;
+                }
+            } catch (error) {
+                console.error('Error loading status details:', error);
+                this.selectedResource.statusDetails = null;
+            }
+            
+            this.showResourceStatus = true;
         },
 
         // Toggle resource status (available/disabled)
