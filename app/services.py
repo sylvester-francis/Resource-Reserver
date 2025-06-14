@@ -89,7 +89,7 @@ class ResourceService:
     def search_resources(
         self,
         query: str = None,
-        status_filter: str = 'available',
+        status_filter: str = "available",
         available_from: datetime = None,
         available_until: datetime = None,
     ) -> list[models.Resource]:
@@ -137,7 +137,7 @@ class ResourceService:
         filtered_resources = []
         for resource in resources:
             # Apply status filter (use existing status, don't update it)
-            if status_filter != 'all':
+            if status_filter != "all":
                 if resource.status != status_filter:
                     continue
 
@@ -151,7 +151,9 @@ class ResourceService:
                     continue
 
             # Set current availability for response (read-only check)
-            resource.current_availability = self._is_resource_currently_available(resource.id)
+            resource.current_availability = self._is_resource_currently_available(
+                resource.id
+            )
             filtered_resources.append(resource)
 
         return filtered_resources

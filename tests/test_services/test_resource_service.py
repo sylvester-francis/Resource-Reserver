@@ -76,11 +76,11 @@ class TestResourceService:
 
         try:
             # Search available only
-            available_results = service.search_resources(status_filter='available')
+            available_results = service.search_resources(status_filter="available")
             assert all(r.available for r in available_results)
 
             # Search all resources
-            all_results = service.search_resources(status_filter='all')
+            all_results = service.search_resources(status_filter="all")
             assert len(all_results) >= len(available_results)
         finally:
             db.close()

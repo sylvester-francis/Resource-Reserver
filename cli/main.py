@@ -129,11 +129,7 @@ def list_resources(
 
             # Show detailed status if available
             if "status" in resource:
-                status_icons = {
-                    "available": "🟢",
-                    "in_use": "🟡",
-                    "unavailable": "🔴"
-                }
+                status_icons = {"available": "🟢", "in_use": "🟡", "unavailable": "🔴"}
                 status_icon = status_icons.get(resource["status"], "❓")
                 status_text = resource["status"].replace("_", " ").title()
                 current_status = f"{status_icon} {status_text}"
@@ -405,7 +401,7 @@ def resource_status(
         print(f"\n📊 [bold]Status for {status_info['resource_name']}[/bold]")
         print(f"🆔 Resource ID: {status_info['resource_id']}")
         current_time = datetime.fromisoformat(
-            status_info['current_time'].replace('Z', '')
+            status_info["current_time"].replace("Z", "")
         )
         print(f"🕐 Current time: {format_datetime(current_time)}")
 
@@ -414,23 +410,17 @@ def resource_status(
         print(f"⚙️  Base setting: {base_status}")
 
         # Current status
-        status_icons = {
-            "available": "🟢",
-            "in_use": "🟡",
-            "unavailable": "🔴"
-        }
+        status_icons = {"available": "🟢", "in_use": "🟡", "unavailable": "🔴"}
         status_icon = status_icons.get(status_info["status"], "❓")
         status_text = status_info["status"].replace("_", " ").title()
         print(f"📊 Current status: {status_icon} {status_text}")
 
         # Additional status info
         reservation_status = (
-            "✅ Yes" if status_info['is_available_for_reservation'] else "❌ No"
+            "✅ Yes" if status_info["is_available_for_reservation"] else "❌ No"
         )
         print(f"🎯 Available for reservation: {reservation_status}")
-        in_use_status = (
-            "✅ Yes" if status_info['is_currently_in_use'] else "❌ No"
-        )
+        in_use_status = "✅ Yes" if status_info["is_currently_in_use"] else "❌ No"
         print(f"🔄 Currently in use: {in_use_status}")
 
         # Unavailable details
@@ -442,9 +432,9 @@ def resource_status(
             )
             print("\n🔧 [bold]Maintenance Details:[/bold]")
             print(f"📅 Unavailable since: {unavailable_since}")
-            reset_hours = status_info['hours_until_auto_reset']
+            reset_hours = status_info["hours_until_auto_reset"]
             print(f"⏰ Auto-reset in: {reset_hours:.1f} hours")
-            config_hours = status_info['auto_reset_hours']
+            config_hours = status_info["auto_reset_hours"]
             print(f"⚙️  Auto-reset configured: {config_hours} hours")
             if status_info.get("will_auto_reset"):
                 print("✅ Will automatically reset to available")
@@ -501,9 +491,7 @@ def set_maintenance(
             return
 
     try:
-        result = client.set_resource_unavailable(
-            resource_id, auto_reset_hours
-        )
+        result = client.set_resource_unavailable(resource_id, auto_reset_hours)
         print(
             f"🔧 [bold orange1]Resource {resource_id} set to maintenance mode"
             "[/bold orange1]"
@@ -532,18 +520,13 @@ def reset_resource(
         raise typer.Exit(1) from e
 
     if not force:
-        if not confirm_action(
-            f"Reset resource {resource_id} to available status?"
-        ):
+        if not confirm_action(f"Reset resource {resource_id} to available status?"):
             print("Operation cancelled")
             return
 
     try:
         result = client.reset_resource_to_available(resource_id)
-        print(
-            f"✅ [bold green]Resource {resource_id} reset to available"
-            "[/bold green]"
-        )
+        print(f"✅ [bold green]Resource {resource_id} reset to available[/bold green]")
         print(f"🏢 Resource: {result['resource']['name']}")
         print("ℹ️  Resource is now available for reservations")
     except requests.exceptions.HTTPError as e:

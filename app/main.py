@@ -97,7 +97,7 @@ async def cleanup_expired_reservations():
                 db.query(models.Resource)
                 .filter(
                     models.Resource.status == "unavailable",
-                    models.Resource.unavailable_since.isnot(None)
+                    models.Resource.unavailable_since.isnot(None),
                 )
                 .all()
             )
@@ -217,11 +217,13 @@ def health_check(db: Session = Depends(get_db)):
     # Test database connectivity
     try:
         from sqlalchemy import text
+
         db.execute(text("SELECT 1"))
         db_status = "healthy"
 
         # Test basic service functionality
         from app.services import ResourceService
+
         service = ResourceService(db)
         resources_count = len(service.get_all_resources())
         api_status = "healthy"
@@ -232,8 +234,7 @@ def health_check(db: Session = Depends(get_db)):
         resources_count = 0
 
     overall_status = (
-        "healthy" if db_status == "healthy" and api_status == "healthy"
-        else "unhealthy"
+        "healthy" if db_status == "healthy" and api_status == "healthy" else "unhealthy"
     )
 
     return {
@@ -317,7 +318,7 @@ def search_resources(
     status_filter: str | None = Query(
         None,
         description="Filter by resource status: 'available', 'in_use', 'unavailable', or 'all'",
-        alias="status"
+        alias="status",
     ),
     available_only: bool = Query(
         None, description="Legacy parameter - use 'status' instead"
@@ -356,19 +357,19 @@ def search_resources(
     final_status_filter = None
     if status_filter is not None:
         # Validate status parameter
-        valid_statuses = ['available', 'in_use', 'unavailable', 'all']
+        valid_statuses = ["available", "in_use", "unavailable", "all"]
         if status_filter not in valid_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}",
             )
         final_status_filter = status_filter
     elif available_only is not None:
         # Legacy parameter support
-        final_status_filter = 'available' if available_only else 'all'
+        final_status_filter = "available" if available_only else "all"
     else:
         # Default behavior - show available resources
-        final_status_filter = 'available'
+        final_status_filter = "available"
 
     resource_service = ResourceService(db)
     return resource_service.search_resources(
@@ -475,14 +476,13 @@ def set_resource_unavailable(
                 "auto_reset_hours": resource.auto_reset_hours,
                 "unavailable_since": (
                     resource.unavailable_since.isoformat()
-                    if resource.unavailable_since else None
-                )
+                    if resource.unavailable_since
+                    else None
+                ),
             },
         }
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
 @app.put("/resources/{resource_id}/status/available")

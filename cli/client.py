@@ -213,7 +213,5 @@ class APIClient:
 
     def get_resource_status(self, resource_id: int) -> dict[str, Any]:
         """Get detailed status information for a resource."""
-        response = self.session.get(
-            f"{self.base_url}/resources/{resource_id}/status"
-        )
+        response = self.session.get(f"{self.base_url}/resources/{resource_id}/status")
         return self._handle_response(response)
