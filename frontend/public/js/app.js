@@ -29,12 +29,25 @@ function dashboardApp() {
         currentFilter: 'all',
         loading: false,
         
+        // Pagination
+        currentPage: 1,
+        itemsPerPage: 10,
+        
+        // Stats
+        stats: {
+            totalResources: 0,
+            availableResources: 0,
+            activeReservations: 0,
+            upcomingReservations: 0
+        },
+        
         // Modals
         showCreateResource: false,
         showReservation: false,
         showUpload: false,
         showAvailability: false,
         showHistory: false,
+        showHealthStatus: false,
         
         // Forms
         newResource: {
@@ -53,6 +66,7 @@ function dashboardApp() {
         availabilityData: null,
         selectedReservation: null,
         reservationHistory: null,
+        healthData: null,
         
         // Errors
         resourceError: '',
@@ -64,6 +78,7 @@ function dashboardApp() {
             this.resources = window.initialResources || [];
             this.reservations = window.initialReservations || [];
             this.filterResources();
+            this.updateStats();
             
             // Set default dates for reservation form
             const now = new Date();
@@ -83,9 +98,58 @@ function dashboardApp() {
             ).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
         },
 
+        // Pagination computed properties
+        get totalPages() {
+            return Math.ceil(this.filteredResources.length / this.itemsPerPage);
+        },
+
+        get paginatedResources() {
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            const end = start + this.itemsPerPage;
+            return this.filteredResources.slice(start, end);
+        },
+
+        get showPagination() {
+            return this.totalPages > 1;
+        },
+
+        get paginationPages() {
+            const pages = [];
+            const maxVisible = 5;
+            const start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+            const end = Math.min(this.totalPages, start + maxVisible - 1);
+            
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            return pages;
+        },
+
+        // Update stats based on current data
+        updateStats() {
+            this.stats.totalResources = this.resources.length;
+            // Use current_availability if available, otherwise fall back to base availability
+            this.stats.availableResources = this.resources.filter(r => 
+                r.current_availability !== undefined ? r.current_availability : r.available
+            ).length;
+            this.stats.activeReservations = this.reservations.filter(r => r.status === 'active').length;
+            this.stats.upcomingReservations = this.reservations.filter(r => 
+                r.status === 'active' && new Date(r.start_time) > new Date()
+            ).length;
+        },
+
         // Filter and search using backend
         async filterResources() {
             try {
+                // Reset to first page when filtering/searching
+                this.currentPage = 1;
+                
+                // For 'unavailable' filter, we need to use local filtering since backend doesn't support it
+                if (this.currentFilter === 'unavailable') {
+                    this.localFilterResources();
+                    return;
+                }
+                
                 const params = {};
                 
                 // Add search query if present
@@ -96,21 +160,13 @@ function dashboardApp() {
                 // Apply availability filter
                 if (this.currentFilter === 'available') {
                     params.available_only = true;
-                } else if (this.currentFilter === 'unavailable') {
-                    params.available_only = false;
                 } else {
-                    // For 'all', we still want to use search if there's a query
-                    if (this.searchQuery) {
-                        params.available_only = false; // Show all when searching
-                    } else {
-                        // No search, just show local resources
-                        this.filteredResources = [...this.resources];
-                        return;
-                    }
+                    // For 'all', show all resources (available_only = false)
+                    params.available_only = false;
                 }
                 
                 // Only call backend if we have search query or specific filter
-                if (this.searchQuery || this.currentFilter !== 'all') {
+                if (this.searchQuery || this.currentFilter === 'available') {
                     const response = await apiCall('/api/resources/search?' + new URLSearchParams(params));
                     const result = await response.json();
                     
@@ -122,6 +178,7 @@ function dashboardApp() {
                         this.localFilterResources();
                     }
                 } else {
+                    // No search and 'all' filter - show local resources
                     this.filteredResources = [...this.resources];
                 }
             } catch (error) {
@@ -156,7 +213,27 @@ function dashboardApp() {
 
         setFilter(filter) {
             this.currentFilter = filter;
+            this.currentPage = 1; // Reset to first page when filtering
             this.filterResources();
+        },
+
+        // Pagination methods
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
         },
 
         // Modal functions
@@ -246,6 +323,7 @@ function dashboardApp() {
                     // Add the new resource to local state immediately
                     this.resources.push(result.data);
                     this.filterResources();
+                    this.updateStats();
                     
                     // Reset form and close modal
                     this.newResource = { name: '', tags: '', available: true };
@@ -253,11 +331,22 @@ function dashboardApp() {
                     
                     showNotification('Resource created successfully!', 'success');
                 } else {
-                    this.resourceError = result.error;
+                    // Handle specific error messages gracefully
+                    const errorMessage = result.error || 'Failed to create resource';
+                    if (errorMessage.toLowerCase().includes('already exists')) {
+                        this.resourceError = `A resource named "${this.newResource.name}" already exists. Please choose a different name.`;
+                    } else {
+                        this.resourceError = errorMessage;
+                    }
                 }
             } catch (error) {
-                this.resourceError = 'Failed to create resource';
+                // Handle network or other errors gracefully
                 console.error('Resource creation error:', error);
+                if (error.message && error.message.includes('already exists')) {
+                    this.resourceError = `A resource named "${this.newResource.name}" already exists. Please choose a different name.`;
+                } else {
+                    this.resourceError = 'Unable to create resource. Please check your connection and try again.';
+                }
             } finally {
                 this.loading = false;
             }
@@ -333,6 +422,8 @@ function dashboardApp() {
                     if (index !== -1) {
                         this.reservations[index].status = 'cancelled';
                     }
+                    // Update stats immediately after cancellation
+                    this.updateStats();
                     showNotification('Reservation cancelled successfully', 'success');
                 } else {
                     showNotification(result.error, 'error');
@@ -368,10 +459,8 @@ function dashboardApp() {
                     this.csvFile = null;
                     showNotification(`Successfully uploaded! Created ${result.data.created_count} resources.`, 'success');
                     
-                    // Refresh resources list
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
+                    // Refresh resources list and stats without page reload
+                    await this.refreshResources();
                 } else {
                     this.uploadError = result.error || 'Upload failed';
                     console.error('Upload error:', result);
@@ -381,6 +470,24 @@ function dashboardApp() {
                 this.uploadError = 'Failed to upload CSV. Please check your file format.';
             } finally {
                 this.loading = false;
+            }
+        },
+
+        // Refresh resources from server
+        async refreshResources() {
+            try {
+                const response = await apiCall('/api/resources/search?available_only=false');
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.resources = result.data;
+                    this.filterResources();
+                    this.updateStats();
+                } else {
+                    console.error('Failed to refresh resources:', result.error);
+                }
+            } catch (error) {
+                console.error('Error refreshing resources:', error);
             }
         },
 
@@ -422,9 +529,64 @@ function dashboardApp() {
             return texts[action] || 'Unknown Action';
         },
 
-        showSystemStatus() {
-            // Show system status (could be expanded)
-            showNotification('System is running normally', 'info');
+        async showSystemStatus() {
+            this.showHealthStatus = true;
+            await this.refreshHealthData();
+        },
+
+        async refreshHealthData() {
+            try {
+                const response = await apiCall('/api/health');
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.healthData = result.data;
+                } else {
+                    console.error('Failed to load health data:', result.error);
+                    this.healthData = null;
+                }
+            } catch (error) {
+                console.error('Error loading health data:', error);
+                this.healthData = null;
+            }
+        },
+
+        async toggleResourceAvailability(resource) {
+            try {
+                const newAvailability = !resource.available;
+                const response = await apiCall(`/api/resources/${resource.id}/availability`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ available: newAvailability })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update the resource in local state
+                    const resourceIndex = this.resources.findIndex(r => r.id === resource.id);
+                    if (resourceIndex !== -1) {
+                        this.resources[resourceIndex].available = newAvailability;
+                    }
+                    
+                    // Update filtered resources as well
+                    const filteredIndex = this.filteredResources.findIndex(r => r.id === resource.id);
+                    if (filteredIndex !== -1) {
+                        this.filteredResources[filteredIndex].available = newAvailability;
+                    }
+                    
+                    // Update stats
+                    this.updateStats();
+                    
+                    const action = newAvailability ? 'enabled' : 'disabled';
+                    showNotification(`Resource ${action} successfully`, 'success');
+                } else {
+                    showNotification(result.error || 'Failed to update resource availability', 'error');
+                }
+            } catch (error) {
+                console.error('Error toggling availability:', error);
+                showNotification('Failed to update resource availability', 'error');
+            }
         }
     };
 }

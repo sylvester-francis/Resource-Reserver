@@ -68,19 +68,19 @@
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-number"><%= stats.totalResources %></span>
+                <span class="stat-number" x-text="stats.totalResources"><%= stats.totalResources %></span>
                 <div class="stat-label">Total Resources</div>
             </div>
             <div class="stat-card">
-                <span class="stat-number"><%= stats.availableResources %></span>
+                <span class="stat-number" x-text="stats.availableResources"><%= stats.availableResources %></span>
                 <div class="stat-label">Available Now</div>
             </div>
             <div class="stat-card">
-                <span class="stat-number"><%= stats.activeReservations %></span>
+                <span class="stat-number" x-text="stats.activeReservations"><%= stats.activeReservations %></span>
                 <div class="stat-label">Active Bookings</div>
             </div>
             <div class="stat-card">
-                <span class="stat-number"><%= stats.upcomingReservations %></span>
+                <span class="stat-number" x-text="stats.upcomingReservations"><%= stats.upcomingReservations %></span>
                 <div class="stat-label">Upcoming</div>
             </div>
         </div>
@@ -132,7 +132,7 @@
 
                 <!-- Resources List -->
                 <div class="resources-list">
-                    <template x-for="resource in filteredResources" :key="resource.id">
+                    <template x-for="resource in paginatedResources" :key="resource.id">
                         <div class="resource-list-item">
                             <div class="resource-list-avatar" x-text="resource.name.charAt(0).toUpperCase()"></div>
                             <div class="resource-list-content">
@@ -142,9 +142,9 @@
                                 </div>
                                 <div class="resource-list-meta">
                                     <span class="resource-list-status" 
-                                          :class="resource.available ? 'available' : 'unavailable'">
-                                        <i class="fas" :class="resource.available ? 'fa-check-circle' : 'fa-times-circle'"></i>
-                                        <span x-text="resource.available ? 'Available' : 'Unavailable'"></span>
+                                          :class="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'available' : 'unavailable'">
+                                        <i class="fas" :class="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                        <span x-text="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'Available' : 'Unavailable'"></span>
                                     </span>
                                     <div class="resource-list-tags">
                                         <template x-for="tag in resource.tags" :key="tag">
@@ -159,15 +159,69 @@
                                     <i class="fas fa-calendar-alt"></i>
                                     Schedule
                                 </button>
-                                <button class="btn-list-reserve" 
-                                        :disabled="!resource.available"
+                                <button x-show="(resource.current_availability !== undefined ? resource.current_availability : resource.available)" 
+                                        class="btn-list-reserve" 
                                         @click="showReservationModal(resource)">
                                     <i class="fas fa-calendar-plus"></i>
                                     Reserve
                                 </button>
+                                <button x-show="!resource.available" 
+                                        class="btn btn-success btn-sm" 
+                                        @click="toggleResourceAvailability(resource)">
+                                    <i class="fas fa-power-off"></i>
+                                    Enable
+                                </button>
+                                <button x-show="resource.available && resource.current_availability === false" 
+                                        class="btn btn-warning btn-sm" 
+                                        disabled>
+                                    <i class="fas fa-clock"></i>
+                                    In Use
+                                </button>
                             </div>
                         </div>
                     </template>
+
+                    <!-- Empty State for Resources -->
+                    <div x-show="filteredResources.length === 0" class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3 class="empty-state-title">No Resources Found</h3>
+                        <p class="empty-state-description">
+                            No resources match your current search criteria. Try adjusting your filters or search terms.
+                        </p>
+                        <button class="btn btn-outline" @click="searchQuery = ''; currentFilter = 'all'; filterResources()">
+                            <i class="fas fa-undo"></i> Clear Filters
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div x-show="showPagination" class="pagination-container">
+                    <div class="pagination-info">
+                        <span x-text="`Showing ${((currentPage - 1) * itemsPerPage) + 1}-${Math.min(currentPage * itemsPerPage, filteredResources.length)} of ${filteredResources.length} resources`"></span>
+                    </div>
+                    <div class="pagination">
+                        <button class="pagination-btn" 
+                                :disabled="currentPage === 1" 
+                                @click="prevPage()">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        
+                        <template x-for="page in paginationPages" :key="page">
+                            <button class="pagination-btn" 
+                                    :class="{ 'active': page === currentPage }"
+                                    @click="goToPage(page)"
+                                    x-text="page">
+                            </button>
+                        </template>
+                        
+                        <button class="pagination-btn" 
+                                :disabled="currentPage === totalPages" 
+                                @click="nextPage()">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -207,6 +261,20 @@
                         </div>
                     </div>
                 </template>
+
+                <!-- Empty State for My Reservations -->
+                <div x-show="reservations.length === 0" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-calendar-times"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Reservations Found</h3>
+                    <p class="empty-state-description">
+                        You haven't made any reservations yet. Start by browsing available resources and making your first booking.
+                    </p>
+                    <button class="btn btn-primary" @click="activeTab = 'resources'">
+                        <i class="fas fa-plus"></i> Make a Reservation
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -238,6 +306,20 @@
                         </div>
                     </div>
                 </template>
+
+                <!-- Empty State for Upcoming Reservations -->
+                <div x-show="upcomingReservations.length === 0" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-calendar-plus"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Upcoming Reservations</h3>
+                    <p class="empty-state-description">
+                        You don't have any upcoming reservations. Book a resource now to secure your spot for future needs.
+                    </p>
+                    <button class="btn btn-primary" @click="activeTab = 'resources'">
+                        <i class="fas fa-plus"></i> Make a Reservation
+                    </button>
+                </div>
             </div>
         </div>
     </main>

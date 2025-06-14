@@ -338,6 +338,22 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
   }
 });
 
+app.get('/api/health', async (req, res) => {
+  try {
+    const result = await apiCall('/health', {
+      method: 'GET'
+    });
+    // Add timestamp to health data
+    const healthData = {
+      ...result,
+      timestamp: new Date().toISOString()
+    };
+    res.json({ success: true, data: healthData });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Frontend server running on http://localhost:${PORT}`);
   console.log(`Backend API URL: ${API_BASE_URL}`);

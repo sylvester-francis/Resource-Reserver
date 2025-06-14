@@ -51,9 +51,11 @@ class ResourceService:
         """Get all resources with real-time availability status."""
         resources = self.db.query(models.Resource).all()
 
-        # Update availability status based on current reservations
+        # Add current availability as a computed field without modifying base availability
         for resource in resources:
-            resource.available = self._is_resource_currently_available(resource.id)
+            # Keep the original available field (base availability)
+            # Add current_availability as a computed field
+            resource.current_availability = self._is_resource_currently_available(resource.id)
 
         return resources
 
@@ -85,8 +87,8 @@ class ResourceService:
 
             for resource in resources:
                 if not self._has_conflict(resource.id, available_from, available_until):
-                    # Set dynamic availability for the response
-                    resource.available = True
+                    # Set current availability for time-based search
+                    resource.current_availability = True
                     available_resources.append(resource)
 
             # Apply text search if provided
@@ -123,8 +125,8 @@ class ResourceService:
                 ):
                     continue
 
-            # Set dynamic availability status
-            resource.available = is_currently_available
+            # Set current availability status
+            resource.current_availability = is_currently_available
             filtered_resources.append(resource)
 
         return filtered_resources

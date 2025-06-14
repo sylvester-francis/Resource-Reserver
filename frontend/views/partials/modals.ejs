@@ -262,3 +262,97 @@
         </div>
     </div>
 </div>
+
+<!-- System Health Status Modal -->
+<div x-show="showHealthStatus" 
+     x-transition
+     class="modal"
+     @click.self="showHealthStatus = false">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2 class="modal-title">System Health Status</h2>
+            <button class="modal-close" @click="showHealthStatus = false">&times;</button>
+        </div>
+        
+        <div x-show="healthData">
+            <!-- System Status -->
+            <div class="alert alert-info mb-4">
+                <strong>System Status:</strong> 
+                <span :class="healthData?.status === 'healthy' ? 'text-success' : 'text-danger'" 
+                      x-text="healthData?.status === 'healthy' ? 'System Running Normally' : 'System Issues Detected'"></span>
+                <br>
+                <strong>Last Updated:</strong> 
+                <span x-text="healthData ? formatDateTime(healthData.timestamp) : ''"></span>
+            </div>
+
+            <!-- Resource Statistics -->
+            <div class="health-section">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary-color);">
+                    <i class="fas fa-box"></i> Resource Statistics
+                </h3>
+                <div class="health-stats-grid">
+                    <div class="health-stat-item">
+                        <span class="health-stat-number" x-text="stats.totalResources">0</span>
+                        <span class="health-stat-label">Total Resources</span>
+                    </div>
+                    <div class="health-stat-item">
+                        <span class="health-stat-number text-success" x-text="stats.availableResources">0</span>
+                        <span class="health-stat-label">Available Now</span>
+                    </div>
+                    <div class="health-stat-item">
+                        <span class="health-stat-number text-warning" x-text="stats.totalResources - stats.availableResources">0</span>
+                        <span class="health-stat-label">Currently Booked</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservation Statistics -->
+            <div class="health-section">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary-color);">
+                    <i class="fas fa-calendar-check"></i> Reservation Statistics
+                </h3>
+                <div class="health-stats-grid">
+                    <div class="health-stat-item">
+                        <span class="health-stat-number" x-text="stats.activeReservations">0</span>
+                        <span class="health-stat-label">Active Bookings</span>
+                    </div>
+                    <div class="health-stat-item">
+                        <span class="health-stat-number text-info" x-text="stats.upcomingReservations">0</span>
+                        <span class="health-stat-label">Upcoming</span>
+                    </div>
+                    <div class="health-stat-item">
+                        <span class="health-stat-number text-muted" x-text="Math.round((stats.availableResources / stats.totalResources) * 100) || 0">0</span>
+                        <span class="health-stat-label">% Available</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Performance -->
+            <div class="health-section" x-show="healthData?.details">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary-color);">
+                    <i class="fas fa-tachometer-alt"></i> System Performance
+                </h3>
+                <div class="health-metrics">
+                    <template x-for="(value, key) in healthData?.details || {}" :key="key">
+                        <div class="health-metric-row">
+                            <span class="health-metric-label" x-text="key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())"></span>
+                            <span class="health-metric-value" x-text="value"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+        
+        <div x-show="!healthData" class="text-center py-4">
+            <i class="fas fa-spinner fa-spin"></i>
+            Loading system health data...
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn btn-outline" @click="showHealthStatus = false">Close</button>
+            <button type="button" class="btn btn-primary" @click="refreshHealthData">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>

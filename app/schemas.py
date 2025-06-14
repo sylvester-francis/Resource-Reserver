@@ -67,7 +67,8 @@ class ResourceCreate(BaseModel):
 class ResourceResponse(BaseModel):
     id: int
     name: str
-    available: bool
+    available: bool  # Base availability (manual enable/disable)
+    current_availability: bool | None = None  # Real-time availability (includes reservations)
     tags: list[str]
 
     model_config = ConfigDict(from_attributes=True)
