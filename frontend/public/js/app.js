@@ -10,9 +10,30 @@ async function apiCall(url, options = {}) {
             return;
         }
         
+        // Handle other HTTP errors gracefully
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage;
+            
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.error || errorData.detail || errorData.message || `Request failed (${response.status})`;
+            } catch {
+                errorMessage = `Request failed with status ${response.status}`;
+            }
+            
+            throw new Error(errorMessage);
+        }
+        
         return response;
     } catch (error) {
         console.error('API call failed:', error);
+        
+        // Provide user-friendly error messages
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Unable to connect to the server. Please check your connection.');
+        }
+        
         throw error;
     }
 }
@@ -73,22 +94,105 @@ function dashboardApp() {
         reservationError: '',
         uploadError: '',
 
-        // Initialize
+        // Initialize with robust data validation
         init() {
-            this.resources = window.initialResources || [];
-            this.reservations = window.initialReservations || [];
-            this.filterResources();
-            this.updateStats();
-            
-            // Set default dates for reservation form
-            const now = new Date();
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            this.newReservation.startDate = tomorrow.toISOString().split('T')[0];
-            this.newReservation.endDate = tomorrow.toISOString().split('T')[0];
-            this.newReservation.startTime = '09:00';
-            this.newReservation.endTime = '10:00';
+            try {
+                // Validate and set initial data
+                this.resources = this.validateResourceArray(window.initialResources);
+                this.reservations = this.validateReservationArray(window.initialReservations);
+                
+                // Initialize filtered resources safely
+                this.filterResources();
+                this.updateStats();
+                
+                // Set default dates for reservation form
+                this.initializeReservationForm();
+                
+                // Set up periodic refresh for real-time updates
+                this.setupPeriodicRefresh();
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                // Ensure arrays are always initialized
+                this.resources = [];
+                this.reservations = [];
+                this.filteredResources = [];
+                showNotification('Application initialized with limited functionality. Please refresh the page.', 'warning');
+            }
+        },
+
+        // Validate resource data array
+        validateResourceArray(data) {
+            if (!Array.isArray(data)) {
+                console.warn('Invalid resources data, using empty array');
+                return [];
+            }
+            return data.filter(resource => 
+                resource && 
+                typeof resource.id === 'number' && 
+                typeof resource.name === 'string' &&
+                typeof resource.available === 'boolean' &&
+                Array.isArray(resource.tags)
+            );
+        },
+
+        // Validate reservation data array
+        validateReservationArray(data) {
+            if (!Array.isArray(data)) {
+                console.warn('Invalid reservations data, using empty array');
+                return [];
+            }
+            return data.filter(reservation => 
+                reservation && 
+                typeof reservation.id === 'number' &&
+                typeof reservation.start_time === 'string' &&
+                typeof reservation.end_time === 'string' &&
+                typeof reservation.status === 'string'
+            );
+        },
+
+        // Initialize reservation form with safe date handling
+        initializeReservationForm() {
+            try {
+                const now = new Date();
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                this.newReservation.startDate = tomorrow.toISOString().split('T')[0];
+                this.newReservation.endDate = tomorrow.toISOString().split('T')[0];
+                this.newReservation.startTime = '09:00';
+                this.newReservation.endTime = '10:00';
+            } catch (error) {
+                console.error('Error setting default dates:', error);
+                // Fallback to manual date setting
+                this.newReservation.startTime = '09:00';
+                this.newReservation.endTime = '10:00';
+            }
+        },
+
+        // Setup periodic refresh for real-time updates
+        setupPeriodicRefresh() {
+            // Refresh stats every 30 seconds to keep data current
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    this.refreshResourcesIfNeeded();
+                }
+            }, 30000);
+        },
+
+        // Refresh resources only if page is visible and user isn't actively working
+        async refreshResourcesIfNeeded() {
+            try {
+                // Don't refresh if user is in the middle of an operation
+                if (this.loading || this.showCreateResource || this.showReservation) {
+                    return;
+                }
+
+                await this.refreshResources();
+            } catch (error) {
+                // Silent fail for background refresh
+                console.warn('Background refresh failed:', error);
+            }
         },
 
         // Computed properties
@@ -138,7 +242,7 @@ function dashboardApp() {
             ).length;
         },
 
-        // Filter and search using backend
+        // Filter and search using backend with robust error handling
         async filterResources() {
             try {
                 // Reset to first page when filtering/searching
@@ -152,9 +256,9 @@ function dashboardApp() {
                 
                 const params = {};
                 
-                // Add search query if present
-                if (this.searchQuery) {
-                    params.q = this.searchQuery;
+                // Add search query if present (validate and sanitize)
+                if (this.searchQuery && typeof this.searchQuery === 'string') {
+                    params.q = this.searchQuery.trim().slice(0, 100); // Limit query length
                 }
                 
                 // Apply availability filter
@@ -166,24 +270,31 @@ function dashboardApp() {
                 }
                 
                 // Only call backend if we have search query or specific filter
-                if (this.searchQuery || this.currentFilter === 'available') {
+                if (params.q || this.currentFilter === 'available') {
                     const response = await apiCall('/api/resources/search?' + new URLSearchParams(params));
+                    
+                    // Handle response safety
+                    if (!response) {
+                        this.localFilterResources();
+                        return;
+                    }
+                    
                     const result = await response.json();
                     
-                    if (result.success) {
+                    if (result && result.success && Array.isArray(result.data)) {
                         this.filteredResources = result.data;
                     } else {
-                        console.error('Search failed:', result.error);
+                        console.error('Search failed:', result?.error || 'Invalid response format');
                         // Fallback to local filtering
                         this.localFilterResources();
                     }
                 } else {
                     // No search and 'all' filter - show local resources
-                    this.filteredResources = [...this.resources];
+                    this.filteredResources = Array.isArray(this.resources) ? [...this.resources] : [];
                 }
             } catch (error) {
                 console.error('Search error:', error);
-                // Fallback to local filtering
+                // Always fallback to local filtering on any error
                 this.localFilterResources();
             }
         },
@@ -551,7 +662,25 @@ function dashboardApp() {
             }
         },
 
-        async toggleResourceAvailability(resource) {
+        // Get display text for resource status
+        getResourceStatusText(resource) {
+            if (!resource.available) {
+                return 'Disabled';
+            }
+            if (resource.current_availability === false) {
+                return 'In Use';
+            }
+            return 'Available';
+        },
+
+        // Toggle resource status (available/disabled)
+        async toggleResourceStatus(resource) {
+            // Don't allow toggling if resource is currently in use
+            if (resource.available && resource.current_availability === false) {
+                showNotification('Cannot disable resource while it is in use', 'warning');
+                return;
+            }
+
             try {
                 const newAvailability = !resource.available;
                 const response = await apiCall(`/api/resources/${resource.id}/availability`, {
@@ -567,12 +696,14 @@ function dashboardApp() {
                     const resourceIndex = this.resources.findIndex(r => r.id === resource.id);
                     if (resourceIndex !== -1) {
                         this.resources[resourceIndex].available = newAvailability;
+                        this.resources[resourceIndex].current_availability = newAvailability ? this.resources[resourceIndex].current_availability : false;
                     }
                     
                     // Update filtered resources as well
                     const filteredIndex = this.filteredResources.findIndex(r => r.id === resource.id);
                     if (filteredIndex !== -1) {
                         this.filteredResources[filteredIndex].available = newAvailability;
+                        this.filteredResources[filteredIndex].current_availability = newAvailability ? this.filteredResources[filteredIndex].current_availability : false;
                     }
                     
                     // Update stats
@@ -581,11 +712,11 @@ function dashboardApp() {
                     const action = newAvailability ? 'enabled' : 'disabled';
                     showNotification(`Resource ${action} successfully`, 'success');
                 } else {
-                    showNotification(result.error || 'Failed to update resource availability', 'error');
+                    showNotification(result.error || 'Failed to update resource status', 'error');
                 }
             } catch (error) {
-                console.error('Error toggling availability:', error);
-                showNotification('Failed to update resource availability', 'error');
+                console.error('Error toggling resource status:', error);
+                showNotification('Failed to update resource status', 'error');
             }
         }
     };

@@ -39,9 +39,14 @@ async function apiCall(endpoint, options = {}, token = null) {
     return response.data;
   } catch (error) {
     if (error.response) {
-      throw new Error(error.response.data.detail || error.response.data.message || 'API Error');
+      // Extract meaningful error messages from backend
+      const errorMessage = error.response.data.detail || 
+                          error.response.data.message || 
+                          error.response.data.error ||
+                          `Service error (${error.response.status})`;
+      throw new Error(errorMessage);
     }
-    throw new Error('Network Error');
+    throw new Error('Unable to connect to the server. Please check your connection.');
   }
 }
 

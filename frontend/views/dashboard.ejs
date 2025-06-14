@@ -141,10 +141,12 @@
                                     <span class="resource-list-id" x-text="'#' + resource.id"></span>
                                 </div>
                                 <div class="resource-list-meta">
-                                    <span class="resource-list-status" 
-                                          :class="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'available' : 'unavailable'">
+                                    <span class="resource-list-status clickable" 
+                                          :class="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'available' : 'unavailable'"
+                                          @click="toggleResourceStatus(resource)"
+                                          :title="resource.available ? 'Click to disable resource' : 'Click to enable resource'">
                                         <i class="fas" :class="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'fa-check-circle' : 'fa-times-circle'"></i>
-                                        <span x-text="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'Available' : 'Unavailable'"></span>
+                                        <span x-text="getResourceStatusText(resource)"></span>
                                     </span>
                                     <div class="resource-list-tags">
                                         <template x-for="tag in resource.tags" :key="tag">
@@ -164,12 +166,6 @@
                                         @click="showReservationModal(resource)">
                                     <i class="fas fa-calendar-plus"></i>
                                     Reserve
-                                </button>
-                                <button x-show="!resource.available" 
-                                        class="btn btn-success btn-sm" 
-                                        @click="toggleResourceAvailability(resource)">
-                                    <i class="fas fa-power-off"></i>
-                                    Enable
                                 </button>
                                 <button x-show="resource.available && resource.current_availability === false" 
                                         class="btn btn-warning btn-sm" 
