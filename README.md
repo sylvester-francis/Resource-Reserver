@@ -101,9 +101,11 @@ resource manually
 ### 💻 **Command Line Interface** - Built for Administrators
 
 ![CLI Main Interface](screenshots/CLI%20Interface/cli-main.png)
+
 *Powerful CLI for system administration and automation*
 
 ![CLI Resources](screenshots/CLI%20Interface/cli-resources.png)
+
 *Bulk operations and advanced management via command line*
 
 ---
