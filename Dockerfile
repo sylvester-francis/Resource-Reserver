@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Resource Reserver application
 
 # Frontend build stage
-FROM node:18-alpine as frontend-builder
+FROM node:24-alpine as frontend-builder
 
 WORKDIR /app
 

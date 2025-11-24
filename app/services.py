@@ -351,11 +351,14 @@ class ResourceService:
 
         return status_info
 
-    def get_resource_availability_schedule(
-        self, resource_id: int, days_ahead: int = 7
-    ) -> dict:
-        """Get detailed availability schedule for a resource."""
+
+    def get_resource_schedule(
+        self, resource_id:int, days_ahead: int = 7
+    ) -> list:
+        """ Get existing reservations for a resource over the next specified days,
+        including any reservations since 12:00 AM today. """
         now = utcnow()
+        start_of_today = datetime.combine(now.date(), datetime.min.time(), tzinfo=UTC)
         end_date = now + timedelta(days=days_ahead)
 
         # Get the resource
@@ -370,63 +373,20 @@ class ResourceService:
 
         # Get all reservations for this resource in the time period
         reservations = (
-            self.db.query(models.Reservation)
+            self.db.query(models.Reservation,
+                          models.User.username)
+            .join(models.User, models.Reservation.user_id == models.User.id)
             .filter(
                 models.Reservation.resource_id == resource_id,
                 models.Reservation.status == "active",
                 models.Reservation.start_time < end_date,
-                models.Reservation.end_time > now,
+                models.Reservation.end_time > start_of_today,
             )
             .order_by(models.Reservation.start_time)
             .all()
         )
 
-        # Generate 7-day schedule with hourly time slots
-        schedule = []
-        for day_offset in range(days_ahead):
-            current_date = (now + timedelta(days=day_offset)).date()
-
-            # Generate time slots for each day (9 AM to 5 PM)
-            time_slots = []
-            for hour in range(9, 17):  # 9 AM to 4 PM (last slot is 4-5 PM)
-                slot_time = f"{hour:02d}:00"
-                # Create timezone-aware slot times in UTC
-                slot_datetime_start = datetime.combine(
-                    current_date, datetime.min.time(), tzinfo=UTC
-                ) + timedelta(hours=hour)
-                slot_datetime_end = slot_datetime_start + timedelta(hours=1)
-
-                # Check if this time slot conflicts with any reservation
-                is_available = True
-                if not resource.available:  # Base availability check
-                    is_available = False
-                else:
-                    for res in reservations:
-                        # Ensure database times are timezone-aware (assume they're UTC)
-                        res_start = res.start_time
-                        res_end = res.end_time
-
-                        # If database times are timezone-naive, assume they're UTC
-                        if res_start.tzinfo is None:
-                            res_start = res_start.replace(tzinfo=UTC)
-                        if res_end.tzinfo is None:
-                            res_end = res_end.replace(tzinfo=UTC)
-
-                        # Check overlap: slot overlaps if slot_start < res_end AND slot_end > res_start  # noqa
-                        if (
-                            slot_datetime_start < res_end
-                            and slot_datetime_end > res_start
-                        ):
-                            is_available = False
-                            break
-
-                time_slots.append({"time": slot_time, "available": is_available})
-
-            schedule.append(
-                {"date": current_date.isoformat(), "time_slots": time_slots}
-            )
-
-        return {
+        schedule = {
             "success": True,
             "data": {
                 "resource_id": resource_id,
@@ -436,19 +396,20 @@ class ResourceService:
                     resource_id
                 ),
                 "base_available": resource.available,
-                "schedule": schedule,
                 "reservations": [
                     {
                         "id": res.id,
-                        "start_time": res.start_time.isoformat(),
-                        "end_time": res.end_time.isoformat(),
+                        "start_time": res.start_time.replace(tzinfo=UTC).isoformat(),
+                        "end_time": res.end_time.replace(tzinfo=UTC).isoformat(),
                         "user_id": res.user_id,
+                        "user_name": user_name,
                         "status": res.status,
                     }
-                    for res in reservations
+                    for res, user_name in reservations
                 ],
             },
         }
+        return schedule
 
 
 class ReservationService:

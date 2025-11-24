@@ -842,7 +842,7 @@ body {
     border-radius: var(--radius-lg);
     padding: var(--space-6);
     width: 100%;
-    max-width: 500px;
+    max-width: 900px;
     max-height: 90vh;
     overflow-y: auto;
 }
@@ -1041,6 +1041,8 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: var(--space-3);
     margin-bottom: var(--space-4);
+    min-width: min-content;
+    overflow-x: auto;
 }
 
 .availability-day {
@@ -1055,6 +1057,10 @@ body {
     text-align: center;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.875rem;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+    min-height: auto;
 }
 
 .availability-slots {
@@ -1064,11 +1070,13 @@ body {
 
 .availability-slot {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-1) var(--space-2);
-    font-size: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--border-radius);
+    border-left: 4px solid;
+    margin-bottom: var(--space-2);
+    min-width: 0;
 }
 
 .availability-slot:last-child {
@@ -1085,8 +1093,70 @@ body {
     color: #dc2626;
 }
 
+
 .slot-time {
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.4;
+    overflow: visible;
+    flex-shrink: 0;
+}
+
+.slot-time div {
+    word-break: break-word;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.slot-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: 0.9rem;
+}
+
+.slot-status {
+    text-transform: capitalize;
     font-weight: 500;
+}
+
+.slot-user {
+    color: #666;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.slot-available {
+    background-color: #e8f5e9;
+    border-left-color: #4caf50;
+}
+
+.slot-booked {
+    background-color: #ffebee;
+    border-left-color: #f44336;
+}
+
+.availability-day {
+    margin-bottom: var(--space-4);
+    min-width: max-content;
+}
+
+.availability-day-header {
+    font-weight: 500;
+    color: var(--primary-color);
+    margin-bottom: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.availability-controls .form-input {
+    flex: 0 1 auto;
+}
+
+.availability-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
 
 .slot-status {
