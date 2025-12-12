@@ -168,23 +168,41 @@
             <span :class="selectedResource?.available ? 'text-success' : 'text-danger'" 
                   x-text="selectedResource?.available ? 'Available' : 'Unavailable'"></span>
         </div>
+
+        <!-- Days Ahead Control -->
+        <div class="availability-controls mb-4">
+            <label class="form-label">Show Availability For:</label>
+            <select class="form-input" x-model.number="availabilityDaysAhead" style="max-width: 200px;">
+                <option value="3">3 Days</option>
+                <option value="7">1 Week</option>
+                <option value="14">2 Weeks</option>
+                <option value="30">1 Month</option>
+                <option value="60">2 Months</option>
+            </select>
+            <button class="btn btn-sm btn-primary" @click="showAvailabilityModal(selectedResource, availabilityDaysAhead)" style="margin-left: var(--space-2);">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
         
         <div x-show="availabilityData">
-            <h3 style="margin-bottom: var(--space-4);">7-Day Schedule</h3>
+            <h3 style="margin-bottom: var(--space-4);" x-text="'Reservations for ' + (selectedResource?.name || '') + ' for the next ' + availabilityDaysAhead + ' days'"></h3>
             <div class="availability-grid">
-                <template x-for="day in availabilityData?.schedule || []" :key="day.date">
+
+                <template x-for="day in availabilityData.reservations" :key="day.date">
                     <div class="availability-day">
-                        <div class="availability-day-header">
-                            <strong x-text="new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })"></strong>
-                        </div>
-                        <div class="availability-slots">
-                            <template x-for="slot in day.time_slots" :key="slot.time">
-                                <div class="availability-slot" :class="slot.available ? 'available' : 'unavailable'">
-                                    <span class="slot-time" x-text="slot.time"></span>
-                                    <span class="slot-status" x-text="slot.available ? 'Free' : 'Booked'"></span>
+                        <h4 class="availability-day-header">
+                            <div x-text="day.dayName.split(',')[0]"></div>
+                            <div x-text="day.dayName.split(',').slice(1).join(',').trim()"></div>                            
+                        </h4>
+                        <template x-for="slot in day.time_slots" :key="slot.id + '-' + slot.start_time">
+                            <div class="availability-slot" :class="slot.status === 'available' ? 'slot-available' : 'slot-booked'">
+                                <div class="slot-time" x-text="slot.start_time + ' - ' + slot.end_time"></div>
+                                <div class="slot-info">
+                                    <!-- <span class="slot-status" x-text="slot.status"></span> -->
+                                    <span class="slot-user" x-show="slot.user_name" x-text="slot.user_name"></span>
                                 </div>
-                            </template>
-                        </div>
+                            </div>
+                        </template>
                     </div>
                 </template>
             </div>
@@ -219,9 +237,9 @@
             <strong>Reservation:</strong> <span x-text="selectedReservation?.resource?.name"></span>
             <br>
             <strong>Period:</strong> 
-            <span x-text="selectedReservation ? formatDateTime(selectedReservation.start_time) : ''"></span>
+            <span x-text="selectedReservation ? formatDateTimeLocal(selectedReservation.start_time) : ''"></span>
             - 
-            <span x-text="selectedReservation ? formatDateTime(selectedReservation.end_time) : ''"></span>
+            <span x-text="selectedReservation ? formatDateTimeLocal(selectedReservation.end_time) : ''"></span>
             <br>
             <strong>Status:</strong> 
             <span :class="selectedReservation?.status === 'active' ? 'text-success' : 'text-danger'" 
@@ -239,7 +257,7 @@
                         <div class="history-content">
                             <div class="history-action">
                                 <strong x-text="getHistoryActionText(entry.action)"></strong>
-                                <span class="history-time" x-text="formatDateTime(entry.timestamp)"></span>
+                                <span class="history-time" x-text="formatDateTimeLocal(entry.timestamp)"></span>
                             </div>
                             <div class="history-details" x-show="entry.details" x-text="entry.details"></div>
                         </div>
@@ -284,7 +302,7 @@
                       x-text="healthData?.status === 'healthy' ? 'System Running Normally' : 'System Issues Detected'"></span>
                 <br>
                 <strong>Last Updated:</strong> 
-                <span x-text="healthData ? formatDateTime(healthData.timestamp) : ''"></span>
+                <span x-text="healthData ? formatDateTimeLocal(healthData.timestamp) : ''"></span>
             </div>
 
             <!-- Resource Statistics -->

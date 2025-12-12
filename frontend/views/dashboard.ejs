@@ -6,6 +6,8 @@
     <title><%= title %></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
+    <!-- Add Luxon CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
@@ -197,7 +199,7 @@
                                           @click="toggleResourceStatus(resource)"
                                           :title="resource.available ? 'Click to disable resource' : 'Click to enable resource'">
                                         <i class="fas" :class="(resource.current_availability !== undefined ? resource.current_availability : resource.available) ? 'fa-check-circle' : 'fa-times-circle'"></i>
-                                        <span x-text="getResourceStatusText(resource)"></span>
+                                        <span x-text="getResourceStatusText(resource, 7)"></span>
                                     </span>
                                     <div class="resource-list-tags">
                                         <template x-for="tag in resource.tags" :key="tag">
@@ -208,13 +210,13 @@
                             </div>
                             <div class="resource-list-actions">
                                 <button class="btn btn-outline btn-sm" 
-                                        @click="showAvailabilityModal(resource)">
+                                        @click="showAvailabilityModal(resource, availabilityDaysAhead)">
                                     <i class="fas fa-calendar-alt"></i>
                                     Schedule
                                 </button>
                                 <button x-show="(resource.current_availability !== undefined ? resource.current_availability : resource.available)" 
                                         class="btn-list-reserve" 
-                                        @click="showReservationModal(resource)">
+                                        @click="showReservationModal(resource, 7)">
                                     <i class="fas fa-calendar-plus"></i>
                                     Reserve
                                 </button>
@@ -286,9 +288,9 @@
                             <h3 x-text="reservation.resource.name"></h3>
                             <div class="reservation-time">
                                 <i class="fas fa-clock"></i>
-                                <span x-text="formatDateTime(reservation.start_time)"></span>
-                                - 
-                                <span x-text="formatDateTime(reservation.end_time)"></span>
+                                <span x-text="formatDateTimeLocal(reservation.start_time)"></span>
+                                 - 
+                                <span x-text="formatDateTimeLocal(reservation.end_time)"></span>
                             </div>
                             <div class="reservation-badges">
                                 <span class="resource-list-status" 
@@ -338,9 +340,9 @@
                             <h3 x-text="reservation.resource.name"></h3>
                             <div class="reservation-time">
                                 <i class="fas fa-clock"></i>
-                                <span x-text="formatDateTime(reservation.start_time)"></span>
+                                <span x-text="formatDateTimeLocal(reservation.start_time)"></span>
                                 - 
-                                <span x-text="formatDateTime(reservation.end_time)"></span>
+                                <span x-text="formatDateTimeLocal(reservation.end_time)"></span>
                             </div>
                         </div>
                         <div class="reservation-actions">
@@ -375,11 +377,20 @@
     <%- include('partials/modals') %>
 </div>
 
-<script>
-// Pass server data to Alpine.js
-window.initialResources = <%- JSON.stringify(resources) %>;
-window.initialReservations = <%- JSON.stringify(reservations) %>;
+<script type="application/json" id="server-data">
+{
+    "resources": <%- JSON.stringify(resources || []) %>,
+    "reservations": <%- JSON.stringify(reservations || []) %>
+}
 </script>
+
+<script>
+// Parse the JSON data
+const serverData = JSON.parse(document.getElementById('server-data').textContent);
+window.initialResources = serverData.resources;
+window.initialReservations = serverData.reservations;
+</script>
+
 
 <!-- Notification Container -->
 <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
