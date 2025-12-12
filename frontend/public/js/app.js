@@ -1,4 +1,6 @@
 // API wrapper with session handling
+const { DateTime } = luxon;
+
 async function apiCall(url, options = {}) {
     try {
         const response = await fetch(url, options);
@@ -91,6 +93,7 @@ function dashboardApp() {
         selectedResource: null,
         csvFile: null,
         availabilityData: null,
+        availabilityDaysAhead: 7,
         selectedReservation: null,
         reservationHistory: null,
         healthData: null,
@@ -162,12 +165,10 @@ function dashboardApp() {
         // Initialize reservation form with safe date handling
         initializeReservationForm() {
             try {
-                const now = new Date();
-                const tomorrow = new Date(now);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                
-                this.newReservation.startDate = tomorrow.toISOString().split('T')[0];
-                this.newReservation.endDate = tomorrow.toISOString().split('T')[0];
+                const now = DateTime.now();
+                const tomorrow = now.plus({days: 1});
+                this.newReservation.startDate = tomorrow.toISODate();
+                this.newReservation.endDate = tomorrow.toISODate();
                 this.newReservation.startTime = '09:00';
                 this.newReservation.endTime = '10:00';
             } catch (error) {
@@ -206,8 +207,8 @@ function dashboardApp() {
         // Computed properties
         get upcomingReservations() {
             return this.reservations.filter(r => 
-                r.status === 'active' && new Date(r.start_time) > new Date()
-            ).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+                r.status === 'active' && DateTime.fromISO(r.start_time) > DateTime.now()
+            ).sort((a, b) => DateTime.fromISO(a.start_time) - DateTime.fromISO(b.start_time));
         },
 
         // Pagination computed properties
@@ -280,11 +281,12 @@ function dashboardApp() {
                 // Add time-based search parameters
                 if (this.searchTimeFrom) {
                     // Convert to ISO format for API
-                    params.available_from = new Date(this.searchTimeFrom).toISOString();
+                    // Convert local datetime to UTC ISO string
+                    params.available_from = DateTime.fromJSDate(this.searchTimeFrom).toUTC().toISO();
                 }
                 if (this.searchTimeUntil) {
                     // Convert to ISO format for API
-                    params.available_until = new Date(this.searchTimeUntil).toISOString();
+                    params.available_until = DateTime.fromJSDate(this.searchTimeUntil).toUTC().toISO();
                 }
                 
                 // Only call backend if we have search query, specific filter, or time parameters
@@ -348,30 +350,28 @@ function dashboardApp() {
 
         // Time-based search functions
         setTimePreset(preset) {
-            const now = new Date();
-            
+            const now = DateTime.now();
+
             switch (preset) {
                 case 'now':
                     // Available from now for the next 2 hours
                     this.searchTimeFrom = this.formatDateTimeLocal(now);
-                    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+                    const twoHoursLater = now.plus({ hours: 2 });
                     this.searchTimeUntil = this.formatDateTimeLocal(twoHoursLater);
                     break;
                 case 'today':
                     // Rest of today (current time to end of day)
                     this.searchTimeFrom = this.formatDateTimeLocal(now);
-                    const endOfDay = new Date(now);
-                    endOfDay.setHours(23, 59, 59, 999);
+                    const endOfDay = DateTime.now().endOf('day');
                     this.searchTimeUntil = this.formatDateTimeLocal(endOfDay);
                     break;
                 case 'tomorrow':
                     // All day tomorrow
-                    const tomorrow = new Date(now);
-                    tomorrow.setDate(now.getDate() + 1);
-                    tomorrow.setHours(9, 0, 0, 0); // Start at 9 AM
-                    this.searchTimeFrom = this.formatDateTimeLocal(tomorrow);
-                    tomorrow.setHours(17, 0, 0, 0); // End at 5 PM
-                    this.searchTimeUntil = this.formatDateTimeLocal(tomorrow);
+                    const tomorrow = now.plus({ days: 1 });
+                    let temp = tomorrow.set({ hour: 9, minute: 0, second: 0, millisecond: 0 }); // Start at 9 AM
+                    this.searchTimeFrom = this.formatDateTimeLocal(temp);
+                    temp = tomorrow.set({ hour: 17, minute: 0, second: 0, millisecond: 0 }); // End at 5 PM
+                    this.searchTimeUntil = this.formatDateTimeLocal(temp);
                     break;
             }
             
@@ -386,15 +386,11 @@ function dashboardApp() {
         },
 
         // Helper function to format datetime for datetime-local input
-        formatDateTimeLocal(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        formatDateTimeLocal(dateString) {
+            return DateTime.fromISO(dateString).toLocaleString();
         },
 
+        // Toggle advanced search visibility
         // Pagination methods
         goToPage(page) {
             if (page >= 1 && page <= this.totalPages) {
@@ -433,16 +429,141 @@ function dashboardApp() {
             this.showUpload = true;
         },
 
-        async showAvailabilityModal(resource) {
+                // Convert UTC reservations to local time and group by day
+        groupReservationsByDay(reservations) {
+            const groupedByDay = new Map();
+            
+            if (!Array.isArray(reservations)) {
+                return [];
+            }
+            
+            reservations.forEach(reservation => {
+                try {
+                    // Parse UTC times and convert to local
+                    const startTime = DateTime.fromISO(reservation.start_time).toLocal();
+                    const endTime = DateTime.fromISO(reservation.end_time).toLocal();
+                    
+                    // Check if reservation spans multiple days
+                    const startDate = startTime.toISODate();
+                    const endDate = endTime.toISODate();
+                    
+                    if (startDate === endDate) {
+                        // Reservation is within a single day
+                        this.addReservationToDay(groupedByDay, {
+                            date: startDate,
+                            dayName: startTime.toFormat('EEEE, MMMM d, yyyy'),
+                            start_time: startTime.toFormat('h:mm a'),
+                            end_time: endTime.toFormat('h:mm a'),
+                            status: reservation.status,
+                            id: reservation.id,
+                            resource_id: reservation.resource_id,
+                            user_id: reservation.user_id,
+                            user_name: reservation.user_name,
+                            isPartial: false
+                        });
+                    } else {
+                        // Reservation spans multiple days - split it
+                        let currentDate = startTime;
+                        
+                        while (currentDate.toISODate() <= endDate) {
+                            const dateStr = currentDate.toISODate();
+                            
+                            // Determine start and end times for this day
+                            let dayStartTime, dayEndTime;
+                            
+                            if (dateStr === startDate) {
+                                // First day: use reservation start time to end of day
+                                dayStartTime = startTime;
+                                dayEndTime = currentDate.endOf('day');
+                            } else if (dateStr === endDate) {
+                                // Last day: use start of day to reservation end time
+                                dayStartTime = currentDate.startOf('day');
+                                dayEndTime = endTime;
+                            } else {
+                                // Middle days: use full day
+                                dayStartTime = currentDate.startOf('day');
+                                dayEndTime = currentDate.endOf('day');
+                            }
+                            
+                            this.addReservationToDay(groupedByDay, {
+                                date: dateStr,
+                                dayName: currentDate.toFormat('EEEE, MMMM d, yyyy'),
+                                start_time: dayStartTime.toFormat('h:mm a'),
+                                end_time: dayEndTime.toFormat('h:mm a'),
+                                status: reservation.status,
+                                id: reservation.id,
+                                resource_id: reservation.resource_id,
+                                user_id: reservation.user_id,
+                                user_name: reservation.user_name,
+                                isPartial: true // Mark as part of a multi-day reservation
+                            });
+                            
+                            // Move to next day
+                            currentDate = currentDate.plus({ days: 1 }).startOf('day');
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error processing reservation:', reservation, error);
+                }
+            });
+            
+            // Convert Map to array and sort by date
+            const sortedReservations = Array.from(groupedByDay.values()).sort((a, b) => {
+                return DateTime.fromISO(a.date) - DateTime.fromISO(b.date);
+            });
+            
+            // Sort time slots within each day by start time
+            sortedReservations.forEach(day => {
+                day.time_slots.sort((a, b) => {
+                    const timeA = DateTime.fromFormat(a.start_time, 'h:mm a');
+                    const timeB = DateTime.fromFormat(b.start_time, 'h:mm a');
+                    return timeA - timeB;
+                });
+            });
+            
+            return sortedReservations;
+        },
+
+        // Helper method to add a reservation to a specific day
+        addReservationToDay(groupedByDay, timeSlotData) {
+            const { date, dayName, ...slotData } = timeSlotData;
+            
+            // Create the day entry if it doesn't exist
+            if (!groupedByDay.has(date)) {
+                groupedByDay.set(date, {
+                    date: date,
+                    dayName: dayName,
+                    time_slots: []
+                });
+            }
+            
+            // Add the time slot to the day's array
+            groupedByDay.get(date).time_slots.push(slotData);
+        },
+        
+        async showAvailabilityModal(resource, days = 7) {
             this.selectedResource = resource;
             this.showAvailability = true;
             
             try {
-                const response = await apiCall(`/api/resources/${resource.id}/availability`);
+                const response = await apiCall(`/api/resources/${resource.id}/availability?days_ahead=${days}`);
                 const result = await response.json();
-                
+
                 if (result.success) {
                     this.availabilityData = result.data;
+                    
+                    // Convert and group reservations by day (UTC to local time)
+                    if (this.availabilityData.reservations && Array.isArray(this.availabilityData.reservations)) {
+                        this.availabilityData.reservations = this.groupReservationsByDay(
+                            this.availabilityData.reservations
+                        );
+                    }
+                    this.availabilityData.reservations.forEach(reservation => {
+                        if (!reservation.user_name) {
+                            reservation.user_name = 'Unknown User (' + reservation.user_id + ')';
+                        }
+                    });
                 } else {
                     console.error('Failed to load availability:', result.error);
                     this.availabilityData = null;
@@ -547,6 +668,7 @@ function dashboardApp() {
                 const response = await apiCall('/api/reservations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    // convert to ISO strings in UTC
                     body: JSON.stringify({
                         resource_id: this.selectedResource.id,
                         start_time: startDateTime.toISOString(),
@@ -684,7 +806,7 @@ function dashboardApp() {
 
         // Utility functions
         formatDateTime(dateString) {
-            return new Date(dateString).toLocaleString();
+            return DateTime.fromISO(dateString);
         },
 
         getHistoryIcon(action) {
