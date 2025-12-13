@@ -233,7 +233,7 @@ The Safari login issue has been successfully resolved by adding the `sameSite: '
 
 ---
 
-**Fixed by**: Antigravity AI  
+**Fixed by**: Sylvester Francis  
 **Date**: 2025-12-13  
 **Release**: v2.0.1  
 **Status**: Resolved
