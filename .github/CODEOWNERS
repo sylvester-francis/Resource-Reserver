@@ -1,0 +1,81 @@
+# CODEOWNERS file for Resource-Reserver
+# This file defines who owns and is responsible for different parts of the codebase
+# When a pull request is opened, the appropriate code owners are automatically requested for review
+#
+# Format: <file-pattern> <owner(s)>
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repository
+# This will be requested for review unless a later match takes precedence
+* @sylvester-francis
+
+# Documentation
+# All documentation files should be reviewed by the project owner
+/docs/ @sylvester-francis
+*.md @sylvester-francis
+CHANGELOG.md @sylvester-francis
+RELEASE_NOTES*.md @sylvester-francis
+
+# Backend (Python/FastAPI)
+# All backend Python code, including main application and services
+/app/ @sylvester-francis
+/tests/test_api/ @sylvester-francis
+/tests/test_services/ @sylvester-francis
+pyproject.toml @sylvester-francis
+requirements.txt @sylvester-francis
+
+# CLI (Python/Typer)
+# Command-line interface code
+/cli/ @sylvester-francis
+/tests/test_cli/ @sylvester-francis
+
+# Frontend (JavaScript/Express.js)
+# All frontend code including server, views, and assets
+/frontend/ @sylvester-francis
+/frontend/server.js @sylvester-francis
+/frontend/views/ @sylvester-francis
+/frontend/public/ @sylvester-francis
+/frontend/package.json @sylvester-francis
+
+# Infrastructure & DevOps
+# Docker, CI/CD, and deployment configuration
+Dockerfile* @sylvester-francis
+docker-compose*.yml @sylvester-francis
+.dockerignore @sylvester-francis
+/.github/ @sylvester-francis
+
+# Development Tooling
+# Development environment configuration and tooling
+.mise.toml @sylvester-francis
+Tiltfile @sylvester-francis
+Makefile @sylvester-francis
+/scripts/ @sylvester-francis
+.pre-commit-config.yaml @sylvester-francis
+.yamllint.yml @sylvester-francis
+/.githooks/ @sylvester-francis
+
+# Configuration Files
+# Project configuration and settings
+.gitignore @sylvester-francis
+.env.example @sylvester-francis
+.editorconfig @sylvester-francis
+
+# GitHub Specific
+# GitHub configuration files
+/.github/workflows/ @sylvester-francis
+/.github/CODEOWNERS @sylvester-francis
+/.github/ISSUE_TEMPLATE/ @sylvester-francis
+/.github/PULL_REQUEST_TEMPLATE.md @sylvester-francis
+
+# Security & Sensitive Files
+# Files that require extra scrutiny
+/.github/workflows/ci.yml @sylvester-francis
+/app/auth.py @sylvester-francis
+/app/security.py @sylvester-francis
+
+# Critical Application Files
+# Core files that affect the entire application
+/app/main.py @sylvester-francis
+/app/database.py @sylvester-francis
+/app/models.py @sylvester-francis
+/frontend/server.js @sylvester-francis
