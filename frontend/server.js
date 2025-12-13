@@ -35,16 +35,16 @@ async function apiCall(endpoint, options = {}, token = null) {
         ...options.headers
       }
     };
-    
+
     const response = await axios(config);
     return response.data;
   } catch (error) {
     if (error.response) {
       // Extract meaningful error messages from backend
-      const errorMessage = error.response.data.detail || 
-                          error.response.data.message || 
-                          error.response.data.error ||
-                          `Service error (${error.response.status})`;
+      const errorMessage = error.response.data.detail ||
+        error.response.data.message ||
+        error.response.data.error ||
+        `Service error (${error.response.status})`;
       throw new Error(errorMessage);
     }
     throw new Error('Unable to connect to the server. Please check your connection.');
@@ -54,11 +54,11 @@ async function apiCall(endpoint, options = {}, token = null) {
 // Authentication middleware with token validation
 async function requireAuth(req, res, next) {
   const token = req.cookies.auth_token;
-  
+
   if (!token) {
     return res.redirect('/login?error=' + encodeURIComponent('Please log in to access this page'));
   }
-  
+
   try {
     // Validate token with backend by making a test API call to a protected endpoint
     await apiCall('/reservations/my', { method: 'GET' }, token);
@@ -92,17 +92,16 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  res.render('login', { 
+  res.render('login', {
     title: 'Login - Resource Reservation System',
-    error: req.query.error 
+    error: req.query.error,
+    success: req.query.success
   });
 });
 
 app.get('/register', (req, res) => {
-  res.render('register', { 
-    title: 'Register - Resource Reservation System',
-    error: req.query.error 
-  });
+  // Redirect to login page which has both login and register forms
+  res.redirect('/login?success=' + encodeURIComponent(req.query.success || ''));
 });
 
 app.post('/auth/login', async (req, res) => {
@@ -110,21 +109,23 @@ app.post('/auth/login', async (req, res) => {
     const formData = new URLSearchParams();
     formData.append('username', req.body.username);
     formData.append('password', req.body.password);
-    
+
     const response = await axios.post(`${API_BASE_URL}/token`, formData, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
-    
-    res.cookie('auth_token', response.data.access_token, { 
-      httpOnly: true, 
+
+    res.cookie('auth_token', response.data.access_token, {
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax', // Required for Safari compatibility
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
-    
+
     res.cookie('username', req.body.username, {
+      sameSite: 'Lax', // Required for Safari compatibility
       maxAge: 24 * 60 * 60 * 1000
     });
-    
+
     res.redirect('/dashboard');
   } catch (error) {
     res.redirect('/login?error=' + encodeURIComponent(error.message));
@@ -140,7 +141,7 @@ app.post('/auth/register', async (req, res) => {
         password: req.body.password
       }
     });
-    
+
     res.redirect('/login?success=Registration successful! Please log in.');
   } catch (error) {
     res.redirect('/register?error=' + encodeURIComponent(error.message));
@@ -165,17 +166,17 @@ app.get('/dashboard', requireAuth, async (req, res) => {
       resourceCount: resources.length,
       reservationCount: reservations.length
     });
-    
+
     // Get total count from health endpoint or make separate call
     const totalResourcesResponse = await apiCall('/resources/search?status=all', { method: 'GET' }, req.token);
-    
+
     const stats = {
       totalResources: totalResourcesResponse.length,
       availableResources: resources.length, // Since we filtered for available only
       activeReservations: reservations.filter(r => r.status === 'active').length,
       upcomingReservations: reservations.filter(r => r.status === 'active' && new Date(r.start_time) > new Date()).length
     };
-    
+
     res.render('dashboard', {
       title: 'Dashboard - Resource Reservation System',
       username: req.cookies.username,
@@ -319,7 +320,7 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
 
     const fs = require('fs');
     const FormData = require('form-data');
-    
+
     const formData = new FormData();
     formData.append('file', fs.createReadStream(req.file.path), {
       filename: req.file.originalname,
@@ -346,7 +347,7 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
         console.error('Error cleaning up file:', cleanupError);
       }
     }
-    
+
     const errorMessage = error.response?.data?.detail || error.message || 'Upload failed';
     res.status(400).json({ success: false, error: errorMessage });
   }

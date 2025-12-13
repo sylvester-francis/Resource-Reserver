@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# One-command quick start for Resource-Reserver
+# Run this to go from zero to running in one command!
+
+set -e
+
+echo ""
+echo "╔═══════════════════════════════════════════════════╗"
+echo "║  Resource-Reserver - One-Command Quick Start     ║"
+echo "╚═══════════════════════════════════════════════════╝"
+echo ""
+
+# Check if setup has been run
+if [ ! -f ".setup-complete" ]; then
+    echo "Running first-time setup..."
+    ./scripts/setup-dev.sh
+    
+    # Mark setup as complete
+    touch .setup-complete
+    echo ""
+fi
+
+# Start development environment
+echo "Starting development environment..."
+echo ""
+
+if command -v make > /dev/null 2>&1; then
+    make dev
+else
+    # Fallback to direct command
+    if command -v mise > /dev/null 2>&1; then
+        mise run dev
+    else
+        tilt up
+    fi
+fi

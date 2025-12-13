@@ -1,0 +1,85 @@
+# mise configuration for Resource-Reserver
+# Manages tool versions and environment variables for development
+# Documentation: https://mise.jdx.dev
+
+[tools]
+# Python version for backend and CLI
+python = "3.11"
+
+# Node.js version for frontend
+node = "24"
+
+# Tilt for development workflow
+tilt = "latest"
+
+[env]
+# Development environment variables
+DATABASE_URL = "sqlite:///./data/resource_reserver_dev.db"
+ENVIRONMENT = "development"
+SECRET_KEY = "dev-secret-key-change-in-production"
+API_BASE_URL = "http://localhost:8000"
+NODE_ENV = "development"
+
+# Python development settings
+PYTHONDONTWRITEBYTECODE = "1"
+PYTHONUNBUFFERED = "1"
+
+# CLI configuration
+CLI_CONFIG_DIR = "{{config_root}}/.resource-reserver-cli"
+
+[tasks.dev]
+description = "Start development environment with Tilt"
+run = "tilt up"
+
+[tasks.down]
+description = "Stop Tilt development environment"
+run = "tilt down"
+
+[tasks.install]
+description = "Install all project dependencies"
+run = """
+pip install -r requirements.txt
+cd frontend && npm install
+"""
+
+[tasks.test]
+description = "Run all tests"
+run = "pytest tests/"
+
+[tasks.test-backend]
+description = "Run backend tests only"
+run = "pytest tests/test_api/ tests/test_services/"
+
+[tasks.test-cli]
+description = "Run CLI tests only"
+run = "pytest tests/test_cli/"
+
+[tasks.lint]
+description = "Run all linters"
+run = """
+ruff check .
+black --check .
+"""
+
+[tasks.format]
+description = "Format all code"
+run = """
+black .
+ruff check --fix .
+"""
+
+[tasks.setup-hooks]
+description = "Install git hooks"
+run = """
+pip install pre-commit
+pre-commit install
+pre-commit install --hook-type post-commit
+"""
+
+[tasks.docker]
+description = "Start services with Docker Compose (alternative to Tilt)"
+run = "docker compose up -d"
+
+[tasks.docker-down]
+description = "Stop Docker Compose services"
+run = "docker compose down"

@@ -13,12 +13,11 @@
 
 **The Resource Scheduling Nightmare:**
 
-🚨 **Conference Room Chaos** - Two teams show up for the same meeting room at 2 PM
-🚨 **Equipment Conflicts** - Critical equipment is already booked when you need it
-🚨 **Admin Overhead** - Manual scheduling spreadsheets and endless email chains
-🚨 **No Visibility** - You don't know what's available until you check every
-resource manually
-🚨 **Compliance Issues** - No audit trail of who used what and when  
+- **Conference Room Chaos** - Two teams show up for the same meeting room at 2 PM
+- **Equipment Conflicts** - Critical equipment is already booked when you need it
+- **Admin Overhead** - Manual scheduling spreadsheets and endless email chains
+- **No Visibility** - You don't know what's available until you check every resource manually
+- **Compliance Issues** - No audit trail of who used what and when  
 
 **Resource Reserver solves all of these problems in one intelligent platform.**
 
@@ -26,19 +25,19 @@ resource manually
 
 ## Why Organizations Choose Resource Reserver
 
-### 💰 **Immediate Cost Savings**
+### Immediate Cost Savings
 
 - **Stop Double-Bookings**: Automatic conflict detection prevents scheduling disasters
 - **Reduce Admin Time**: Self-service booking eliminates manual coordination
 - **Maximize Utilization**: See exactly which resources are underused vs. overbooked
 
-### ⚡ **Instant Efficiency Gains**
+### Instant Efficiency Gains
 
 - **Book in Seconds**: Find and reserve resources in 3 clicks
 - **Real-Time Availability**: See what's free right now, no guesswork
 - **Automated Notifications**: Everyone knows what's booked when
 
-### 📊 **Complete Visibility & Control**
+### Complete Visibility & Control
 
 - **Full Audit Trail**: Know exactly who booked what and when for compliance
 - **Usage Analytics**: Optimize resource allocation based on real data
@@ -48,7 +47,7 @@ resource manually
 
 ## Who Benefits From This?
 
-### 🏢 **Corporate Teams**
+### Corporate Teams
 
 > "Finally, our meeting rooms actually get used efficiently!"
 
@@ -56,7 +55,7 @@ resource manually
 - Equipment checkout (laptops, projectors, vehicles)
 - Shared workspaces and hot desking
 
-### 🎓 **Educational Institutions**  
+### Educational Institutions  
 
 > "Students can book lab time without administrator intervention"
 
@@ -64,7 +63,7 @@ resource manually
 - Study rooms, maker spaces, recording studios
 - Sports facilities and equipment
 
-### 🏥 **Healthcare Facilities**
+### Healthcare Facilities
 
 > "Critical equipment is always available when we need it"
 
@@ -72,7 +71,7 @@ resource manually
 - Specialized tools, consultation rooms
 - Mobile equipment across multiple departments
 
-### 🏭 **Manufacturing & Industrial**
+### Manufacturing & Industrial
 
 > "Our production schedule runs like clockwork now"
 
@@ -84,7 +83,7 @@ resource manually
 
 ## See It In Action
 
-### 🌐 **Web Interface** - Perfect for End Users
+### Web Interface - Perfect for End Users
 
 ![Login Screen](screenshots/Web%20Interface/login-web.png)
 *Simple, secure login gets you started immediately*
@@ -98,7 +97,7 @@ resource manually
 ![My Reservations](screenshots/Web%20Interface/myreservations-web.png)
 *Manage your bookings with full control and history*
 
-### 💻 **Command Line Interface** - Built for Administrators
+### Command Line Interface - Built for Administrators
 
 ![CLI Main Interface](screenshots/CLI%20Interface/cli-main.png)
 
@@ -112,77 +111,122 @@ resource manually
 
 ## Key Features That Matter
 
-### ✅ **Conflict-Free Booking**
+### Conflict-Free Booking
 
 **Problem**: "The projector is double-booked again!"  
 **Solution**: Automatic conflict detection prevents overlapping reservations entirely
 
-### ✅ **Real-Time Availability**
+### Real-Time Availability
 
 **Problem**: "Is Conference Room B free at 3 PM?"  
 **Solution**: Live availability updates show exactly what's free when
 
-### ✅ **Smart Resource Management**
+### Smart Resource Management
 
 **Problem**: "I can't find the equipment I need"  
 **Solution**: Advanced search and filtering across all resources
 
-### ✅ **Complete Audit Trail**
+### Complete Audit Trail
 
 **Problem**: "Who was using the lab equipment yesterday?"  
 **Solution**: Full activity logs for compliance and accountability
 
-### ✅ **Bulk Operations**
+### Bulk Operations
 
 **Problem**: "Adding 50 new resources will take forever"  
 **Solution**: CSV upload for adding hundreds of resources at once
 
-### ✅ **Two Interfaces, One System**
+### Two Interfaces, One System
 
 - **Web Interface**: Perfect for daily users who need visual booking
 - **CLI Interface**: Ideal for administrators and automation scripts
 
 ---
 
-## Quick Start - Get Running in 5 Minutes
+## Quick Start - One Command, Zero Manual Steps
 
-### Option 1: Docker (Recommended)
+### For New Contributors (Recommended)
+
+**Truly one command - everything automated:**
 
 ```bash
-# Download and run with pre-built images
+# Clone and go
+git clone https://github.com/sylvester-francis/Resource-Reserver.git
+cd Resource-Reserver
+
+# ONE COMMAND - that's it!
+./dev
+```
+
+**What happens automatically:**
+- Installs mise if needed
+- Installs Python 3.11, Node 24, Tilt
+- Installs all dependencies
+- Starts Docker if not running
+- Builds Docker images
+- Configures git hooks
+- Starts development environment
+- Opens Tilt UI at http://localhost:10350
+
+**Alternative simple commands:**
+```bash
+# If you prefer make
+make setup  # One-time setup
+make dev    # Start development
+
+# Or step-by-step
+./scripts/setup-dev.sh  # Setup once
+make dev                # Start development
+```
+
+**Access your system:**
+- Tilt Dashboard: http://localhost:10350
+- Web Interface: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+**All available commands:**
+```bash
+make help  # View all commands
+```
+
+### For Production/Quick Testing
+
+Docker Compose with pre-built images:
+
+```bash
+# Download and run
 curl -O https://raw.githubusercontent.com/sylvester-francis/Resource-Reserver/main/docker-compose.registry.yml
 docker compose -f docker-compose.registry.yml up -d
 
-# Access your system
-# Web Interface: http://localhost:3000
-# API Documentation: http://localhost:8000/docs
+# Access at http://localhost:3000
 ```
 
-### Option 2: From Source
+### For Source Build
 
 ```bash
 # Clone and start
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
 cd Resource-Reserver
 docker compose up -d
-
-# That's it! Everything is containerized.
 ```
 
-### Option 3: Development Setup
+### For Manual Local Development
 
 ```bash
-# Backend (Terminal 1)
+# Backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
-# Frontend (Terminal 2)  
+# Frontend (separate terminal)
 cd frontend && npm install && npm start
 
-# CLI (Optional)
+# CLI (optional)
 pip install -e .
 resource-reserver-cli --help
 ```
+
+**For detailed development instructions, see [docs/development.md](docs/development.md)**
 
 ---
 
@@ -196,10 +240,10 @@ resource-reserver-cli --help
 
 **Results:**
 
-- ✅ 100% elimination of scheduling conflicts
-- ✅ 23% improvement in equipment utilization  
-- ✅ 40 hours/week saved in manual coordination
-- ✅ Complete compliance audit trail
+- 100% elimination of scheduling conflicts
+- 23% improvement in equipment utilization  
+- 40 hours/week saved in manual coordination
+- Complete compliance audit trail
 
 ### University Research Lab
 
@@ -208,30 +252,30 @@ resource-reserver-cli --help
 
 **Results:**
 
-- ✅ Self-service booking for 200+ students
-- ✅ Zero administrator intervention required
-- ✅ Complete usage tracking for grant reporting
-- ✅ 95% student satisfaction improvement
+- Self-service booking for 200+ students
+- Zero administrator intervention required
+- Complete usage tracking for grant reporting
+- 95% student satisfaction improvement
 
 ---
 
 ## Technical Excellence
 
-### 🏗️ **Modern Architecture**
+### Modern Architecture
 
 - **Frontend**: Express.js + Alpine.js (no build complexity)
 - **Backend**: FastAPI + Python (high performance, auto-documentation)
 - **CLI**: Typer framework (professional command-line tools)
 - **Database**: SQLite or PostgreSQL (scales from development to enterprise)
 
-### 🐳 **Production Ready**
+### Production Ready
 
 - **Docker Images**: Available on GitHub Container Registry
 - **Zero Downtime**: Rolling updates and health checks
 - **Scalable**: Horizontal scaling for enterprise deployments
 - **Secure**: JWT authentication, input validation, audit logging
 
-### 🔧 **Developer Friendly**
+### Developer Friendly
 
 - **No Build Process**: Direct development, no compilation steps
 - **Auto-Documentation**: Interactive API docs at `/docs`
@@ -284,20 +328,20 @@ Resource Reserver is built API-first, making it perfect for integration:
 
 ## Support & Community
 
-### 📚 **Documentation**
+### Documentation
 
 - **User Guide**: Complete web interface walkthrough
 - **Administrator Guide**: CLI and system management
 - **API Reference**: Interactive documentation at `/docs`
 - **Integration Examples**: Sample code for common use cases
 
-### 🤝 **Getting Help**
+### Getting Help
 
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Community support and questions
 - **Enterprise Support**: Available for production deployments
 
-### 🔄 **Stay Updated**
+### Stay Updated
 
 - **Release Notes**: Clear information about new features
 - **Migration Guides**: Smooth upgrades between versions
@@ -329,19 +373,19 @@ Contact us for enterprise features:
 
 ### Version 2.0 (Current) - Modern Architecture
 
-- 🚀 **Complete Frontend Rewrite**: Express.js + Alpine.js for better performance
-- 🐳 **Production Containers**: Docker images on GitHub Container Registry
-- ⚡ **Enhanced CLI**: Improved user experience with Rich terminal output
-- 🔧 **Zero Build Process**: Direct development and deployment
-- 📈 **Better Performance**: Server-side rendering + client reactivity
+- **Complete Frontend Rewrite**: Express.js + Alpine.js for better performance
+- **Production Containers**: Docker images on GitHub Container Registry
+- **Enhanced CLI**: Improved user experience with Rich terminal output
+- **Zero Build Process**: Direct development and deployment
+- **Better Performance**: Server-side rendering + client reactivity
 
 ### Version 1.0 - Foundation
 
-- ✅ Core reservation and resource management
-- ✅ TypeScript frontend with Vite build system
-- ✅ FastAPI backend with comprehensive API
-- ✅ Typer-based CLI for automation
-- ✅ Complete test suite and documentation
+- Core reservation and resource management
+- TypeScript frontend with Vite build system
+- FastAPI backend with comprehensive API
+- Typer-based CLI for automation
+- Complete test suite and documentation
 
 ---
 

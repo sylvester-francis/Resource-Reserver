@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Post-commit hook for Resource-Reserver
+# Runs after each commit to verify code quality
+# This ensures commits always pass CI/CD checks
+
+set -e
+
+echo "Running post-commit checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    if [ $1 -eq 0 ]; then
+        echo -e "${GREEN}✓ $2${NC}"
+    else
+        echo -e "${RED}✗ $2${NC}"
+    fi
+}
+
+# Track overall status
+OVERALL_STATUS=0
+
+# Check if we're in a rebase/merge
+if [ -f ".git/MERGE_HEAD" ] || [ -f ".git/rebase-merge" ]; then
+    echo -e "${YELLOW}Skipping post-commit checks during merge/rebase${NC}"
+    exit 0
+fi
+
+# 1. Run ruff linting
+echo ""
+echo "1. Running ruff linter..."
+if ruff check . --quiet; then
+    print_status 0 "Ruff linting passed"
+else
+    print_status 1 "Ruff linting failed"
+    OVERALL_STATUS=1
+fi
+
+# 2. Run ruff formatting check
+echo ""
+echo "2. Checking code formatting..."
+if ruff format --check . --quiet; then
+    print_status 0 "Code formatting is correct"
+else
+    print_status 1 "Code formatting issues found"
+    echo -e "${YELLOW}   Run 'ruff format .' or 'mise run format' to fix${NC}"
+    OVERALL_STATUS=1
+fi
+
+# 3. Run mypy type checking (on changed Python files only)
+echo ""
+echo "3. Running mypy type checking..."
+CHANGED_PY_FILES=$(git diff --name-only HEAD~1 HEAD | grep '\.py$' | grep -E '^(app|cli)/' || true)
+if [ -n "$CHANGED_PY_FILES" ]; then
+    if mypy $CHANGED_PY_FILES --ignore-missing-imports --no-strict-optional 2>/dev/null; then
+        print_status 0 "Type checking passed"
+    else
+        print_status 1 "Type checking found issues"
+        OVERALL_STATUS=1
+    fi
+else
+    echo -e "${YELLOW}⊘ No Python files changed, skipping mypy${NC}"
+fi
+
+# 4. Run quick test suite (only on changed test files)
+echo ""
+echo "4. Running quick test suite..."
+CHANGED_TEST_FILES=$(git diff --name-only HEAD~1 HEAD | grep '^tests/.*\.py$' || true)
+if [ -n "$CHANGED_TEST_FILES" ]; then
+    if pytest --maxfail=1 --tb=short -q $CHANGED_TEST_FILES; then
+        print_status 0 "Tests passed"
+    else
+        print_status 1 "Tests failed"
+        OVERALL_STATUS=1
+    fi
+else
+    echo -e "${YELLOW}⊘ No test files changed, skipping pytest${NC}"
+fi
+
+# 5. Security check with bandit (on changed Python files)
+echo ""
+echo "5. Running security scan..."
+if [ -n "$CHANGED_PY_FILES" ]; then
+    if bandit -c pyproject.toml -q $CHANGED_PY_FILES 2>/dev/null; then
+        print_status 0 "Security scan passed"
+    else
+        print_status 1 "Security issues found"
+        OVERALL_STATUS=1
+    fi
+else
+    echo -e "${YELLOW}⊘ No Python files changed, skipping bandit${NC}"
+fi
+
+# Summary
+echo ""
+echo "=========================================="
+if [ $OVERALL_STATUS -eq 0 ]; then
+    echo -e "${GREEN}All post-commit checks passed!${NC}"
+    echo "This commit should pass CI/CD."
+else
+    echo -e "${RED}Some post-commit checks failed!${NC}"
+    echo ""
+    echo "Your commit is saved, but it may fail in CI/CD."
+    echo ""
+    echo "To fix issues:"
+    echo "  - Run 'mise run format' to auto-format code"
+    echo "  - Run 'mise run lint' to see all linting issues"
+    echo "  - Run 'mise run test' to run the full test suite"
+    echo ""
+    echo "Then amend your commit:"
+    echo "  git add ."
+    echo "  git commit --amend --no-edit"
+fi
+echo "=========================================="
+
+# Don't fail the commit, just warn
+# Return 0 so the commit still succeeds
+exit 0

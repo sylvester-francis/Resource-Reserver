@@ -109,3 +109,20 @@ ehthumbs.db
 # Test files
 test-*.csv
 *test*.csv
+
+# mise (tool version manager)
+.mise.lock
+.mise.local.toml
+
+# Tilt development
+.tiltbuild/
+tilt_modules/
+
+# moon build system
+.moon/cache/
+
+# Pre-commit
+.pre-commit-cache/
+
+# Setup marker
+.setup-complete

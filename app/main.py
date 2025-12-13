@@ -174,7 +174,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Resource Reservation System",
     description="A clean, scalable resource booking system",
-    version="1.0.0",
+    version="2.0.1",
     lifespan=lifespan,
 )
 

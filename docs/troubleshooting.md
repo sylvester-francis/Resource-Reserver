@@ -142,6 +142,61 @@ docker-compose exec backend env | grep SECRET_KEY
 # Or use incognito/private mode
 ```
 
+**Problem**: Login fails in Safari but works in Chrome/Brave (macOS Sequoia, M-series chips)
+```bash
+Login successful in Brave/Chrome but fails in Safari
+Cookies not being set or retained
+Session immediately expires after login
+```
+
+**Root Cause**: Safari requires explicit `sameSite` attribute for cookies. This is more strictly enforced on macOS Sequoia with Apple Silicon (M1/M2/M3/M4), especially when using Podman or alternative container runtimes.
+
+**Solution**:
+```bash
+# This issue has been fixed in version 2.0.1+
+# Verify your frontend/server.js includes sameSite attribute
+
+# If using older version, update the cookie configuration:
+# frontend/server.js line 118-126 should include:
+# sameSite: 'Lax'  // Required for Safari compatibility
+
+# Restart frontend service
+docker-compose restart frontend
+
+# Clear Safari cookies:
+# Safari \u003e Settings \u003e Privacy \u003e Manage Website Data
+# Remove all localhost entries
+
+# Restart Safari and try logging in again
+```
+
+**Verification**:
+```bash
+# Check cookie in Safari Developer Tools
+# Safari \u003e Develop \u003e Show Web Inspector \u003e Storage \u003e Cookies
+
+# Verify auth_token cookie has:
+# - Name: auth_token
+# - SameSite: Lax
+# - HttpOnly: true
+# - Secure: false (for localhost), true (for production https)
+
+# Test login
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=testuser\u0026password=testpass" \
+  -c cookies.txt -v
+
+# Check cookies.txt for sameSite attribute
+cat cookies.txt
+```
+
+**Platform-Specific Notes**:
+- **macOS Sequoia (15.x)**: Safari 18+ has stricter cookie policies
+- **Apple Silicon (M1/M2/M3/M4)**: No specific issues, affects all Macs equally
+- **Podman vs Docker**: Both work the same after fix
+- **Other Browsers**: Chrome, Brave, Firefox, Edge all work without sameSite (but it's best practice to include it)
+
 #### Resource Management Issues
 
 **Problem**: Resources don't appear in the list

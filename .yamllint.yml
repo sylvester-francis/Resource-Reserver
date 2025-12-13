@@ -1,0 +1,38 @@
+# YAML linting configuration for yamllint
+# Used by pre-commit hooks
+
+extends: default
+
+rules:
+  # Allow longer lines in YAML (common in docker-compose)
+  line-length:
+    max: 120
+    level: warning
+  
+  # Allow document start markers to be omitted
+  document-start: disable
+  
+  # Indentation rules
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  
+  # Allow truthy values (yes/no/on/off)
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+    check-keys: false
+  
+  # Comments configuration
+  comments:
+    min-spaces-from-content: 1
+  
+  # Allow empty values
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: false
+
+ignore: |
+  .venv/
+  venv/
+  node_modules/
+  .moon/cache/
