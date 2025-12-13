@@ -17,9 +17,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Files changed**: `frontend/server.js` (lines 118-126)
   - **Verification**: Clear Safari cookies (Settings > Privacy > Manage Website Data) and restart browser after update
 
+- **Frontend Register Route**: Fixed `/register` route error by redirecting to `/login` page (which contains both login and register forms)
+
+### Added - Developer Experience
+
+- **One-Command Setup**: New `./dev` script provides truly automated setup and start
+  - Auto-installs mise if missing
+  - Auto-detects and configures shell (bash/zsh)
+  - Auto-starts Docker on macOS
+  - Installs all dependencies automatically
+  - Zero manual configuration required
+
+- **mise Integration**: Tool version manager for consistent development environments
+  - Automatic installation of Python 3.11, Node 24, and Tilt
+  - Environment variable management via `.mise.toml`
+  - Task shortcuts: `mise run dev`, `mise run test`, `mise run format`, etc.
+
+- **Tilt Integration**: Modern development workflow with live reload
+  - Docker Compose integration via `Tiltfile`
+  - Live reload for backend and frontend (< 1 second)
+  - Visual dashboard at http://localhost:10350
+  - Unified logging for all services
+  - Manual quality check tasks (lint, test, format)
+
+- **Makefile**: Simple command interface for all development tasks
+  - `make dev` - Start development environment
+  - `make test` - Run all tests
+  - `make format` - Auto-format code
+  - `make lint` - Run linters
+  - `make help` - View all commands
+
+- **Git Hooks**: Comprehensive pre-commit and post-commit automation
+  - Pre-commit: 40+ quality checks (ruff, mypy, bandit, safety, hadolint, yamllint, shellcheck, mdformat)
+  - Post-commit: CI/CD verification on changed files
+  - Auto-fixes formatting issues
+  - Ensures commits always pass CI/CD
+
+- **Enhanced Setup Script**: Fully automated `scripts/setup-dev.sh`
+  - Shell auto-detection and configuration
+  - Docker auto-start capability (macOS)
+  - Silent/fast installation
+  - Progress indicators
+
 ### Documentation
 - Added comprehensive troubleshooting guide for Safari cookie issues in `docs/troubleshooting.md`
-- Includes verification steps and platform-specific notes
+- Added `docs/development.md` - Complete developer guide (500+ lines)
+- Added `docs/one-command-setup.md` - One-command experience documentation
+- Updated README.md with modern development setup as primary option
+- Removed all emojis from documentation for professional tone
+- All documentation now credits Sylvester Francis
+
 
 ## [2.0.0] - Current
 

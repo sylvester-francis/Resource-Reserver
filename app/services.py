@@ -351,12 +351,9 @@ class ResourceService:
 
         return status_info
 
-
-    def get_resource_schedule(
-        self, resource_id:int, days_ahead: int = 7
-    ) -> list:
-        """ Get existing reservations for a resource over the next specified days,
-        including any reservations since 12:00 AM today. """
+    def get_resource_schedule(self, resource_id: int, days_ahead: int = 7) -> list:
+        """Get existing reservations for a resource over the next specified days,
+        including any reservations since 12:00 AM today."""
         now = utcnow()
         start_of_today = datetime.combine(now.date(), datetime.min.time(), tzinfo=UTC)
         end_date = now + timedelta(days=days_ahead)
@@ -373,8 +370,7 @@ class ResourceService:
 
         # Get all reservations for this resource in the time period
         reservations = (
-            self.db.query(models.Reservation,
-                          models.User.username)
+            self.db.query(models.Reservation, models.User.username)
             .join(models.User, models.Reservation.user_id == models.User.id)
             .filter(
                 models.Reservation.resource_id == resource_id,

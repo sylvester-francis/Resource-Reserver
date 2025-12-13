@@ -433,6 +433,7 @@ def upload_resources_csv(
             detail=f"Failed to process CSV file: {str(e)}",
         ) from e
 
+
 @app.get("/resources/{resource_id}/schedule")
 def get_resource_schedule(
     resource_id: int,
@@ -443,9 +444,7 @@ def get_resource_schedule(
     resource_service = ResourceService(db)
 
     try:
-        schedule = resource_service.get_resource_schedule(
-            resource_id, days_ahead
-        )
+        schedule = resource_service.get_resource_schedule(resource_id, days_ahead)
         return schedule
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
@@ -461,9 +460,7 @@ def get_resource_availability(
     resource_service = ResourceService(db)
 
     try:
-        availability = resource_service.get_resource_schedule(
-            resource_id, days_ahead
-        )
+        availability = resource_service.get_resource_schedule(resource_id, days_ahead)
         return availability
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
