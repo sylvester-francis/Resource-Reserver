@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-## 🔧 Common Issues and Solutions
+## Common Issues and Solutions
 
 ### Installation & Setup Issues
 
@@ -531,8 +531,8 @@ echo "1. Docker services:"
 docker-compose ps
 
 echo -e "\n2. Port accessibility:"
-curl -s http://localhost:3000 > /dev/null && echo "✅ Frontend (3000) accessible" || echo "❌ Frontend (3000) not accessible"
-curl -s http://localhost:8000/health > /dev/null && echo "✅ Backend (8000) accessible" || echo "❌ Backend (8000) not accessible"
+curl -s http://localhost:3000 > /dev/null && echo "[OK] Frontend (3000) accessible" || echo "[ERROR] Frontend (3000) not accessible"
+curl -s http://localhost:8000/health > /dev/null && echo "[OK] Backend (8000) accessible" || echo "[ERROR] Backend (8000) not accessible"
 
 echo -e "\n3. Backend health:"
 curl -s http://localhost:8000/health | jq .
@@ -544,9 +544,9 @@ from app.models import Resource
 try:
     db = SessionLocal()
     count = db.query(Resource).count()
-    print(f'✅ Database accessible, {count} resources')
+    print(f'[OK] Database accessible, {count} resources')
 except Exception as e:
-    print(f'❌ Database error: {e}')
+    print(f'[ERROR] Database error: {e}')
 "
 
 echo -e "\n5. Disk space:"

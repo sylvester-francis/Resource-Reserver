@@ -1,6 +1,6 @@
 # Deployment Guide
 
-## 🚀 Production Deployment Options
+## Production Deployment Options
 
 ### Docker Compose (Recommended)
 

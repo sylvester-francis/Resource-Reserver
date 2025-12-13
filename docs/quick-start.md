@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-## 🚀 Get Resource Reserver Running in 5 Minutes
+## Get Resource Reserver Running in 5 Minutes
 
 ### Prerequisites
 
