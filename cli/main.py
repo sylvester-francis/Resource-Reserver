@@ -19,6 +19,7 @@ from cli.utils import (
     parse_duration,
     prompt_for_optional,
 )
+from cli.auth_commands import mfa_app, oauth_app, role_app
 
 # Initialize CLI app and API client
 app = typer.Typer(
@@ -31,6 +32,11 @@ console = Console()
 # Authentication commands
 auth_app = typer.Typer(help="Authentication commands")
 app.add_typer(auth_app, name="auth")
+
+# Add new auth feature command groups
+app.add_typer(mfa_app, name="mfa")
+app.add_typer(role_app, name="roles")
+app.add_typer(oauth_app, name="oauth")
 
 
 @auth_app.command("register")
