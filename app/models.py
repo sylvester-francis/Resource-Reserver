@@ -28,9 +28,20 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
+    
+    # MFA fields
+    mfa_enabled = Column(Boolean, default=False, nullable=False)
+    mfa_secret = Column(String(32), nullable=True)
+    mfa_backup_codes = Column(JSON, nullable=True)  # List of backup codes
+    
+    # Email fields
+    email = Column(String(255), unique=True, nullable=True, index=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     reservations = relationship("Reservation", back_populates="user")
+    roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
+    oauth_clients = relationship("OAuth2Client", back_populates="owner", cascade="all, delete-orphan")
 
 
 class Resource(Base):
@@ -125,3 +136,102 @@ class ReservationHistory(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     timestamp = Column(DateTime(timezone=True), default=utcnow)
     details = Column(Text)
+
+
+# ============================================================================
+# RBAC Models
+# ============================================================================
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    
+    # Relationships
+    user_roles = relationship("UserRole", back_populates="role", cascade="all, delete-orphan")
+
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="roles")
+    role = relationship("Role", back_populates="user_roles")
+
+
+# ============================================================================
+# OAuth2 Models
+# ============================================================================
+
+class OAuth2Client(Base):
+    __tablename__ = "oauth2_clients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(String(48), unique=True, nullable=False, index=True)
+    client_secret = Column(String, nullable=False)  # Hashed
+    client_name = Column(String(255), nullable=False)
+    redirect_uris = Column(JSON, nullable=False)  # List of URIs
+    grant_types = Column(String(255), nullable=False)  # Space-separated
+    scope = Column(String(255), nullable=False)  # Space-separated scopes
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    
+    # Relationships
+    owner = relationship("User", back_populates="oauth_clients")
+    tokens = relationship("OAuth2Token", back_populates="client", cascade="all, delete-orphan")
+
+
+class OAuth2AuthorizationCode(Base):
+    __tablename__ = "oauth2_authorization_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(120), unique=True, nullable=False, index=True)
+    client_id = Column(String(48), ForeignKey("oauth2_clients.client_id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    redirect_uri = Column(Text, nullable=False)
+    scope = Column(String(255), nullable=False)
+    code_challenge = Column(String(128), nullable=True)  # PKCE
+    code_challenge_method = Column(String(10), nullable=True)  # PKCE
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+class OAuth2Token(Base):
+    __tablename__ = "oauth2_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(String(48), ForeignKey("oauth2_clients.client_id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Null for client_credentials
+    token_type = Column(String(20), default="Bearer", nullable=False)
+    access_token = Column(String(255), unique=True, nullable=False, index=True)
+    refresh_token = Column(String(255), unique=True, nullable=True, index=True)
+    scope = Column(String(255), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    
+    # Relationships
+    client = relationship("OAuth2Client", back_populates="tokens")
+
+
+# ============================================================================
+# Permission Models
+# ============================================================================
+
+class ResourcePermission(Base):
+    __tablename__ = "resource_permissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(Integer, ForeignKey("resources.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Null = applies to role
+    role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
+    action = Column(String(50), nullable=False)  # 'read', 'update', 'delete', 'reserve'
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+

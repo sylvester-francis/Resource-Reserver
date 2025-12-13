@@ -143,6 +143,68 @@
 
 ---
 
+## Enterprise Security & Access Control
+
+### Multi-Factor Authentication (MFA)
+
+**Problem**: "Passwords alone aren't secure enough for our compliance requirements"  
+**Solution**: TOTP-based two-factor authentication with backup codes
+
+- Compatible with Google Authenticator, Authy, 1Password, and other authenticator apps
+- QR code setup for easy onboarding
+- 10 backup codes per user for account recovery
+- Easy enable/disable from web or CLI
+
+### Role-Based Access Control (RBAC)
+
+**Problem**: "Not everyone should be able to delete resources or modify system settings"  
+**Solution**: Flexible role-based permissions powered by Casbin
+
+- **Default Roles**: Admin, User, Guest with predefined permissions
+- **Custom Roles**: Create roles tailored to your organization
+- **Resource-Level Permissions**: Fine-grained control per resource
+- **Easy Management**: Assign/remove roles via API or CLI
+
+#### Default Role Permissions
+
+| Role  | Resources | Reservations | Users | OAuth2 |
+|-------|-----------|--------------|-------|--------|
+| Admin | Full control | Full control | Full control | Full control |
+| User  | Read only | Create/manage own | Read only | Manage own clients |
+| Guest | Read only | None | None | None |
+
+### OAuth2 Authorization Server
+
+**Problem**: "We need to integrate Resource Reserver with our other applications"  
+**Solution**: Built-in OAuth2 server for secure API access
+
+- **Authorization Code Flow**: For web applications
+- **Client Credentials Flow**: For server-to-server authentication  
+- **Refresh Tokens**: Long-lived access without re-authentication
+- **Token Management**: Revocation, introspection, and scope control
+- **PKCE Support**: Enhanced security for public clients
+
+#### OAuth2 Scopes
+
+- `read` - View resources and reservations
+- `write` - Create and modify resources and reservations
+- `delete` - Remove resources and reservations
+- `admin` - Administrative access
+- `user:profile` - Access user profile information
+
+### Security Features
+
+- Hashed passwords with bcrypt
+- JWT-based authentication tokens
+- Encrypted MFA secrets and backup codes
+- Time-limited authorization codes (10 minutes)
+- Short-lived access tokens (1 hour) with refresh tokens
+- Comprehensive audit logging
+
+**Learn more**: See [docs/auth-guide.md](docs/auth-guide.md) for complete authentication documentation
+
+---
+
 ## Quick Start - One Command, Zero Manual Steps
 
 ### For New Contributors (Recommended)
@@ -334,6 +396,47 @@ Resource Reserver is built API-first, making it perfect for integration:
 - **Administrator Guide**: CLI and system management
 - **API Reference**: Interactive documentation at `/docs`
 - **Integration Examples**: Sample code for common use cases
+- **Authentication Guide**: [docs/auth-guide.md](docs/auth-guide.md) - MFA, RBAC, and OAuth2
+
+### CLI Command Reference
+
+**Authentication**
+```bash
+resource-reserver-cli auth login              # Login to your account
+resource-reserver-cli auth logout             # Logout
+resource-reserver-cli auth status             # Check login status
+```
+
+**Multi-Factor Authentication**
+```bash
+resource-reserver-cli mfa setup               # Setup MFA with QR code
+resource-reserver-cli mfa enable              # Enable MFA
+resource-reserver-cli mfa disable             # Disable MFA
+resource-reserver-cli mfa backup-codes        # Regenerate backup codes
+```
+
+**Role Management**
+```bash
+resource-reserver-cli roles list              # List all roles
+resource-reserver-cli roles my-roles          # Show your roles
+resource-reserver-cli roles assign <id> <role>  # Assign role (admin)
+resource-reserver-cli roles remove <id> <role>  # Remove role (admin)
+```
+
+**OAuth2 Clients**
+```bash
+resource-reserver-cli oauth create <name> <uri>  # Create OAuth2 client
+resource-reserver-cli oauth list                # List your clients
+resource-reserver-cli oauth delete <client_id>  # Delete client
+```
+
+**Resources & Reservations**
+```bash
+resource-reserver-cli resources list          # List resources
+resource-reserver-cli resources search        # Search with filters
+resource-reserver-cli reservations create     # Create reservation
+resource-reserver-cli reservations list       # List your reservations
+```
 
 ### Getting Help
 

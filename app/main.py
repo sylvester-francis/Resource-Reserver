@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.auth import authenticate_user, create_access_token, get_current_user
+from app.auth_routes import auth_router, mfa_router, oauth_router, roles_router
 from app.database import engine, get_db
 from app.services import ReservationService, ResourceService, UserService
 
@@ -190,6 +191,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include new auth routers
+app.include_router(mfa_router)
+app.include_router(roles_router)
+app.include_router(oauth_router)
 
 # API-only backend - frontend served by Express.js
 
