@@ -11,6 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!/frontend-next/src/lib/
 lib64/
 parts/
 sdist/
@@ -71,6 +72,10 @@ yarn.lock
 .pnpm-debug.log*
 .yarn-integrity
 
+# Bun
+bun.lockb
+.bun
+
 # Process files
 *.pid
 
@@ -94,7 +99,7 @@ web/js/script.js.legacy
 tmp/
 temp/
 
-# Backup files  
+# Backup files
 *.bak
 *.backup
 
@@ -126,3 +131,4 @@ tilt_modules/
 
 # Setup marker
 .setup-complete
+.mise-installed

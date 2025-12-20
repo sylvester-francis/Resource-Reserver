@@ -6,11 +6,17 @@
 # Python version for backend and CLI
 python = "3.11"
 
-# Node.js version for frontend
-node = "24"
+# Bun - Fast JavaScript runtime (replaces Node.js/npm)
+bun = "latest"
 
-# Tilt for development workflow
+# Moon - Build orchestration for monorepo
+"ubi:moonrepo/moon" = "latest"
+
+# Tilt for development workflow (optional)
 tilt = "latest"
+
+# uv - Fast Python package installer (optional, for faster pip)
+"pipx:uv" = "latest"
 
 [env]
 # Development environment variables
@@ -27,6 +33,27 @@ PYTHONUNBUFFERED = "1"
 # CLI configuration
 CLI_CONFIG_DIR = "{{config_root}}/.resource-reserver-cli"
 
+# Bun settings
+BUN_INSTALL = "{{env.HOME}}/.bun"
+
+[tasks.setup]
+description = "Install all project dependencies"
+run = """
+#!/usr/bin/env bash
+set -e
+echo "📦 Installing Python dependencies..."
+if command -v uv > /dev/null 2>&1; then
+    uv pip install -r requirements.txt
+else
+    pip install -r requirements.txt
+fi
+
+echo "📦 Installing frontend dependencies with Bun..."
+cd frontend-next && bun install
+
+echo "✅ Setup complete!"
+"""
+
 [tasks.dev]
 description = "Start development environment with Tilt"
 run = "tilt up"
@@ -35,11 +62,13 @@ run = "tilt up"
 description = "Stop Tilt development environment"
 run = "tilt down"
 
-[tasks.install]
-description = "Install all project dependencies"
+[tasks.build]
+description = "Build all projects"
 run = """
-pip install -r requirements.txt
-cd frontend && npm install
+#!/usr/bin/env bash
+echo "🔨 Building frontend..."
+cd frontend-next && bun run build
+echo "✅ Build complete!"
 """
 
 [tasks.test]
@@ -57,20 +86,29 @@ run = "pytest tests/test_cli/"
 [tasks.lint]
 description = "Run all linters"
 run = """
+#!/usr/bin/env bash
+echo "🔍 Linting Python..."
 ruff check .
 black --check .
+echo "🔍 Linting frontend..."
+cd frontend-next && bun run lint
+echo "✅ Linting complete!"
 """
 
 [tasks.format]
 description = "Format all code"
 run = """
+#!/usr/bin/env bash
+echo "✨ Formatting Python..."
 black .
 ruff check --fix .
+echo "✅ Formatting complete!"
 """
 
 [tasks.setup-hooks]
 description = "Install git hooks"
 run = """
+#!/usr/bin/env bash
 pip install pre-commit
 pre-commit install
 pre-commit install --hook-type post-commit
@@ -83,3 +121,24 @@ run = "docker compose up -d"
 [tasks.docker-down]
 description = "Stop Docker Compose services"
 run = "docker compose down"
+
+[tasks.clean]
+description = "Clean caches and temporary files"
+run = """
+#!/usr/bin/env bash
+echo "🧹 Cleaning caches..."
+rm -rf __pycache__ .pytest_cache .ruff_cache .mypy_cache .tox
+rm -rf frontend-next/.next frontend-next/node_modules/.cache
+rm -rf .tiltbuild
+find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find . -type f -name "*.pyc" -delete 2>/dev/null || true
+echo "✅ Clean complete!"
+"""
+
+[tasks.frontend-dev]
+description = "Start frontend development server"
+run = "cd frontend-next && bun run dev"
+
+[tasks.backend-dev]
+description = "Start backend development server"
+run = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"

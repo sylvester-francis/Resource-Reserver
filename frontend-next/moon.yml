@@ -1,0 +1,74 @@
+# Moon Project Configuration for Frontend
+# Documentation: https://moonrepo.dev/docs/config/project
+
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# Project metadata
+language: 'typescript'
+type: 'application'
+
+# Dependency detection
+dependsOn: []
+
+# File groups for caching
+fileGroups:
+  sources:
+    - 'src/**/*'
+  configs:
+    - '*.config.*'
+    - 'tsconfig.json'
+    - 'package.json'
+  assets:
+    - 'public/**/*'
+
+# Tasks
+tasks:
+  # Development server
+  dev:
+    command: 'bun run dev'
+    local: true
+    options:
+      runInCI: false
+
+  # Production build
+  build:
+    command: 'bun run build'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+    outputs:
+      - '.next'
+
+  # Start production server
+  start:
+    command: 'bun run start'
+    deps:
+      - '~:build'
+    local: true
+
+  # Linting
+  lint:
+    command: 'bun run lint'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+
+  # Install dependencies
+  install:
+    command: 'bun install'
+    inputs:
+      - 'package.json'
+    outputs:
+      - 'node_modules'
+
+  # Type checking
+  typecheck:
+    command: 'bun run tsc --noEmit'
+    inputs:
+      - '@group(sources)'
+      - 'tsconfig.json'
+
+  # Clean build artifacts
+  clean:
+    command: 'rm -rf .next node_modules/.cache'
+    local: true

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.auth import authenticate_user, create_access_token, get_current_user
-from app.auth_routes import auth_router, mfa_router, oauth_router, roles_router
+from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.database import engine, get_db
 from app.services import ReservationService, ResourceService, UserService
 
@@ -293,6 +293,18 @@ def login_user(
 
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.get("/users/me")
+def get_current_user_info(
+    current_user: models.User = Depends(get_current_user),
+):
+    """Get current authenticated user's information."""
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "mfa_enabled": current_user.mfa_enabled,
+    }
 
 
 # Resource endpoints

@@ -35,7 +35,7 @@ SHELL_RC="$HOME/.${SHELL_TYPE}rc"
 if ! command -v mise &> /dev/null; then
     echo -e "${YELLOW}mise not found - installing automatically...${NC}"
     curl -sSf https://mise.run | sh
-    
+
     # Add mise to shell
     if ! grep -q "mise activate" "$SHELL_RC" 2>/dev/null; then
         echo "" >> "$SHELL_RC"
@@ -43,11 +43,11 @@ if ! command -v mise &> /dev/null; then
         echo 'eval "$(~/.local/bin/mise activate '"$SHELL_TYPE"')"' >> "$SHELL_RC"
         echo -e "${GREEN}Added mise to $SHELL_RC${NC}"
     fi
-    
+
     # Activate mise for this session
     export PATH="$HOME/.local/bin:$PATH"
     eval "$(~/.local/bin/mise activate $SHELL_TYPE)"
-    
+
     echo -e "${GREEN}✓ mise installed successfully${NC}"
 else
     echo -e "${GREEN}✓ mise is already installed${NC}"
@@ -57,13 +57,13 @@ fi
 check_docker() {
     if ! docker info &> /dev/null; then
         echo -e "${YELLOW}Docker not running - attempting to start...${NC}"
-        
+
         # Try to start Docker Desktop on macOS
         if [[ "$OSTYPE" == "darwin"* ]]; then
             if [ -d "/Applications/Docker.app" ]; then
                 open -a Docker
                 echo "Waiting for Docker to start..."
-                
+
                 # Wait up to 30 seconds for Docker to start
                 for i in {1..30}; do
                     if docker info &> /dev/null; then
@@ -72,7 +72,7 @@ check_docker() {
                     fi
                     sleep 1
                 done
-                
+
                 echo -e "${RED}Docker failed to start automatically${NC}"
                 echo "Please start Docker Desktop manually and run this script again"
                 exit 1
@@ -117,8 +117,8 @@ echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 # Install pre-commit hooks
 echo ""
 echo "Installing git hooks..."
-pre-commit install --quiet
-pre-commit install --hook-type post-commit --quiet
+pre-commit install
+pre-commit install --hook-type post-commit
 
 # Configure post-commit hook
 if [ -f ".githooks/post-commit" ]; then

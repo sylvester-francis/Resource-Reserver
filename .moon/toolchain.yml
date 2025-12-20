@@ -1,0 +1,17 @@
+# Moon Toolchain Configuration
+# Documentation: https://moonrepo.dev/docs/config/toolchain
+
+$schema: 'https://moonrepo.dev/schemas/toolchain.json'
+
+# Bun for JavaScript/TypeScript
+bun:
+  # Use version from mise or system
+  version: 'latest'
+
+  # Package manager settings
+  packageManager: 'bun'
+
+# Node.js fallback (if needed)
+# node:
+#   version: '20'
+#   packageManager: 'bun'
