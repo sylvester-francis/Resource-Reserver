@@ -32,7 +32,7 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
     const [setupData, setSetupData] = useState<MFASetupResponse | null>(null);
     const [backupCodes, setBackupCodes] = useState<string[]>([]);
     const [verificationCode, setVerificationCode] = useState('');
-    const [disableCode, setDisableCode] = useState('');
+    const [disablePassword, setDisablePassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showCodes, setShowCodes] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.post('/mfa/setup');
+            const response = await api.post('/auth/mfa/setup');
             setSetupData(response.data);
             setStep('setup');
         } catch (err) {
@@ -60,7 +60,7 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
         setIsLoading(true);
         setError(null);
         try {
-            await api.post('/mfa/enable', { code: verificationCode });
+            await api.post('/auth/mfa/verify', { code: verificationCode });
             toast.success('MFA enabled successfully!');
             if (setupData?.backup_codes) {
                 setBackupCodes(setupData.backup_codes);
@@ -77,20 +77,20 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
     };
 
     const handleDisableMfa = async () => {
-        if (!disableCode) {
-            setError('Please enter your authentication code');
+        if (!disablePassword) {
+            setError('Please enter your password');
             return;
         }
 
         setIsLoading(true);
         setError(null);
         try {
-            await api.post('/mfa/disable', { code: disableCode });
+            await api.post('/auth/mfa/disable', { password: disablePassword });
             toast.success('MFA disabled');
             onOpenChange(false);
             window.location.reload();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Invalid code');
+            setError(err instanceof Error ? err.message : 'Invalid password');
         } finally {
             setIsLoading(false);
         }
@@ -100,7 +100,7 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.post('/mfa/backup-codes');
+            const response = await api.post('/auth/mfa/backup-codes');
             setBackupCodes(response.data.backup_codes);
             setStep('backup_codes');
             toast.success('New backup codes generated');
@@ -121,7 +121,7 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
         setSetupData(null);
         setBackupCodes([]);
         setVerificationCode('');
-        setDisableCode('');
+        setDisablePassword('');
         setError(null);
         setShowCodes(false);
     };
@@ -184,15 +184,14 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
                                 <Separator />
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="disable-code">Enter code to disable MFA</Label>
+                                    <Label htmlFor="disable-password">Enter password to disable MFA</Label>
                                     <div className="flex gap-2">
                                         <Input
-                                            id="disable-code"
-                                            type="text"
-                                            placeholder="Enter 6-digit code"
-                                            value={disableCode}
-                                            onChange={(e) => setDisableCode(e.target.value)}
-                                            maxLength={6}
+                                            id="disable-password"
+                                            type="password"
+                                            placeholder="Account password"
+                                            value={disablePassword}
+                                            onChange={(e) => setDisablePassword(e.target.value)}
                                         />
                                         <Button
                                             variant="destructive"

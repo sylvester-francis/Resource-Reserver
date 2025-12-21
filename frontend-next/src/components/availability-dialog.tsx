@@ -22,7 +22,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
@@ -115,25 +114,25 @@ export function AvailabilityDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                {resource && (
-                    <Alert>
-                        <AlertDescription>
-                            <strong>Resource:</strong> {resource.name}
-                            <span className="ml-4">
-                                <strong>Status:</strong>{' '}
-                                <span className={resource.available ? 'text-green-600' : 'text-red-600'}>
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3">
+                    {resource && (
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div>
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Resource</p>
+                                <p className="font-medium">{resource.name}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Status</span>
+                                <Badge variant={resource.available ? 'default' : 'destructive'}>
                                     {resource.available ? 'Available' : 'Unavailable'}
-                                </span>
-                            </span>
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                <div className="flex items-center gap-4">
+                                </Badge>
+                            </div>
+                        </div>
+                    )}
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Show:</span>
+                        <span className="text-xs uppercase tracking-wide text-muted-foreground">Show</span>
                         <Select value={daysAhead} onValueChange={setDaysAhead}>
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-28">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -144,11 +143,11 @@ export function AvailabilityDialog({
                                 <SelectItem value="60">2 Months</SelectItem>
                             </SelectContent>
                         </Select>
+                        <Button variant="outline" size="sm" onClick={fetchAvailability}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Refresh
+                        </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={fetchAvailability}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Refresh
-                    </Button>
                 </div>
 
                 <div className="flex-1 overflow-auto">
@@ -171,35 +170,37 @@ export function AvailabilityDialog({
                             {schedule.map((day, idx) => {
                                 const timeSlots = Array.isArray(day.time_slots) ? day.time_slots : [];
                                 return (
-                                <div key={idx} className="rounded-lg border p-4">
-                                    <h4 className="mb-3 font-semibold text-sm">
-                                        {day.dayName || formatShortDay(day.date)}
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {timeSlots.length === 0 ? (
-                                            <p className="text-sm text-muted-foreground">No reservations</p>
-                                        ) : (
-                                            timeSlots.map((slot, slotIdx) => (
-                                                <div
-                                                    key={slotIdx}
-                                                    className={`flex items-center justify-between rounded px-2 py-1 text-xs ${slot.status === 'available'
-                                                            ? 'bg-green-100 dark:bg-green-900/30'
-                                                            : 'bg-red-100 dark:bg-red-900/30'
-                                                        }`}
-                                                >
-                                                    <span>
-                                                        {slot.start_time} - {slot.end_time}
-                                                    </span>
-                                                    {slot.user_name && (
-                                                        <Badge variant="secondary" className="text-[10px]">
-                                                            {slot.user_name}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            ))
-                                        )}
+                                    <div key={idx} className="rounded-lg border bg-card">
+                                        <div className="border-b px-4 py-2">
+                                            <h4 className="text-sm font-semibold">
+                                                {day.dayName || formatShortDay(day.date)}
+                                            </h4>
+                                        </div>
+                                        <div className="divide-y px-4">
+                                            {timeSlots.length === 0 ? (
+                                                <p className="py-3 text-sm text-muted-foreground">No reservations</p>
+                                            ) : (
+                                                timeSlots.map((slot, slotIdx) => (
+                                                    <div
+                                                        key={slotIdx}
+                                                        className={`flex items-center justify-between gap-3 py-2 text-sm ${slot.status === 'available'
+                                                                ? 'text-green-700 dark:text-green-300'
+                                                                : 'text-foreground'
+                                                            }`}
+                                                    >
+                                                        <span className="font-medium">
+                                                            {slot.start_time} - {slot.end_time}
+                                                        </span>
+                                                        {slot.user_name && (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {slot.user_name}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
                                 );
                             })}
                         </div>
