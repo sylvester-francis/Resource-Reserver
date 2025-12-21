@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { format, addDays } from 'date-fns';
+import { useState, useEffect, useCallback } from 'react';
+import { format } from 'date-fns';
 import { RefreshCw, Calendar } from 'lucide-react';
 
 import api from '@/lib/api';
@@ -55,7 +55,7 @@ export function AvailabilityDialog({
     const [loading, setLoading] = useState(false);
     const [schedule, setSchedule] = useState<DaySchedule[]>([]);
 
-    const fetchAvailability = async () => {
+    const fetchAvailability = useCallback(async () => {
         if (!resource) return;
 
         setLoading(true);
@@ -72,13 +72,13 @@ export function AvailabilityDialog({
         } finally {
             setLoading(false);
         }
-    };
+    }, [resource, daysAhead]);
 
     useEffect(() => {
         if (open && resource) {
             fetchAvailability();
         }
-    }, [open, resource, daysAhead]);
+    }, [open, resource, fetchAvailability]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

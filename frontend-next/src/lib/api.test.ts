@@ -25,7 +25,7 @@ describe('API Client', () => {
 
     it('should create axios instance with correct base URL', async () => {
         // Import fresh after mocks are set
-        const { default: api, API_BASE_URL } = await import('@/lib/api');
+        const { API_BASE_URL } = await import('@/lib/api');
 
         expect(axios.create).toHaveBeenCalledWith({
             baseURL: expect.any(String),

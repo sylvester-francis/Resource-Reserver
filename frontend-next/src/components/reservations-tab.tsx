@@ -67,7 +67,7 @@ export function ReservationsTab({
             });
             toast.success('Reservation cancelled successfully');
             onRefresh();
-        } catch (err) {
+        } catch {
             toast.error('Failed to cancel reservation');
         } finally {
             setIsLoading(false);

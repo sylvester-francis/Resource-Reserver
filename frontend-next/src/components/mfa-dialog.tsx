@@ -220,6 +220,7 @@ export function MfaDialog({ open, onOpenChange, user }: MfaDialogProps) {
                             </p>
                             {setupData.qr_code && (
                                 <div className="inline-block rounded-lg bg-white p-4">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={setupData.qr_code}
                                         alt="MFA QR Code"

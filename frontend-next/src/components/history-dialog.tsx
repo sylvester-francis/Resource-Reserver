@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { History, CheckCircle, XCircle, Clock, Edit } from 'lucide-react';
 
@@ -39,7 +39,7 @@ export function HistoryDialog({
     const [loading, setLoading] = useState(false);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
 
-    const fetchHistory = async () => {
+    const fetchHistory = useCallback(async () => {
         if (!reservation) return;
 
         setLoading(true);
@@ -52,13 +52,13 @@ export function HistoryDialog({
         } finally {
             setLoading(false);
         }
-    };
+    }, [reservation]);
 
     useEffect(() => {
         if (open && reservation) {
             fetchHistory();
         }
-    }, [open, reservation]);
+    }, [open, reservation, fetchHistory]);
 
     const getActionIcon = (action: string) => {
         switch (action.toLowerCase()) {

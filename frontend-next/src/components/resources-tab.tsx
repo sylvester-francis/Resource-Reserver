@@ -84,7 +84,7 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
             });
             toast.success(`Resource ${resource.available ? 'disabled' : 'enabled'} successfully`);
             onRefresh();
-        } catch (err) {
+        } catch {
             toast.error('Failed to update resource status');
         }
     };
