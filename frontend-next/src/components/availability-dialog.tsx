@@ -106,7 +106,7 @@ export function AvailabilityDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogContent className="max-w-4xl max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-4rem)] overflow-hidden flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Resource Availability Schedule</DialogTitle>
                     <DialogDescription>
@@ -166,24 +166,22 @@ export function AvailabilityDialog({
                             </p>
                         </div>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="space-y-6">
                             {schedule.map((day, idx) => {
                                 const timeSlots = Array.isArray(day.time_slots) ? day.time_slots : [];
                                 return (
-                                    <div key={idx} className="rounded-lg border bg-card">
-                                        <div className="border-b px-4 py-2">
-                                            <h4 className="text-sm font-semibold">
-                                                {day.dayName || formatShortDay(day.date)}
-                                            </h4>
-                                        </div>
-                                        <div className="divide-y px-4">
+                                    <div key={idx} className="space-y-2">
+                                        <h4 className="text-sm font-semibold">
+                                            {day.dayName || formatShortDay(day.date)}
+                                        </h4>
+                                        <div className="divide-y rounded-lg border bg-card">
                                             {timeSlots.length === 0 ? (
-                                                <p className="py-3 text-sm text-muted-foreground">No reservations</p>
+                                                <p className="px-4 py-3 text-sm text-muted-foreground">No reservations</p>
                                             ) : (
                                                 timeSlots.map((slot, slotIdx) => (
                                                     <div
                                                         key={slotIdx}
-                                                        className={`flex items-center justify-between gap-3 py-2 text-sm ${slot.status === 'available'
+                                                        className={`flex flex-col gap-1 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${slot.status === 'available'
                                                                 ? 'text-green-700 dark:text-green-300'
                                                                 : 'text-foreground'
                                                             }`}
@@ -191,11 +189,11 @@ export function AvailabilityDialog({
                                                         <span className="font-medium">
                                                             {slot.start_time} - {slot.end_time}
                                                         </span>
-                                                        {slot.user_name && (
+                                                        {slot.user_name ? (
                                                             <span className="text-xs text-muted-foreground">
                                                                 {slot.user_name}
                                                             </span>
-                                                        )}
+                                                        ) : null}
                                                     </div>
                                                 ))
                                             )}

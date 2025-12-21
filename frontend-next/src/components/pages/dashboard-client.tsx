@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, LogOut, Activity, Settings } from 'lucide-react';
+import { Calendar, LogOut, Activity, Settings, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/hooks/use-auth';
 import api from '@/lib/api';
+import { formatDateTime } from '@/lib/date';
 import type { Resource, Reservation } from '@/types';
 
 import { Button } from '@/components/ui/button';
@@ -102,15 +103,15 @@ export default function DashboardClient() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen bg-gray-50">
-                <header className="border-b bg-white">
+            <div className="min-h-screen">
+                <header className="border-b border-border/60 bg-background/80 backdrop-blur">
                     <div className="container mx-auto flex h-16 items-center justify-between px-4">
                         <Skeleton className="h-8 w-48" />
                         <Skeleton className="h-10 w-10 rounded-full" />
                     </div>
                 </header>
-                <main className="container mx-auto p-4">
-                    <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+                <main className="container mx-auto p-4 sm:p-6">
+                    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {[...Array(4)].map((_, i) => (
                             <Card key={i}>
                                 <CardContent className="p-6">
@@ -131,15 +132,18 @@ export default function DashboardClient() {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen">
             {/* Header */}
-            <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600">
-                            <Calendar className="h-5 w-5 text-white" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                            <Calendar className="h-5 w-5" />
                         </div>
-                        <span className="text-lg font-semibold">Resource Reserver</span>
+                        <div className="leading-tight">
+                            <p className="font-display text-lg">Resource Reserver</p>
+                            <p className="text-xs text-muted-foreground">Smart scheduling hub</p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -157,7 +161,7 @@ export default function DashboardClient() {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                                     <Avatar className="h-9 w-9">
-                                        <AvatarFallback className="bg-blue-600 text-white">
+                                        <AvatarFallback className="bg-primary text-primary-foreground">
                                             {user?.username?.charAt(0).toUpperCase() || 'U'}
                                         </AvatarFallback>
                                     </Avatar>
@@ -166,14 +170,14 @@ export default function DashboardClient() {
                             <DropdownMenuContent className="w-56" align="end" side="bottom">
                                 <div className="flex items-center gap-2 p-2">
                                     <Avatar className="h-8 w-8">
-                                        <AvatarFallback className="bg-blue-600 text-white text-xs">
+                                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                             {user?.username?.charAt(0).toUpperCase() || 'U'}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium">{user?.username}</span>
-                                        <span className="text-xs text-gray-500">
-                                            {user?.mfa_enabled ? '🔒 MFA enabled' : '⚠️ MFA disabled'}
+                                        <span className="text-xs text-muted-foreground">
+                                            {user?.mfa_enabled ? 'MFA enabled' : 'MFA disabled'}
                                         </span>
                                     </div>
                                 </div>
@@ -194,44 +198,111 @@ export default function DashboardClient() {
             </header>
 
             {/* Main Content */}
-            <main className="container mx-auto p-4">
-                {/* Stats Grid */}
-                <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <Card>
-                        <CardContent className="p-6">
-                            <div className="text-3xl font-bold">{stats.totalResources}</div>
-                            <p className="text-sm text-gray-500">Total Resources</p>
+            <main className="container mx-auto p-4 sm:p-6">
+                <div className="mb-8 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+                    <Card className="relative overflow-hidden">
+                        <CardContent className="space-y-4 p-6">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                Workspace overview
+                            </p>
+                            <div>
+                                <h1 className="font-display text-3xl sm:text-4xl">
+                                    Welcome back, {user?.username || 'there'}.
+                                </h1>
+                                <p className="mt-2 text-muted-foreground">
+                                    Track live availability, manage reservations, and stay ahead of conflicts.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-xs text-muted-foreground">
+                                    <span className="font-semibold tabular-nums text-foreground">
+                                        {stats.availableResources}
+                                    </span>
+                                    available now
+                                </span>
+                                <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-xs text-muted-foreground">
+                                    <span className="font-semibold tabular-nums text-foreground">
+                                        {stats.activeReservations}
+                                    </span>
+                                    active bookings
+                                </span>
+                                <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-xs text-muted-foreground">
+                                    <span className="font-semibold tabular-nums text-foreground">
+                                        {stats.upcomingReservations}
+                                    </span>
+                                    upcoming
+                                </span>
+                            </div>
                         </CardContent>
                     </Card>
+
                     <Card>
-                        <CardContent className="p-6">
-                            <div className="text-3xl font-bold text-green-600">
-                                {stats.availableResources}
-                            </div>
-                            <p className="text-sm text-gray-500">Available Now</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-6">
-                            <div className="text-3xl font-bold text-blue-600">
-                                {stats.activeReservations}
-                            </div>
-                            <p className="text-sm text-gray-500">Active Bookings</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-6">
-                            <div className="text-3xl font-bold text-purple-600">
-                                {stats.upcomingReservations}
-                            </div>
-                            <p className="text-sm text-gray-500">Upcoming</p>
+                        <CardContent className="space-y-3 p-6">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                Next reservation
+                            </p>
+                            {upcomingReservations[0] ? (
+                                <div className="space-y-2">
+                                    <p className="font-display text-2xl">
+                                        Resource #{upcomingReservations[0].resource_id}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {formatDateTime(upcomingReservations[0].start_time)} —{' '}
+                                        {formatDateTime(upcomingReservations[0].end_time)}
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    No upcoming reservations yet. Reserve a resource to get started.
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
 
+                {/* Stats Grid */}
+                <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                        {
+                            label: 'Total Resources',
+                            value: stats.totalResources,
+                            icon: Calendar,
+                        },
+                        {
+                            label: 'Available Now',
+                            value: stats.availableResources,
+                            icon: CheckCircle2,
+                        },
+                        {
+                            label: 'Active Bookings',
+                            value: stats.activeReservations,
+                            icon: Activity,
+                        },
+                        {
+                            label: 'Upcoming',
+                            value: stats.upcomingReservations,
+                            icon: Clock,
+                        },
+                    ].map(({ label, value, icon: Icon }) => (
+                        <Card key={label}>
+                            <CardContent className="flex items-center justify-between p-6">
+                                <div>
+                                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                        {label}
+                                    </p>
+                                    <p className="mt-2 text-3xl font-semibold">{value}</p>
+                                </div>
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                    <Icon className="h-5 w-5" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
                 {/* Tabs */}
                 <Tabs defaultValue="resources" className="w-full">
-                    <TabsList className="mb-4 grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+                    <TabsList className="mb-4 w-full justify-between lg:w-auto lg:justify-start">
                         <TabsTrigger value="resources" className="gap-2">
                             <Calendar className="h-4 w-4" />
                             Resources
@@ -245,18 +316,11 @@ export default function DashboardClient() {
                     </TabsList>
 
                     <TabsContent value="resources">
-                        <ResourcesTab
-                            resources={resources}
-                            onRefresh={fetchData}
-                        />
+                        <ResourcesTab resources={resources} onRefresh={fetchData} />
                     </TabsContent>
 
                     <TabsContent value="reservations">
-                        <ReservationsTab
-                            reservations={reservations}
-                            onRefresh={fetchData}
-                            showAll
-                        />
+                        <ReservationsTab reservations={reservations} onRefresh={fetchData} showAll />
                     </TabsContent>
 
                     <TabsContent value="upcoming">

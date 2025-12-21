@@ -19,10 +19,10 @@ export default function HomeClient() {
     }, [isAuthenticated, loading, router]);
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
-            <div className="flex flex-col items-center gap-4">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-                <p className="text-gray-600">Checking authentication...</p>
+        <div className="flex min-h-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-4 text-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                <p className="text-muted-foreground">Checking authentication...</p>
             </div>
         </div>
     );

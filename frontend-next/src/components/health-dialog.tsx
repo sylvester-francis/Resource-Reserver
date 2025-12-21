@@ -90,7 +90,7 @@ export function HealthDialog({ open, onOpenChange, stats }: HealthDialogProps) {
                         <Alert className={health?.status === 'healthy' ? 'border-green-500' : 'border-red-500'}>
                             <Server className="h-4 w-4" />
                             <AlertDescription>
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                     <span>
                                         <strong>System Status:</strong>{' '}
                                         <span className={health?.status === 'healthy' ? 'text-green-600' : 'text-red-600'}>
@@ -112,7 +112,7 @@ export function HealthDialog({ open, onOpenChange, stats }: HealthDialogProps) {
                                 <Server className="h-4 w-4 text-primary" />
                                 Resource Statistics
                             </h4>
-                            <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3 sm:gap-4">
                                 <div className="rounded-lg border p-3">
                                     <div className="text-2xl font-bold">{stats.totalResources}</div>
                                     <div className="text-xs text-muted-foreground">Total</div>
@@ -143,7 +143,7 @@ export function HealthDialog({ open, onOpenChange, stats }: HealthDialogProps) {
                                 <Calendar className="h-4 w-4 text-primary" />
                                 Reservation Statistics
                             </h4>
-                            <div className="grid grid-cols-2 gap-4 text-center">
+                            <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-2 sm:gap-4">
                                 <div className="rounded-lg border p-3">
                                     <div className="text-2xl font-bold text-blue-600">{stats.activeReservations}</div>
                                     <div className="text-xs text-muted-foreground">Active Bookings</div>

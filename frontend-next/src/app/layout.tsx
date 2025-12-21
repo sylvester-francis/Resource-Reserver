@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const inter = Inter({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-plus-jakarta",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
 });
 
 export const metadata: Metadata = {
@@ -27,7 +37,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body
+        className={`${plusJakarta.variable} ${fraunces.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -70,7 +70,7 @@ export function HistoryDialog({
             case 'updated':
                 return <Edit className="h-4 w-4 text-blue-500" />;
             default:
-                return <Clock className="h-4 w-4 text-gray-500" />;
+                return <Clock className="h-4 w-4 text-muted-foreground" />;
         }
     };
 

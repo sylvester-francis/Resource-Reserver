@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 function LoadingSkeleton({ className }: { className?: string }) {
     return (
         <div
-            className={`animate-pulse rounded bg-gray-200 ${className || ''}`}
+            className={`animate-pulse rounded bg-muted ${className || ''}`}
         />
     );
 }
@@ -12,10 +12,10 @@ function LoadingSkeleton({ className }: { className?: string }) {
 // Loading component without any shadcn/ui dependencies
 function LoginLoading() {
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-            <div className="w-full max-w-md rounded-lg border bg-white p-6 shadow-sm">
+        <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card/90 p-6 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.55)]">
                 <div className="space-y-4 text-center">
-                    <LoadingSkeleton className="mx-auto h-12 w-12 rounded-full" />
+                    <LoadingSkeleton className="mx-auto h-12 w-12 rounded-2xl" />
                     <LoadingSkeleton className="mx-auto h-6 w-32" />
                     <LoadingSkeleton className="mx-auto h-4 w-48" />
                 </div>
