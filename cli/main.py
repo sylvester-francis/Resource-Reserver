@@ -11,6 +11,7 @@ from rich.table import Table
 from cli.auth_commands import mfa_app, oauth_app, role_app
 from cli.client import APIClient
 from cli.config import config
+from cli.setup_commands import setup_app
 from cli.utils import (
     confirm_action,
     format_datetime,
@@ -37,6 +38,7 @@ app.add_typer(auth_app, name="auth")
 app.add_typer(mfa_app, name="mfa")
 app.add_typer(role_app, name="roles")
 app.add_typer(oauth_app, name="oauth")
+app.add_typer(setup_app, name="setup")
 
 
 @auth_app.command("register")
