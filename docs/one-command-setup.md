@@ -13,14 +13,14 @@ That's it! Everything else is automatic.
 ## What Happens Automatically
 
 1. Checks if mise is installed (installs if needed)
-2. Auto-detects your shell (bash/zsh) and configures it
-3. Installs Python 3.11, Node 24, and Tilt
-4. Checks if Docker is running (starts it if needed on macOS)
-5. Installs all Python and Node dependencies
-6. Configures git hooks (pre-commit and post-commit)
-7. Builds Docker images in background
-8. Starts Tilt development environment
-9. Opens Tilt UI at http://localhost:10350
+1. Auto-detects your shell (bash/zsh) and configures it
+1. Installs Python 3.11, Node 24, and Tilt
+1. Checks if Docker is running (starts it if needed on macOS)
+1. Installs all Python and Node dependencies
+1. Configures git hooks (pre-commit and post-commit)
+1. Builds Docker images in background
+1. Starts Tilt development environment
+1. Opens Tilt UI at http://localhost:10350
 
 ## Simple Commands (via Makefile)
 
@@ -39,6 +39,7 @@ make clean     # Clean caches
 ## No Manual Steps Required
 
 Everything is automated:
+
 - No need to manually install Python/Node
 - No need to manually start Docker
 - No need to manually install dependencies
@@ -74,15 +75,18 @@ After running `./dev` or `make dev`:
 ## Features
 
 ### Auto-Restart on Code Changes
+
 - Edit Python files → Backend reloads in < 1 second
 - Edit JavaScript/EJS files → Frontend reloads in < 1 second
 
 ### Quality Checks
+
 - Pre-commit hook runs before each commit
 - Post-commit hook verifies CI will pass
 - All checks run automatically
 
 ### Visual Dashboard
+
 - Tilt UI shows all services
 - Color-coded health status
 - Unified logs
@@ -97,6 +101,7 @@ After running `./dev` or `make dev`:
 ## Troubleshooting
 
 ### Docker not starting on macOS
+
 ```bash
 # Install Docker Desktop if not installed
 brew install --cask docker
@@ -106,12 +111,14 @@ brew install --cask docker
 ```
 
 ### Need to reset
+
 ```bash
 rm .setup-complete
 ./dev  # Will run full setup again
 ```
 
 ### Prefer traditional approach
+
 ```bash
 docker compose up -d  # Still works!
 ```
@@ -119,25 +126,28 @@ docker compose up -d  # Still works!
 ## Why This is Better
 
 **Before (traditional):**
+
 1. Install Python 3.11 manually
-2. Install Node 24 manually
-3. Create virtual environment
-4. Install pip dependencies
-5. Install npm dependencies
-6. Start Docker Desktop
-7. Build images
-8. Start backend in terminal 1
-9. Start frontend in terminal 2
-10. Configure git hooks
-11. Hope everything works
+1. Install Node 24 manually
+1. Create virtual environment
+1. Install pip dependencies
+1. Install npm dependencies
+1. Start Docker Desktop
+1. Build images
+1. Start backend in terminal 1
+1. Start frontend in terminal 2
+1. Configure git hooks
+1. Hope everything works
 
 **After (one command):**
+
 1. `./dev`
-2. Start coding!
+1. Start coding!
 
 ## Summary
 
 This is the simplest possible developer experience:
+
 - Clone repository
 - Run `./dev`
 - Everything else happens automatically

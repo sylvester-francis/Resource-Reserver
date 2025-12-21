@@ -1,0 +1,17 @@
+# Bun configuration for Resource-Reserver frontend
+# Documentation: https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Use faster registry access
+registry = "https://registry.npmjs.org"
+
+# Cache configuration
+cache = true
+
+[install.lockfile]
+# Generate lockfile
+save = true
+
+[run]
+# Silent mode for cleaner output
+silent = false

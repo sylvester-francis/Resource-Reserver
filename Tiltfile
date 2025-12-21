@@ -36,7 +36,7 @@ local_resource(
 
 # Watch additional files for changes
 watch_file('requirements.txt')
-watch_file('frontend/package.json')
+watch_file('frontend-next/package.json')
 watch_file('.env')
 
 # Print helpful information on startup
@@ -58,7 +58,7 @@ Manual Tasks (click in Tilt UI):
 
 Live Reload:
   - Backend: Edit files in app/ or cli/
-  - Frontend: Edit files in frontend/
+  - Frontend: Edit files in frontend-next/src/
 
 Press space or visit http://localhost:10350 to open Tilt UI
 Press Ctrl+C to stop all services

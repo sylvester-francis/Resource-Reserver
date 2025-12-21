@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_status() {
-    if [ $1 -eq 0 ]; then
+    if [ "$1" -eq 0 ]; then
         echo -e "${GREEN}✓ $2${NC}"
     else
         echo -e "${RED}✗ $2${NC}"
@@ -52,26 +52,12 @@ else
     OVERALL_STATUS=1
 fi
 
-# 3. Run mypy type checking (on changed Python files only)
+# 3. Run quick test suite (only on changed test files)
 echo ""
-echo "3. Running mypy type checking..."
-CHANGED_PY_FILES=$(git diff --name-only HEAD~1 HEAD | grep '\.py$' | grep -E '^(app|cli)/' || true)
-if [ -n "$CHANGED_PY_FILES" ]; then
-    if mypy $CHANGED_PY_FILES --ignore-missing-imports --no-strict-optional 2>/dev/null; then
-        print_status 0 "Type checking passed"
-    else
-        print_status 1 "Type checking found issues"
-        OVERALL_STATUS=1
-    fi
-else
-    echo -e "${YELLOW}⊘ No Python files changed, skipping mypy${NC}"
-fi
-
-# 4. Run quick test suite (only on changed test files)
-echo ""
-echo "4. Running quick test suite..."
+echo "3. Running quick test suite..."
 CHANGED_TEST_FILES=$(git diff --name-only HEAD~1 HEAD | grep '^tests/.*\.py$' || true)
 if [ -n "$CHANGED_TEST_FILES" ]; then
+    # shellcheck disable=SC2086
     if pytest --maxfail=1 --tb=short -q $CHANGED_TEST_FILES; then
         print_status 0 "Tests passed"
     else
@@ -82,10 +68,12 @@ else
     echo -e "${YELLOW}⊘ No test files changed, skipping pytest${NC}"
 fi
 
-# 5. Security check with bandit (on changed Python files)
+# 4. Security check with bandit (on changed Python files)
 echo ""
-echo "5. Running security scan..."
+echo "4. Running security scan..."
+CHANGED_PY_FILES=$(git diff --name-only HEAD~1 HEAD | grep '\.py$' | grep -E '^(app|cli)/' || true)
 if [ -n "$CHANGED_PY_FILES" ]; then
+    # shellcheck disable=SC2086
     if bandit -c pyproject.toml -q $CHANGED_PY_FILES 2>/dev/null; then
         print_status 0 "Security scan passed"
     else

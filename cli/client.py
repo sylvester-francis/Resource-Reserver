@@ -223,19 +223,14 @@ class APIClient:
     def mfa_setup(self) -> dict[str, Any]:
         """Setup MFA for current user."""
         headers = config.get_auth_headers()
-        response = self.session.post(
-            f"{self.base_url}/auth/mfa/setup",
-            headers=headers
-        )
+        response = self.session.post(f"{self.base_url}/auth/mfa/setup", headers=headers)
         return self._handle_response(response)
 
     def mfa_verify(self, code: str) -> dict[str, Any]:
         """Verify and enable MFA."""
         headers = config.get_auth_headers()
         response = self.session.post(
-            f"{self.base_url}/auth/mfa/verify",
-            json={"code": code},
-            headers=headers
+            f"{self.base_url}/auth/mfa/verify", json={"code": code}, headers=headers
         )
         return self._handle_response(response)
 
@@ -245,7 +240,7 @@ class APIClient:
         response = self.session.post(
             f"{self.base_url}/auth/mfa/disable",
             json={"password": password},
-            headers=headers
+            headers=headers,
         )
         return self._handle_response(response)
 
@@ -253,8 +248,7 @@ class APIClient:
         """Regenerate MFA backup codes."""
         headers = config.get_auth_headers()
         response = self.session.post(
-            f"{self.base_url}/auth/mfa/backup-codes",
-            headers=headers
+            f"{self.base_url}/auth/mfa/backup-codes", headers=headers
         )
         return self._handle_response(response)
 
@@ -265,19 +259,13 @@ class APIClient:
     def list_roles(self) -> list[dict[str, Any]]:
         """List all available roles."""
         headers = config.get_auth_headers()
-        response = self.session.get(
-            f"{self.base_url}/roles/",
-            headers=headers
-        )
+        response = self.session.get(f"{self.base_url}/roles/", headers=headers)
         return self._handle_response(response)
 
     def get_my_roles(self) -> list[dict[str, Any]]:
         """Get current user's roles."""
         headers = config.get_auth_headers()
-        response = self.session.get(
-            f"{self.base_url}/roles/my-roles",
-            headers=headers
-        )
+        response = self.session.get(f"{self.base_url}/roles/my-roles", headers=headers)
         return self._handle_response(response)
 
     def assign_role(self, user_id: int, role_name: str) -> dict[str, Any]:
@@ -286,7 +274,7 @@ class APIClient:
         response = self.session.post(
             f"{self.base_url}/roles/assign",
             json={"user_id": user_id, "role_name": role_name},
-            headers=headers
+            headers=headers,
         )
         return self._handle_response(response)
 
@@ -296,7 +284,7 @@ class APIClient:
         response = self.session.delete(
             f"{self.base_url}/roles/assign",
             json={"user_id": user_id, "role_name": role_name},
-            headers=headers
+            headers=headers,
         )
         return self._handle_response(response)
 
@@ -309,7 +297,7 @@ class APIClient:
         client_name: str,
         redirect_uris: list[str],
         grant_types: str = "authorization_code",
-        scope: str = "read write"
+        scope: str = "read write",
     ) -> dict[str, Any]:
         """Create OAuth2 client."""
         headers = config.get_auth_headers()
@@ -319,27 +307,22 @@ class APIClient:
                 "client_name": client_name,
                 "redirect_uris": redirect_uris,
                 "grant_types": grant_types,
-                "scope": scope
+                "scope": scope,
             },
-            headers=headers
+            headers=headers,
         )
         return self._handle_response(response)
 
     def list_oauth_clients(self) -> list[dict[str, Any]]:
         """List user's OAuth2 clients."""
         headers = config.get_auth_headers()
-        response = self.session.get(
-            f"{self.base_url}/oauth/clients",
-            headers=headers
-        )
+        response = self.session.get(f"{self.base_url}/oauth/clients", headers=headers)
         return self._handle_response(response)
 
     def delete_oauth_client(self, client_id: str) -> dict[str, Any]:
         """Delete OAuth2 client."""
         headers = config.get_auth_headers()
         response = self.session.delete(
-            f"{self.base_url}/oauth/clients/{client_id}",
-            headers=headers
+            f"{self.base_url}/oauth/clients/{client_id}", headers=headers
         )
         return self._handle_response(response)
-

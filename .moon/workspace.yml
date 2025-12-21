@@ -1,0 +1,25 @@
+# Moon Workspace Configuration
+# Documentation: https://moonrepo.dev/docs/config/workspace
+
+# Workspace root settings
+$schema: 'https://moonrepo.dev/schemas/workspace.json'
+
+# Projects in the workspace
+projects:
+  - 'frontend-next'
+
+# VCS settings
+vcs:
+  manager: 'git'
+  defaultBranch: 'main'
+
+# Caching configuration
+runner:
+  # Enable caching for faster rebuilds
+  cacheLifetime: '7 days'
+
+  # Inherit environment variables
+  inheritColorsForPipedTasks: true
+
+# Extensions (optional)
+extensions: {}

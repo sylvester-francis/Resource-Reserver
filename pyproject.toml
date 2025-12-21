@@ -45,11 +45,7 @@ dev = [
     "pytest-mock>=3.12.0",
     "pytest-cov>=4.1.0",
     "httpx>=0.25.0",
-    "ruff>=0.1.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "mypy>=1.7.0",
-    "flake8>=6.0.0",
+    "ruff>=0.8.0",
     "bandit>=1.7.0",
     "safety>=2.3.0",
 ]
@@ -72,7 +68,7 @@ select = [
     "UP", # pyupgrade
 ]
 ignore = [
-    "E501",  # line too long, handled by black
+    "E501",  # line too long, handled by ruff format
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
 ]
@@ -84,62 +80,22 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["app", "cli"]
 
-[tool.black]
-target-version = ['py311']
-line-length = 88
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | venv
-  | build
-  | dist
-)/
-'''
-
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["app", "cli"]
-known_third_party = ["fastapi", "sqlalchemy", "pydantic", "typer", "rich"]
-
-[tool.mypy]
-python_version = "3.11"
-check_untyped_defs = true
-disallow_any_generics = true
-disallow_incomplete_defs = true
-disallow_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_return_any = true
-strict_optional = true
-
-[[tool.mypy.overrides]]
-module = [
-    "tests.*",
-    "bcrypt.*",
-    "jose.*",
-    "passlib.*",
-]
-ignore_missing_imports = true
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --strict-markers --strict-config"
 testpaths = ["tests"]
 filterwarnings = [
-    "error",
     "ignore::UserWarning",
     "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore:.*crypt.*:DeprecationWarning:passlib",
+    "ignore:.*LegacyAPIWarning.*:sqlalchemy.exc.LegacyAPIWarning",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

@@ -24,32 +24,32 @@ docker-compose ps
 ### Step 2: Access the Application
 
 1. **Open your browser**: Navigate to `http://localhost:3000`
-2. **Create an account**: Click "Register" and create your first user
-3. **Log in**: Use your credentials to access the dashboard
+1. **Create an account**: Click "Register" and create your first user
+1. **Log in**: Use your credentials to access the dashboard
 
 ### Step 3: Create Your First Resource
 
 1. Click **"+ Add Resource"** button
-2. Enter resource details:
+1. Enter resource details:
    - **Name**: "Conference Room A"
    - **Tags**: "meeting, video-call, whiteboard" (optional)
    - **Status**: Available ✓
-3. Click **"Create Resource"**
+1. Click **"Create Resource"**
 
 ### Step 4: Make Your First Reservation
 
 1. Find your resource in the list
-2. Click **"Reserve"** button
-3. Select date and time:
+1. Click **"Reserve"** button
+1. Select date and time:
    - **Start**: Tomorrow at 9:00 AM
    - **End**: Tomorrow at 10:00 AM
-4. Click **"Create Reservation"**
+1. Click **"Create Reservation"**
 
 ### Step 5: Monitor System Health
 
 1. Click **"System Status"** in the top menu
-2. Verify all services are healthy
-3. Check resource utilization statistics
+1. Verify all services are healthy
+1. Check resource utilization statistics
 
 ## Next Steps
 
@@ -75,13 +75,13 @@ docker-compose exec backend python -c "import shutil; shutil.copy('/app/data/res
 
 ## Troubleshooting
 
-**Problem**: Can't access <http://localhost:3000>  
+**Problem**: Can't access <http://localhost:3000>\
 **Solution**: Check if ports are available: `netstat -an | grep 3000`
 
-**Problem**: Login fails  
+**Problem**: Login fails\
 **Solution**: Verify backend is running: `docker-compose logs backend`
 
-**Problem**: Resources not showing  
+**Problem**: Resources not showing\
 **Solution**: Check database connection in System Status
 
 Need help? See our [Troubleshooting Guide](troubleshooting.md) or check the logs.

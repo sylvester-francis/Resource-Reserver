@@ -184,11 +184,13 @@ docker-compose --profile postgres up -d
 #### Managed Database Services
 
 **AWS RDS PostgreSQL**:
+
 ```bash
 DATABASE_URL=postgresql://username:password@rds-endpoint.region.rds.amazonaws.com:5432/resource_reserver
 ```
 
 **Google Cloud SQL**:
+
 ```bash
 DATABASE_URL=postgresql://username:password@google-cloud-sql-ip:5432/resource_reserver
 ```
@@ -246,14 +248,19 @@ services:
 
 #### Prometheus Metrics (Optional)
 
-```python
-# Add to requirements.txt
-prometheus-client==0.16.0
+Add to `requirements.txt`:
 
-# Add to main.py
+```
+prometheus-client==0.16.0
+```
+
+Add to `main.py`:
+
+```python
 from prometheus_client import Counter, Histogram, generate_latest
-request_count = Counter('requests_total', 'Total requests')
-request_duration = Histogram('request_duration_seconds', 'Request duration')
+
+request_count = Counter("requests_total", "Total requests")
+request_duration = Histogram("request_duration_seconds", "Request duration")
 ```
 
 ### Security Considerations
@@ -261,6 +268,7 @@ request_duration = Histogram('request_duration_seconds', 'Request duration')
 #### Environment Variables
 
 Never commit sensitive data:
+
 ```bash
 # .gitignore
 .env
@@ -287,7 +295,7 @@ server {
     listen 443 ssl;
     ssl_certificate /etc/ssl/certs/fullchain.pem;
     ssl_certificate_key /etc/ssl/certs/privkey.pem;
-    
+
     location / {
         proxy_pass http://frontend:3000;
         proxy_set_header Host $host;
@@ -333,6 +341,7 @@ docker run --rm -v resource-reserver_backend_data:/data -v $(pwd):/backup ubuntu
 #### Common Problems
 
 **High Memory Usage**:
+
 ```bash
 # Check container resources
 docker stats
@@ -342,12 +351,14 @@ docker-compose up -d --scale backend=2
 ```
 
 **Database Connection Issues**:
+
 ```bash
 # Check database connectivity
 docker-compose exec backend python -c "from app.database import engine; engine.connect()"
 ```
 
 **SSL Certificate Issues**:
+
 ```bash
 # Verify certificates
 openssl x509 -in certificate.crt -text -noout

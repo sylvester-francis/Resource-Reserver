@@ -1,7 +1,7 @@
 # Makefile for Resource-Reserver
-# Provides simple one-command developer experience
+# Provides simple one-command developer experience with Bun, Moon, and Mise
 
-.PHONY: help setup dev stop test lint format clean install-hooks docker logs
+.PHONY: help setup dev stop test lint format clean install-hooks docker logs build
 
 # Default target - show help
 help:
@@ -16,11 +16,14 @@ help:
 	@echo "  make test     - Run all tests"
 	@echo "  make lint     - Run linters"
 	@echo "  make format   - Auto-format code"
+	@echo "  make build    - Build frontend for production"
 	@echo "  make logs     - View service logs"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean    - Clean caches and temp files"
 	@echo "  make docker   - Use Docker Compose instead of Tilt"
+	@echo ""
+	@echo "Tools: mise (Bun, Python, Moon) | Tilt | Docker"
 	@echo ""
 
 # Complete automated setup - ONE command to rule them all
@@ -28,64 +31,55 @@ setup:
 	@echo "=========================================="
 	@echo "Resource-Reserver Automated Setup"
 	@echo "=========================================="
-	@./scripts/setup-dev.sh
+	@echo ""
+	@echo "📦 Installing tools with mise..."
+	@mise install
+	@echo ""
+	@echo "📦 Installing dependencies..."
+	@mise run setup
+	@echo ""
+	@echo "✅ Setup complete! Run 'make dev' to start."
 
 # Start development environment with Tilt
 dev:
-	@echo "Starting development environment with Tilt..."
-	@echo "Tilt UI will open at http://localhost:10350"
-	@echo "Backend API: http://localhost:8000"
+	@echo "Starting development environment..."
+	@echo "Tilt UI: http://localhost:10350"
+	@echo "Backend: http://localhost:8000"
 	@echo "Frontend: http://localhost:3000"
 	@echo ""
-	@if command -v mise > /dev/null 2>&1; then \
-		mise run dev; \
-	else \
-		tilt up; \
-	fi
+	@mise run dev
 
 # Stop all services
 stop:
 	@echo "Stopping all services..."
-	@tilt down 2>/dev/null || docker compose down
+	@mise run down 2>/dev/null || docker compose down
 
 # Run all tests
 test:
-	@if command -v mise > /dev/null 2>&1; then \
-		mise run test; \
-	else \
-		pytest tests/; \
-	fi
+	@mise run test
 
 # Run linters
 lint:
-	@if command -v mise > /dev/null 2>&1; then \
-		mise run lint; \
-	else \
-		ruff check . && echo "Linting passed!"; \
-	fi
+	@mise run lint
 
 # Auto-format code
 format:
-	@if command -v mise > /dev/null 2>&1; then \
-		mise run format; \
-	else \
-		black . && ruff check --fix .; \
-	fi
+	@mise run format
+
+# Build for production
+build:
+	@mise run build
 
 # Install git hooks
 install-hooks:
-	@if command -v mise > /dev/null 2>&1; then \
-		mise run setup-hooks; \
-	else \
-		pip install pre-commit && pre-commit install && pre-commit install --hook-type post-commit; \
-	fi
+	@mise run setup-hooks
 
 # Use Docker Compose (alternative to Tilt)
 docker:
 	@echo "Starting services with Docker Compose..."
-	@docker compose up -d
+	@mise run docker
 	@echo "Services started!"
-	@echo "Backend API: http://localhost:8000"
+	@echo "Backend: http://localhost:8000"
 	@echo "Frontend: http://localhost:3000"
 
 # View logs
@@ -98,10 +92,16 @@ logs:
 
 # Clean caches and temporary files
 clean:
-	@echo "Cleaning caches and temporary files..."
-	@rm -rf __pycache__ .pytest_cache .ruff_cache .mypy_cache .tox
-	@rm -rf node_modules/.cache
-	@rm -rf .tiltbuild
-	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@echo "Clean complete!"
+	@mise run clean
+
+# Frontend-only development
+frontend:
+	@mise run frontend-dev
+
+# Backend-only development
+backend:
+	@mise run backend-dev
+
+# Run Moon tasks
+moon-%:
+	@moon run $*

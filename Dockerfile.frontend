@@ -1,27 +1,57 @@
-# Frontend Dockerfile for Express.js
-FROM node:24-alpine
+# Frontend Dockerfile using Bun for faster builds
+# Multi-stage build for optimized production image
 
-# Set working directory
+# Stage 1: Install dependencies
+FROM oven/bun:1-alpine AS deps
+
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY frontend/package*.json ./
+# Copy package files
+COPY frontend-next/package.json frontend-next/bun.lockb* ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN bun install --frozen-lockfile
 
-# Copy application code
-COPY frontend/ .
+# Stage 2: Build the application
+FROM oven/bun:1-alpine AS builder
 
-# Create uploads directory
-RUN mkdir -p uploads
+WORKDIR /app
 
-# Expose port
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY frontend-next/ .
+
+# Set environment for build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Build the application
+RUN bun run build
+
+# Stage 3: Production runner
+FROM oven/bun:1-alpine AS runner
+
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy built assets
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Run the application
-CMD ["npm", "start"]
+# Start the server with Bun
+CMD ["bun", "run", "server.js"]

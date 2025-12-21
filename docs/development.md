@@ -9,7 +9,7 @@
 - [Code Quality](#code-quality)
 - [Troubleshooting](#troubleshooting)
 
----
+______________________________________________________________________
 
 ## Setup
 
@@ -22,6 +22,7 @@ Run the automated setup script:
 ```
 
 This will:
+
 - Install mise (if not already installed)
 - Install all required tools (Python 3.11, Node 24, Tilt)
 - Install Python and Node dependencies
@@ -66,7 +67,7 @@ mise current
 tilt version
 ```
 
----
+______________________________________________________________________
 
 ## Development Workflow
 
@@ -83,6 +84,7 @@ mise run dev
 ```
 
 **Features:**
+
 - Live reload for both backend and frontend
 - Tilt UI at http://localhost:10350
 - Unified logs for all services
@@ -90,16 +92,19 @@ mise run dev
 - Manual quality check tasks
 
 **Services:**
+
 - Backend API: http://localhost:8000
 - Frontend Web: http://localhost:3000
 - API Docs: http://localhost:8000/docs
 
 **Manual Tasks** (click in Tilt UI):
+
 - `lint-backend`: Run ruff on Python code
 - `test-backend`: Run pytest test suite
 - `format-code`: Format all code
 
 **Stop services:**
+
 ```bash
 tilt down
 
@@ -140,7 +145,7 @@ cd frontend && npm run dev
 pytest tests/ --watch
 ```
 
----
+______________________________________________________________________
 
 ## Git Hooks
 
@@ -151,6 +156,7 @@ Git hooks automatically run quality checks to ensure code standards before commi
 Runs **before** each commit:
 
 **Checks:**
+
 - Ruff linting (auto-fixes issues)
 - Ruff formatting
 - MyPy type checking
@@ -162,6 +168,7 @@ Runs **before** each commit:
 - Markdown formatting
 
 **Example output:**
+
 ```
 ruff linter (Python)..................Passed
 ruff formatter (Python)...............Passed
@@ -171,6 +178,7 @@ bandit (Python security)..............Passed
 ```
 
 **If checks fail:**
+
 ```bash
 # Auto-fix formatting issues
 mise run format
@@ -188,6 +196,7 @@ git commit -m "your message"
 Runs **after** each commit to verify it will pass CI/CD:
 
 **Checks:**
+
 - Ruff linting (on changed files)
 - Code formatting verification
 - MyPy type checking (on changed files)
@@ -195,6 +204,7 @@ Runs **after** each commit to verify it will pass CI/CD:
 - Security scan (on changed files)
 
 **Example output:**
+
 ```
 Running post-commit checks...
 
@@ -256,7 +266,7 @@ pre-commit autoupdate
 pre-commit run --all-files
 ```
 
----
+______________________________________________________________________
 
 ## Testing
 
@@ -305,7 +315,7 @@ open htmlcov/index.html
 pytest-watch tests/
 ```
 
----
+______________________________________________________________________
 
 ## Code Quality
 
@@ -344,7 +354,7 @@ ruff check . --output-format=github
 mypy app/ cli/ --pretty
 ```
 
----
+______________________________________________________________________
 
 ## Available Tasks
 
@@ -355,6 +365,7 @@ mise tasks
 ```
 
 Output:
+
 ```
 dev          Start development environment with Tilt
 down         Stop Tilt development environment
@@ -369,7 +380,7 @@ test-backend Run backend tests only
 test-cli     Run CLI tests only
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -378,6 +389,7 @@ test-cli     Run CLI tests only
 **Problem**: `mise: command not found`
 
 **Solution**:
+
 ```bash
 # Reinstall mise
 curl https://mise.run | sh
@@ -390,6 +402,7 @@ source ~/.zshrc
 **Problem**: Wrong tool versions
 
 **Solution**:
+
 ```bash
 # Reinstall tools
 mise install --force
@@ -398,13 +411,14 @@ mise install --force
 mise current
 ```
 
----
+______________________________________________________________________
 
 ### Tilt Issues
 
 **Problem**: `tilt: command not found`
 
 **Solution**:
+
 ```bash
 # Install via mise
 mise install
@@ -416,6 +430,7 @@ brew install tilt  # macOS
 **Problem**: Services won't start
 
 **Solution**:
+
 ```bash
 # Check Tilt logs
 tilt logs
@@ -431,6 +446,7 @@ docker info
 **Problem**: Port conflicts
 
 **Solution**:
+
 ```bash
 # Stop Tilt
 tilt down
@@ -447,13 +463,14 @@ kill -9 <PID>
 tilt up
 ```
 
----
+______________________________________________________________________
 
 ### Git Hooks Issues
 
 **Problem**: Pre-commit hooks fail
 
 **Solution**:
+
 ```bash
 # Update hooks
 pre-commit autoupdate
@@ -469,6 +486,7 @@ pre-commit run --all-files --verbose
 **Problem**: Hooks are slow
 
 **Solution**:
+
 ```bash
 # Skip expensive checks in pre-commit
 SKIP=mypy,bandit,pytest-check git commit -m "message"
@@ -480,6 +498,7 @@ git commit --no-verify -m "message"
 **Problem**: Post-commit hook doesn't run
 
 **Solution**:
+
 ```bash
 # Verify hook is installed
 ls -la .git/hooks/post-commit
@@ -489,13 +508,14 @@ ln -sf ../../.githooks/post-commit .git/hooks/post-commit
 chmod +x .git/hooks/post-commit
 ```
 
----
+______________________________________________________________________
 
 ### Test Issues
 
-**Problem**: Tests fail  locally but pass in CI
+**Problem**: Tests fail locally but pass in CI
 
 **Solution**:
+
 ```bash
 # Clean test cache
 rm -rf .pytest_cache
@@ -510,6 +530,7 @@ pytest --maxfail=1 --tb=short
 **Problem**: Database errors in tests
 
 **Solution**:
+
 ```bash
 # Create test database directory
 mkdir -p data
@@ -521,13 +542,14 @@ rm -f *.db
 pytest tests/
 ```
 
----
+______________________________________________________________________
 
 ### Performance Issues
 
 **Problem**: Slow live reload
 
 **Solution**:
+
 ```bash
 # Check Tilt resource usage
 tilt logs
@@ -542,6 +564,7 @@ tilt down && tilt up
 **Problem**: High CPU usage
 
 **Solution**:
+
 ```bash
 # Check Docker stats
 docker stats
@@ -550,25 +573,28 @@ docker stats
 # Add to docker-compose.override.yml
 ```
 
----
+______________________________________________________________________
 
 ## Best Practices
 
 **Development Workflow:**
+
 1. Start with `mise run dev` (Tilt)
-2. Make code changes
-3. Verify in Tilt UI (auto-reload)
-4. Commit changes (pre-commit runs automatically)
-5. Verify post-commit check output
-6. Push to remote
+1. Make code changes
+1. Verify in Tilt UI (auto-reload)
+1. Commit changes (pre-commit runs automatically)
+1. Verify post-commit check output
+1. Push to remote
 
 **Before Committing:**
+
 - Run `mise run format` to auto-format code
 - Run `mise run lint` to check for issues
 - Run `mise run test` to verify tests pass
 - Let pre-commit hooks catch remaining issues
 
 **Quality Standards:**
+
 - All code must pass ruff linting
 - All code must be formatted with ruff format
 - Type hints required for public APIs
@@ -576,34 +602,39 @@ docker stats
 - Security scanning must pass
 
 **Git Hooks:**
+
 - Pre-commit: Fast checks, auto-fixes when possible
 - Post-commit: Verifies commit will pass CI/CD
 - Never bypass hooks except emergencies
 - Amend commit if post-commit warnings appear
 
 **Debugging:**
+
 - Use Tilt UI logs instead of `docker logs`
 - Check `mise tasks` for available helpers
 - Run quality checks manually before committing
 - Test locally before pushing to CI/CD
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
 **Documentation:**
+
 - mise: https://mise.jdx.dev
 - Tilt: https://docs.tilt.dev
 - pre-commit: https://pre-commit.com
 - ruff: https://docs.astral.sh/ruff
 
 **Project Documentation:**
+
 - [README.md](../README.md) - Project overview
 - [Architecture](../architecture.md) - System design
 - [API Reference](api-reference.md) - API documentation
 - [Troubleshooting](troubleshooting.md) - Common issues
 
 **Quality Tools:**
+
 - [Ruff Documentation](https://docs.astral.sh/ruff/)
 - [MyPy Documentation](https://mypy.readthedocs.io/)
 - [Pytest Documentation](https://docs.pytest.org/)
