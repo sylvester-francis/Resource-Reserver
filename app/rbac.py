@@ -126,7 +126,7 @@ def get_user_roles(user_id: int, db: Session) -> list[models.Role]:
         db.query(models.UserRole).filter(models.UserRole.user_id == user_id).all()
     )
 
-    return [db.query(models.Role).get(ur.role_id) for ur in user_roles]
+    return [db.get(models.Role, ur.role_id) for ur in user_roles]
 
 
 def has_role(user: models.User, role_name: str, db: Session) -> bool:

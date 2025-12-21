@@ -81,7 +81,7 @@ class OAuth2ClientCreate(BaseModel):
     """Create a new OAuth2 client."""
 
     client_name: str = Field(..., min_length=1, max_length=255)
-    redirect_uris: list[str] = Field(..., min_items=1)
+    redirect_uris: list[str] = Field(..., min_length=1)
     grant_types: str = "authorization_code client_credentials"
     scope: str = "read write"
 

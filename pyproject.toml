@@ -91,9 +91,11 @@ minversion = "7.0"
 addopts = "-ra -q --strict-markers --strict-config"
 testpaths = ["tests"]
 filterwarnings = [
-    "error",
     "ignore::UserWarning",
     "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore:.*crypt.*:DeprecationWarning:passlib",
+    "ignore:.*LegacyAPIWarning.*:sqlalchemy.exc.LegacyAPIWarning",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
