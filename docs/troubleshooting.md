@@ -7,11 +7,13 @@
 #### Docker Issues
 
 **Problem**: `docker-compose up` fails with "port already in use"
+
 ```bash
 Error: bind: address already in use
 ```
 
 **Solution**:
+
 ```bash
 # Check what's using the ports
 netstat -an | grep :3000
@@ -28,11 +30,13 @@ docker-compose up -d
 ```
 
 **Problem**: Docker containers fail to start
+
 ```bash
 ERROR: Couldn't connect to Docker daemon
 ```
 
 **Solution**:
+
 ```bash
 # Start Docker service
 sudo systemctl start docker
@@ -49,6 +53,7 @@ docker-compose --version
 **Problem**: "No space left on device" error
 
 **Solution**:
+
 ```bash
 # Clean up Docker
 docker system prune -a
@@ -65,11 +70,13 @@ docker image prune -a
 #### Database Issues
 
 **Problem**: Database connection fails
+
 ```bash
 sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unable to open database file
 ```
 
 **Solution**:
+
 ```bash
 # Check if data directory exists
 ls -la data/
@@ -83,11 +90,13 @@ docker-compose restart backend
 ```
 
 **Problem**: PostgreSQL won't start
+
 ```bash
 FATAL: password authentication failed for user "postgres"
 ```
 
 **Solution**:
+
 ```bash
 # Check environment variables
 cat .env | grep POSTGRES
@@ -103,11 +112,13 @@ docker-compose --profile postgres up -d
 #### Authentication Problems
 
 **Problem**: Login fails with correct credentials
+
 ```bash
 401 Unauthorized: Incorrect username or password
 ```
 
 **Solution**:
+
 ```bash
 # Check if user exists in database
 docker-compose exec backend python -c "
@@ -126,11 +137,13 @@ curl -X POST http://localhost:8000/register \
 ```
 
 **Problem**: Session expires immediately
+
 ```bash
 Your session has expired. Please log in again.
 ```
 
 **Solution**:
+
 ```bash
 # Check system time
 date
@@ -143,6 +156,7 @@ docker-compose exec backend env | grep SECRET_KEY
 ```
 
 **Problem**: Login fails in Safari but works in Chrome/Brave (macOS Sequoia, M-series chips)
+
 ```bash
 Login successful in Brave/Chrome but fails in Safari
 Cookies not being set or retained
@@ -152,6 +166,7 @@ Session immediately expires after login
 **Root Cause**: Safari requires explicit `sameSite` attribute for cookies. This is more strictly enforced on macOS Sequoia with Apple Silicon (M1/M2/M3/M4), especially when using Podman or alternative container runtimes.
 
 **Solution**:
+
 ```bash
 # This issue has been fixed in version 2.0.1+
 # Verify your frontend/server.js includes sameSite attribute
@@ -171,6 +186,7 @@ docker-compose restart frontend
 ```
 
 **Verification**:
+
 ```bash
 # Check cookie in Safari Developer Tools
 # Safari \u003e Develop \u003e Show Web Inspector \u003e Storage \u003e Cookies
@@ -192,6 +208,7 @@ cat cookies.txt
 ```
 
 **Platform-Specific Notes**:
+
 - **macOS Sequoia (15.x)**: Safari 18+ has stricter cookie policies
 - **Apple Silicon (M1/M2/M3/M4)**: No specific issues, affects all Macs equally
 - **Podman vs Docker**: Both work the same after fix
@@ -202,6 +219,7 @@ cat cookies.txt
 **Problem**: Resources don't appear in the list
 
 **Solution**:
+
 ```bash
 # Check backend logs
 docker-compose logs backend
@@ -224,6 +242,7 @@ for r in resources:
 **Problem**: Can't create resources - "already exists" error
 
 **Solution**:
+
 ```bash
 # Check for duplicate names
 docker-compose exec backend python -c "
@@ -245,6 +264,7 @@ print(f'Duplicate names: {duplicates}')
 **Problem**: Can't create reservations - time conflict
 
 **Solution**:
+
 ```bash
 # Check existing reservations for resource
 curl "http://localhost:8000/resources/1/availability?days_ahead=1"
@@ -256,6 +276,7 @@ curl "http://localhost:8000/resources/1/availability?days_ahead=1"
 **Problem**: Reservations don't show up
 
 **Solution**:
+
 ```bash
 # Check reservation status
 docker-compose exec backend python -c "
@@ -280,6 +301,7 @@ for r in reservations:
 **Problem**: Frontend shows blank page
 
 **Solution**:
+
 ```bash
 # Check frontend logs
 docker-compose logs frontend
@@ -297,6 +319,7 @@ docker-compose exec frontend curl http://backend:8000/health
 **Problem**: "API Error" messages
 
 **Solution**:
+
 ```bash
 # Check backend health
 curl http://localhost:8000/health
@@ -316,6 +339,7 @@ docker-compose logs backend | tail -50
 **Problem**: Search doesn't work
 
 **Solution**:
+
 ```bash
 # Test search API directly
 curl "http://localhost:8000/resources/search?q=test"
@@ -328,6 +352,7 @@ curl "http://localhost:8000/resources/search?q=test"
 **Problem**: Status filters not working
 
 **Solution**:
+
 ```bash
 # Check resource availability calculation
 curl "http://localhost:8000/resources/availability/summary"
@@ -343,6 +368,7 @@ curl "http://localhost:8000/resources/availability/summary"
 **Problem**: Dashboard takes long to load
 
 **Solution**:
+
 ```bash
 # Check container resources
 docker stats
@@ -362,6 +388,7 @@ docker-compose restart backend frontend
 **Problem**: High CPU usage
 
 **Solution**:
+
 ```bash
 # Monitor processes
 docker-compose exec backend top
@@ -390,6 +417,7 @@ docker-compose up -d
 **Problem**: "Address already in use" errors
 
 **Solution**:
+
 ```bash
 # Use different ports
 cat > docker-compose.override.yml << EOF
@@ -413,6 +441,7 @@ docker-compose up -d
 **Problem**: Can't reach the application from other devices
 
 **Solution**:
+
 ```bash
 # Bind to all interfaces
 cat > docker-compose.override.yml << EOF
@@ -439,6 +468,7 @@ sudo ufw allow 8000
 **Problem**: All resources/reservations disappeared
 
 **Solution**:
+
 ```bash
 # Check if database file exists
 ls -la data/
@@ -462,6 +492,7 @@ docker-compose restart backend
 **Problem**: Database corruption errors
 
 **Solution**:
+
 ```bash
 # Backup current database
 cp data/resource_reserver.db data/resource_reserver.db.corrupt
@@ -561,14 +592,17 @@ free -h
 If issues persist:
 
 1. Run the health check script above
-2. Collect logs using the log collection script
-3. Include your:
+
+1. Collect logs using the log collection script
+
+1. Include your:
+
    - Operating system and version
    - Docker and Docker Compose versions
    - Any custom configuration
    - Steps to reproduce the issue
 
-4. Create an issue in the project repository with all the collected information
+1. Create an issue in the project repository with all the collected information
 
 ### Quick Fixes Checklist
 

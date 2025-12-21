@@ -9,6 +9,7 @@ All authenticated endpoints require an `Authorization: Bearer <token>` header.
 ## Authentication
 
 ### Register User
+
 ```http
 POST /register
 Content-Type: application/json
@@ -20,6 +21,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -29,6 +31,7 @@ Content-Type: application/json
 ```
 
 ### Login
+
 ```http
 POST /token
 Content-Type: application/x-www-form-urlencoded
@@ -37,6 +40,7 @@ username=john_doe&password=secure_password
 ```
 
 **Response:**
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -47,6 +51,7 @@ username=john_doe&password=secure_password
 ## Resources
 
 ### Create Resource
+
 ```http
 POST /resources
 Authorization: Bearer <token>
@@ -60,6 +65,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -71,11 +77,13 @@ Content-Type: application/json
 ```
 
 ### List All Resources
+
 ```http
 GET /resources
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -90,17 +98,20 @@ GET /resources
 ```
 
 ### Search Resources
+
 ```http
 GET /resources/search?q=conference&available_only=true&available_from=2024-01-16T09:00:00Z&available_until=2024-01-16T17:00:00Z
 ```
 
 **Query Parameters:**
+
 - `q` (string, optional): Search term for resource names
 - `available_only` (boolean, default: true): Filter to only available resources
 - `available_from` (datetime, optional): Check availability from this time
 - `available_until` (datetime, optional): Check availability until this time
 
 **Response:**
+
 ```json
 [
   {
@@ -114,14 +125,17 @@ GET /resources/search?q=conference&available_only=true&available_from=2024-01-16
 ```
 
 ### Get Resource Availability Schedule
+
 ```http
 GET /resources/1/availability?days_ahead=7
 ```
 
 **Query Parameters:**
+
 - `days_ahead` (integer, default: 7): Number of days to show schedule for
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -160,6 +174,7 @@ GET /resources/1/availability?days_ahead=7
 ```
 
 ### Update Resource Availability
+
 ```http
 PUT /resources/1/availability
 Authorization: Bearer <token>
@@ -171,6 +186,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Resource availability updated to unavailable",
@@ -183,6 +199,7 @@ Content-Type: application/json
 ```
 
 ### Upload Resources from CSV
+
 ```http
 POST /resources/upload
 Authorization: Bearer <token>
@@ -192,6 +209,7 @@ file: resources.csv
 ```
 
 **CSV Format:**
+
 ```csv
 name,tags,available
 Conference Room A,"meeting,projector",true
@@ -200,6 +218,7 @@ Equipment Laptop,"laptop,portable",false
 ```
 
 **Response:**
+
 ```json
 {
   "created_count": 3,
@@ -210,6 +229,7 @@ Equipment Laptop,"laptop,portable",false
 ## Reservations
 
 ### Create Reservation
+
 ```http
 POST /reservations
 Authorization: Bearer <token>
@@ -223,6 +243,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -240,15 +261,18 @@ Content-Type: application/json
 ```
 
 ### Get My Reservations
+
 ```http
 GET /reservations/my?include_cancelled=false
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `include_cancelled` (boolean, default: false): Include cancelled reservations
 
 **Response:**
+
 ```json
 [
   {
@@ -266,6 +290,7 @@ Authorization: Bearer <token>
 ```
 
 ### Cancel Reservation
+
 ```http
 POST /reservations/1/cancel
 Authorization: Bearer <token>
@@ -277,6 +302,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Reservation cancelled successfully",
@@ -286,12 +312,14 @@ Content-Type: application/json
 ```
 
 ### Get Reservation History
+
 ```http
 GET /reservations/1/history
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -316,11 +344,13 @@ Authorization: Bearer <token>
 ## System Management
 
 ### Health Check
+
 ```http
 GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -335,11 +365,13 @@ GET /health
 ```
 
 ### Availability Summary
+
 ```http
 GET /resources/availability/summary
 ```
 
 **Response:**
+
 ```json
 {
   "total_resources": 10,
@@ -351,12 +383,14 @@ GET /resources/availability/summary
 ```
 
 ### Manual Cleanup (Admin)
+
 ```http
 POST /admin/cleanup-expired
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Successfully cleaned up 3 expired reservations",
@@ -408,27 +442,30 @@ Configure webhooks to receive real-time notifications:
 ## SDK Examples
 
 ### Python
+
 ```python
 import requests
+
 
 class ResourceReserver:
     def __init__(self, base_url, token):
         self.base_url = base_url
         self.headers = {"Authorization": f"Bearer {token}"}
-    
+
     def create_resource(self, name, tags=None, available=True):
         data = {"name": name, "tags": tags or [], "available": available}
-        response = requests.post(f"{self.base_url}/resources", 
-                               json=data, headers=self.headers)
+        response = requests.post(
+            f"{self.base_url}/resources", json=data, headers=self.headers
+        )
         return response.json()
-    
+
     def search_resources(self, query=None, available_only=True):
         params = {"available_only": available_only}
         if query:
             params["q"] = query
-        response = requests.get(f"{self.base_url}/resources/search", 
-                              params=params)
+        response = requests.get(f"{self.base_url}/resources/search", params=params)
         return response.json()
+
 
 # Usage
 client = ResourceReserver("http://localhost:8000", "your-token")
@@ -436,13 +473,14 @@ resource = client.create_resource("Meeting Room", ["meeting", "projector"])
 ```
 
 ### JavaScript/Node.js
+
 ```javascript
 class ResourceReserver {
     constructor(baseUrl, token) {
         this.baseUrl = baseUrl;
         this.headers = {'Authorization': `Bearer ${token}`};
     }
-    
+
     async createReservation(resourceId, startTime, endTime) {
         const response = await fetch(`${this.baseUrl}/reservations`, {
             method: 'POST',
@@ -465,6 +503,7 @@ const reservation = await client.createReservation(1, '2024-01-16T09:00:00Z', '2
 ### cURL Examples
 
 **Create a resource:**
+
 ```bash
 curl -X POST http://localhost:8000/resources \
   -H "Authorization: Bearer your-token" \
@@ -473,11 +512,13 @@ curl -X POST http://localhost:8000/resources \
 ```
 
 **Search resources:**
+
 ```bash
 curl "http://localhost:8000/resources/search?q=conference&available_only=true"
 ```
 
 **Create reservation:**
+
 ```bash
 curl -X POST http://localhost:8000/reservations \
   -H "Authorization: Bearer your-token" \
@@ -488,6 +529,7 @@ curl -X POST http://localhost:8000/reservations \
 ## OpenAPI Schema
 
 The complete OpenAPI 3.0 schema is available at:
+
 - Interactive documentation: `http://localhost:8000/docs`
 - Raw schema: `http://localhost:8000/openapi.json`
 

@@ -12,11 +12,11 @@ Resource-Reserver now includes enterprise-grade authentication and authorization
 ## Table of Contents
 
 1. [Multi-Factor Authentication](#multi-factor-authentication)
-2. [Role-Based Access Control](#role-based-access-control)
-3. [OAuth2 Integration](#oauth2-integration)
-4. [API Reference](#api-reference)
+1. [Role-Based Access Control](#role-based-access-control)
+1. [OAuth2 Integration](#oauth2-integration)
+1. [API Reference](#api-reference)
 
----
+______________________________________________________________________
 
 ## Multi-Factor Authentication
 
@@ -27,12 +27,14 @@ Resource-Reserver now includes enterprise-grade authentication and authorization
 Enable two-factor authentication for your account.
 
 **Request**:
+
 ```bash
 curl -X POST http://localhost:8000/auth/mfa/setup \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 **Response**:
+
 ```json
 {
   "secret": "BASE32_SECRET",
@@ -43,15 +45,17 @@ curl -X POST http://localhost:8000/auth/mfa/setup \
 ```
 
 **Steps**:
+
 1. Scan QR code with authenticator app (Google Authenticator, Authy, etc.)
-2. Save backup codes in a secure location
-3. Verify setup by entering a code
+1. Save backup codes in a secure location
+1. Verify setup by entering a code
 
 ### Verify and Enable MFA
 
 **Endpoint**: `POST /auth/mfa/verify`
 
 **Request**:
+
 ```bash
 curl -X POST http://localhost:8000/auth/mfa/verify \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -64,6 +68,7 @@ curl -X POST http://localhost:8000/auth/mfa/verify \
 **Endpoint**: `POST /auth/mfa/disable`
 
 **Request**:
+
 ```bash
 curl -X POST http://localhost:8000/auth/mfa/disable \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -75,7 +80,7 @@ curl -X POST http://localhost:8000/auth/mfa/disable \
 
 **Endpoint**: `POST /auth/mfa/backup-codes`
 
----
+______________________________________________________________________
 
 ## Role-Based Access Control
 
@@ -83,11 +88,11 @@ curl -X POST http://localhost:8000/auth/mfa/disable \
 
 Three default roles are created automatically:
 
-| Role   | Description                    | Permissions                           |
-|--------|--------------------------------|---------------------------------------|
-| admin  | Full system access             | All operations on all resources       |
-| user   | Standard user                  | Read resources, manage own reservations |
-| guest  | Read-only access               | View resources only                   |
+| Role  | Description        | Permissions                             |
+| ----- | ------------------ | --------------------------------------- |
+| admin | Full system access | All operations on all resources         |
+| user  | Standard user      | Read resources, manage own reservations |
+| guest | Read-only access   | View resources only                     |
 
 ### List All Roles
 
@@ -123,18 +128,21 @@ curl -X POST http://localhost:8000/roles/assign \
 Permissions follow the format: `resource:action`
 
 **Resources**:
+
 - `resource` - Physical resources
 - `reservation` - Bookings
 - `user` - User management
 - `oauth_client` - OAuth2 clients
 
 **Actions**:
+
 - `create` - Create new items
 - `read` - View items
 - `update` - Modify items
 - `delete` - Remove items
 
 **Example**: Check if user can delete resources
+
 ```python
 from app.rbac import check_permission
 
@@ -143,7 +151,7 @@ if check_permission(user, "resource", "delete", db):
     delete_resource()
 ```
 
----
+______________________________________________________________________
 
 ## OAuth2 Integration
 
@@ -164,6 +172,7 @@ curl -X POST http://localhost:8000/oauth/clients \
 ```
 
 **Response**:
+
 ```json
 {
   "client_id": "CLIENT_ID",
@@ -193,6 +202,7 @@ http://localhost:8000/oauth/authorize?
 ```
 
 User must be logged in. Returns:
+
 ```json
 {
   "code": "AUTHORIZATION_CODE",
@@ -215,6 +225,7 @@ curl -X POST http://localhost:8000/oauth/token \
 ```
 
 **Response**:
+
 ```json
 {
   "access_token": "ACCESS_TOKEN",
@@ -260,6 +271,7 @@ curl -X POST http://localhost:8000/oauth/introspect \
 ```
 
 **Response**:
+
 ```json
 {
   "active": true,
@@ -285,15 +297,15 @@ curl -X POST http://localhost:8000/oauth/revoke \
 
 ### OAuth2 Scopes
 
-| Scope | Description |
-|-------|-------------|
-| `read` | Read access to resources and reservations |
-| `write` | Create and update resources and reservations |
-| `delete` | Delete resources and reservations |
-| `admin` | Administrative access |
-| `user:profile` | Access user profile information |
+| Scope          | Description                                  |
+| -------------- | -------------------------------------------- |
+| `read`         | Read access to resources and reservations    |
+| `write`        | Create and update resources and reservations |
+| `delete`       | Delete resources and reservations            |
+| `admin`        | Administrative access                        |
+| `user:profile` | Access user profile information              |
 
----
+______________________________________________________________________
 
 ## Database Migration
 
@@ -305,20 +317,23 @@ python scripts/migrate_auth.py
 ```
 
 This will:
+
 - Create new tables (roles, oauth2_clients, oauth2_tokens, etc.)
 - Seed default roles (admin, user, guest)
 - Assign 'user' role to all existing users
 
----
+______________________________________________________________________
 
 ## Security Best Practices
 
 ### MFA
+
 - Always enable MFA for admin accounts
 - Store backup codes securely (password manager, safe place)
 - Regenerate backup codes after use
 
 ### OAuth2
+
 - Keep client secrets secure - treat like passwords
 - Use HTTPS in production for redirect URIs
 - Implement PKCE for public clients (mobile/SPA apps)
@@ -326,12 +341,13 @@ This will:
 - Revoke tokens when no longer needed
 
 ### Roles
+
 - Follow principle of least privilege
 - Assign minimum required roles
 - Regularly audit role assignments
 - Use resource-level permissions for fine-grained control
 
----
+______________________________________________________________________
 
 ## Examples
 
@@ -340,13 +356,14 @@ This will:
 ```python
 import requests
 
+
 # OAuth2 Authorization Code Flow
 class APIClient:
     def __init__(self, client_id, client_secret):
         self.client_id = client_id
         self.client_secret = client_secret
         self.access_token = None
-    
+
     def authorize(self, code, redirect_uri):
         """Exchange authorization code for access token."""
         response = requests.post(
@@ -356,20 +373,21 @@ class APIClient:
                 "code": code,
                 "redirect_uri": redirect_uri,
                 "client_id": self.client_id,
-                "client_secret": self.client_secret
-            }
+                "client_secret": self.client_secret,
+            },
         )
         data = response.json()
         self.access_token = data["access_token"]
         return data
-    
+
     def get_resources(self):
         """Get resources using access token."""
         response = requests.get(
             "http://localhost:8000/resources/search",
-            headers={"Authorization": f"Bearer {self.access_token}"}
+            headers={"Authorization": f"Bearer {self.access_token}"},
         )
         return response.json()
+
 
 # Usage
 client = APIClient("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET")
@@ -388,7 +406,7 @@ class APIClient {
     this.clientSecret = clientSecret;
     this.accessToken = null;
   }
-  
+
   async authorize(code, redirectUri) {
     const response = await axios.post(
       'http://localhost:8000/oauth/token',
@@ -400,11 +418,11 @@ class APIClient {
         client_secret: this.clientSecret
       })
     );
-    
+
     this.accessToken = response.data.access_token;
     return response.data;
   }
-  
+
   async getResources() {
     const response = await axios.get(
       'http://localhost:8000/resources/search',
@@ -414,7 +432,7 @@ class APIClient {
         }
       }
     );
-    
+
     return response.data;
   }
 }
@@ -425,77 +443,83 @@ await client.authorize('AUTH_CODE', 'http://localhost:3000/callback');
 const resources = await client.getResources();
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
 ### MFA Issues
 
 **Problem**: QR code won't scan
+
 - Solution: Manually enter the secret into your authenticator app
 
 **Problem**: Code always invalid
+
 - Solution: Check your device time is synchronized (TOTP requires accurate time)
 
 ### OAuth2 Issues
 
 **Problem**: "Invalid redirect_uri"
+
 - Solution: Ensure redirect_uri exactly matches one registered with the client
 
 **Problem**: "Invalid client credentials"
+
 - Solution: Double-check client_id and client_secret are correct
 
 **Problem**: Token expired
+
 - Solution: Use refresh_token to get a new access_token
 
 ### Permission Issues
 
 **Problem**: 403 Forbidden
+
 - Solution: Check user has required role/permission using `/roles/my-roles`
 
----
+______________________________________________________________________
 
 ## API Reference
 
 ### MFA Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/mfa/setup` | Setup MFA for user |
-| POST | `/auth/mfa/verify` | Verify and enable MFA |
-| POST | `/auth/mfa/disable` | Disable MFA |
-| POST | `/auth/mfa/backup-codes` | Regenerate backup codes |
+| Method | Endpoint                 | Description             |
+| ------ | ------------------------ | ----------------------- |
+| POST   | `/auth/mfa/setup`        | Setup MFA for user      |
+| POST   | `/auth/mfa/verify`       | Verify and enable MFA   |
+| POST   | `/auth/mfa/disable`      | Disable MFA             |
+| POST   | `/auth/mfa/backup-codes` | Regenerate backup codes |
 
 ### Role Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/roles/` | List all roles |
-| POST | `/roles/` | Create role (admin only) |
-| GET | `/roles/my-roles` | Get current user's roles |
-| POST | `/roles/assign` | Assign role to user (admin) |
-| DELETE | `/roles/assign` | Remove role from user (admin) |
+| Method | Endpoint          | Description                   |
+| ------ | ----------------- | ----------------------------- |
+| GET    | `/roles/`         | List all roles                |
+| POST   | `/roles/`         | Create role (admin only)      |
+| GET    | `/roles/my-roles` | Get current user's roles      |
+| POST   | `/roles/assign`   | Assign role to user (admin)   |
+| DELETE | `/roles/assign`   | Remove role from user (admin) |
 
 ### OAuth2 Endpoints
 
-| Method | Endpoint| Description |
-|--------|----------|-------------|
-| POST | `/oauth/clients` | Create OAuth2 client |
-| GET | `/oauth/clients` | List user's clients |
-| DELETE | `/oauth/clients/{id}` | Delete client |
-| GET | `/oauth/authorize` | Authorization endpoint |
-| POST | `/oauth/token` | Token endpoint |
-| POST | `/oauth/revoke` | Revoke token |
-| POST | `/oauth/introspect` | Introspect token |
-| GET | `/oauth/protected` | Example protected endpoint |
+| Method | Endpoint              | Description                |
+| ------ | --------------------- | -------------------------- |
+| POST   | `/oauth/clients`      | Create OAuth2 client       |
+| GET    | `/oauth/clients`      | List user's clients        |
+| DELETE | `/oauth/clients/{id}` | Delete client              |
+| GET    | `/oauth/authorize`    | Authorization endpoint     |
+| POST   | `/oauth/token`        | Token endpoint             |
+| POST   | `/oauth/revoke`       | Revoke token               |
+| POST   | `/oauth/introspect`   | Introspect token           |
+| GET    | `/oauth/protected`    | Example protected endpoint |
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 1. Enable MFA for your account
-2. Create an OAuth2 client for your app
-3. Implement authorization code flow
-4. Assign appropriate roles to users
+1. Create an OAuth2 client for your app
+1. Implement authorization code flow
+1. Assign appropriate roles to users
 
 For more information, see the main [README.md](../README.md)

@@ -127,7 +127,7 @@ async def cleanup_expired_reservations():
             logger.error(f"Error in cleanup task: {e}")
             try:
                 db.close()
-            except Exception:
+            except Exception:  # nosec B110 - intentionally ignoring close errors
                 pass
 
         # Run every 5 minutes (300 seconds)

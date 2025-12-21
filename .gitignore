@@ -132,3 +132,6 @@ tilt_modules/
 # Setup marker
 .setup-complete
 .mise-installed
+
+# CLI authentication tokens
+.resource-reserver-cli/

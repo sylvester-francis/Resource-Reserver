@@ -8,6 +8,7 @@ from rich import print
 from rich.console import Console
 from rich.table import Table
 
+from cli.auth_commands import mfa_app, oauth_app, role_app
 from cli.client import APIClient
 from cli.config import config
 from cli.utils import (
@@ -19,7 +20,6 @@ from cli.utils import (
     parse_duration,
     prompt_for_optional,
 )
-from cli.auth_commands import mfa_app, oauth_app, role_app
 
 # Initialize CLI app and API client
 app = typer.Typer(

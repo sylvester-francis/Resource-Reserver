@@ -17,17 +17,20 @@ That's it. Everything else happens automatically.
 ### Core Automation
 
 1. **`./dev`** - Ultimate one-command script
+
    - Runs setup if needed
    - Starts development environment
    - Zero manual intervention
 
-2. **`Makefile`** - Simple command interface
+1. **`Makefile`** - Simple command interface
+
    - `make dev` - Start development
    - `make test` - Run tests
    - `make format` - Auto-format
    - `make help` - View all commands
 
-3. **Enhanced `scripts/setup-dev.sh`**
+1. **Enhanced `scripts/setup-dev.sh`**
+
    - Auto-installs mise
    - Auto-detects shell (bash/zsh)
    - Auto-starts Docker on macOS
@@ -37,11 +40,12 @@ That's it. Everything else happens automatically.
 ### Documentation
 
 4. **`docs/one-command-setup.md`** - One-command experience guide
-5. **Updated `README.md`** - Prominent one-command quick start
+1. **Updated `README.md`** - Prominent one-command quick start
 
 ## Features Implemented
 
 ### Full Automation
+
 - Installs mise if missing
 - Detects and configures shell automatically
 - Starts Docker if not running (macOS)
@@ -52,6 +56,7 @@ That's it. Everything else happens automatically.
 - Starts development environment
 
 ### Zero Manual Steps
+
 - No need to install Python/Node
 - No need to start Docker
 - No need to install dependencies
@@ -60,6 +65,7 @@ That's it. Everything else happens automatically.
 - No need to start services
 
 ### Simple Commands
+
 ```bash
 make dev      # Start
 make stop     # Stop
@@ -71,6 +77,7 @@ make clean    # Clean
 ```
 
 ### Quality of Life
+
 - Color-coded output
 - Progress indicators
 - Error handling
@@ -81,6 +88,7 @@ make clean    # Clean
 ## Developer Experience
 
 ### Before
+
 ```bash
 # 15+ manual steps
 brew install python@3.11
@@ -98,6 +106,7 @@ docker compose build
 ```
 
 ### After
+
 ```bash
 # ONE step
 ./dev
@@ -129,26 +138,31 @@ docker compose build
 ## Platform Support
 
 ### macOS (Full Automation)
+
 - Auto-starts Docker Desktop
 - Auto-detects zsh/bash
 - Fully hands-off experience
 
 ### Linux (Near-Full Automation)
+
 - Requires Docker to be running
 - Otherwise fully automated
 
 ### Windows
+
 - Requires manual Docker start
 - Works via WSL2
 
 ## Additional Fixes
 
 ### Fixed Frontend Register Route
+
 - `/register` was trying to render non-existent template
 - Now redirects to `/login` (which has both forms)
 - No more 500 errors
 
 ### Fixed Tiltfile
+
 - Removed Kubernetes-specific configuration
 - Now uses `dc_resource` for Docker Compose
 - Works correctly with docker-compose.yml
@@ -156,28 +170,34 @@ docker compose build
 ## Success Metrics
 
 **Setup Time:**
+
 - Before: 30-60 minutes
 - After: 3-5 minutes (all automated)
 
 **Commands to Run:**
+
 - Before: 15+ manual steps
 - After: 1 command (`./dev`)
 
 **Docker Management:**
+
 - Before: Manual start required
 - After: Auto-starts on macOS
 
 **Tool Installation:**
+
 - Before: Manual via brew/apt
 - After: Automatic via mise
 
 **Git Hooks:**
+
 - Before: Manual setup
 - After: Automatic configuration
 
 ## User Journey
 
 ### First Time
+
 ```bash
 git clone <repo>
 cd Resource-Reserver
@@ -185,12 +205,14 @@ cd Resource-Reserver
 ```
 
 ### Every Other Time
+
 ```bash
 cd Resource-Reserver
 make dev  # or ./dev
 ```
 
 ### Daily Workflow
+
 ```bash
 make dev       # Start
 # ... code ...
@@ -203,6 +225,7 @@ make stop      # Stop when done
 ## Documentation
 
 All documentation updated:
+
 - README.md - Shows `./dev` first
 - docs/development.md - Comprehensive guide
 - docs/one-command-setup.md - One-command details
@@ -211,6 +234,7 @@ All documentation updated:
 ## Backwards Compatibility
 
 All previous workflows still work:
+
 ```bash
 # Traditional Docker Compose
 docker compose up -d
@@ -228,8 +252,8 @@ mise run dev
 Created the **simplest possible developer experience**:
 
 1. Clone repository
-2. Run `./dev`
-3. Start coding
+1. Run `./dev`
+1. Start coding
 
 No manual steps. No configuration. Just works.
 

@@ -2,12 +2,9 @@
 
 ## Eliminate double-bookings and scheduling chaos with intelligent resource management
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Express.js](https://img.shields.io/badge/Express.js-404D59?style=flat&logo=express&logoColor=white)](https://expressjs.com/)
-[![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Express.js](https://img.shields.io/badge/Express.js-404D59?style=flat&logo=express&logoColor=white)](https://expressjs.com/) [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
----
+______________________________________________________________________
 
 ## What Problem Does This Solve?
 
@@ -17,11 +14,11 @@
 - **Equipment Conflicts** - Critical equipment is already booked when you need it
 - **Admin Overhead** - Manual scheduling spreadsheets and endless email chains
 - **No Visibility** - You don't know what's available until you check every resource manually
-- **Compliance Issues** - No audit trail of who used what and when  
+- **Compliance Issues** - No audit trail of who used what and when
 
 **Resource Reserver solves all of these problems in one intelligent platform.**
 
----
+______________________________________________________________________
 
 ## Why Organizations Choose Resource Reserver
 
@@ -43,7 +40,7 @@
 - **Usage Analytics**: Optimize resource allocation based on real data
 - **Flexible Access**: Web interface for users, CLI for administrators
 
----
+______________________________________________________________________
 
 ## Who Benefits From This?
 
@@ -55,7 +52,7 @@
 - Equipment checkout (laptops, projectors, vehicles)
 - Shared workspaces and hot desking
 
-### Educational Institutions  
+### Educational Institutions
 
 > "Students can book lab time without administrator intervention"
 
@@ -79,23 +76,19 @@
 - Maintenance tools, safety equipment
 - Training facilities and certification resources
 
----
+______________________________________________________________________
 
 ## See It In Action
 
 ### Web Interface - Perfect for End Users
 
-![Login Screen](screenshots/Web%20Interface/login-web.png)
-*Simple, secure login gets you started immediately*
+![Login Screen](screenshots/Web%20Interface/login-web.png) *Simple, secure login gets you started immediately*
 
-![Resource List](screenshots/Web%20Interface/resourcelist-web.png)
-*Find available resources instantly with smart filtering*
+![Resource List](screenshots/Web%20Interface/resourcelist-web.png) *Find available resources instantly with smart filtering*
 
-![Create Reservation](screenshots/Web%20Interface/createreservation-web.png)
-*Book resources in seconds with automatic conflict prevention*
+![Create Reservation](screenshots/Web%20Interface/createreservation-web.png) *Book resources in seconds with automatic conflict prevention*
 
-![My Reservations](screenshots/Web%20Interface/myreservations-web.png)
-*Manage your bookings with full control and history*
+![My Reservations](screenshots/Web%20Interface/myreservations-web.png) *Manage your bookings with full control and history*
 
 ### Command Line Interface - Built for Administrators
 
@@ -107,33 +100,33 @@
 
 *Bulk operations and advanced management via command line*
 
----
+______________________________________________________________________
 
 ## Key Features That Matter
 
 ### Conflict-Free Booking
 
-**Problem**: "The projector is double-booked again!"  
+**Problem**: "The projector is double-booked again!"\
 **Solution**: Automatic conflict detection prevents overlapping reservations entirely
 
 ### Real-Time Availability
 
-**Problem**: "Is Conference Room B free at 3 PM?"  
+**Problem**: "Is Conference Room B free at 3 PM?"\
 **Solution**: Live availability updates show exactly what's free when
 
 ### Smart Resource Management
 
-**Problem**: "I can't find the equipment I need"  
+**Problem**: "I can't find the equipment I need"\
 **Solution**: Advanced search and filtering across all resources
 
 ### Complete Audit Trail
 
-**Problem**: "Who was using the lab equipment yesterday?"  
+**Problem**: "Who was using the lab equipment yesterday?"\
 **Solution**: Full activity logs for compliance and accountability
 
 ### Bulk Operations
 
-**Problem**: "Adding 50 new resources will take forever"  
+**Problem**: "Adding 50 new resources will take forever"\
 **Solution**: CSV upload for adding hundreds of resources at once
 
 ### Two Interfaces, One System
@@ -141,13 +134,13 @@
 - **Web Interface**: Perfect for daily users who need visual booking
 - **CLI Interface**: Ideal for administrators and automation scripts
 
----
+______________________________________________________________________
 
 ## Enterprise Security & Access Control
 
 ### Multi-Factor Authentication (MFA)
 
-**Problem**: "Passwords alone aren't secure enough for our compliance requirements"  
+**Problem**: "Passwords alone aren't secure enough for our compliance requirements"\
 **Solution**: TOTP-based two-factor authentication with backup codes
 
 - Compatible with Google Authenticator, Authy, 1Password, and other authenticator apps
@@ -157,7 +150,7 @@
 
 ### Role-Based Access Control (RBAC)
 
-**Problem**: "Not everyone should be able to delete resources or modify system settings"  
+**Problem**: "Not everyone should be able to delete resources or modify system settings"\
 **Solution**: Flexible role-based permissions powered by Casbin
 
 - **Default Roles**: Admin, User, Guest with predefined permissions
@@ -167,19 +160,19 @@
 
 #### Default Role Permissions
 
-| Role  | Resources | Reservations | Users | OAuth2 |
-|-------|-----------|--------------|-------|--------|
-| Admin | Full control | Full control | Full control | Full control |
-| User  | Read only | Create/manage own | Read only | Manage own clients |
-| Guest | Read only | None | None | None |
+| Role  | Resources    | Reservations      | Users        | OAuth2             |
+| ----- | ------------ | ----------------- | ------------ | ------------------ |
+| Admin | Full control | Full control      | Full control | Full control       |
+| User  | Read only    | Create/manage own | Read only    | Manage own clients |
+| Guest | Read only    | None              | None         | None               |
 
 ### OAuth2 Authorization Server
 
-**Problem**: "We need to integrate Resource Reserver with our other applications"  
+**Problem**: "We need to integrate Resource Reserver with our other applications"\
 **Solution**: Built-in OAuth2 server for secure API access
 
 - **Authorization Code Flow**: For web applications
-- **Client Credentials Flow**: For server-to-server authentication  
+- **Client Credentials Flow**: For server-to-server authentication
 - **Refresh Tokens**: Long-lived access without re-authentication
 - **Token Management**: Revocation, introspection, and scope control
 - **PKCE Support**: Enhanced security for public clients
@@ -203,7 +196,7 @@
 
 **Learn more**: See [docs/auth-guide.md](docs/auth-guide.md) for complete authentication documentation
 
----
+______________________________________________________________________
 
 ## Quick Start - One Command, Zero Manual Steps
 
@@ -221,6 +214,7 @@ cd Resource-Reserver
 ```
 
 **What happens automatically:**
+
 - Installs mise if needed
 - Installs Python 3.11, Node 24, Tilt
 - Installs all dependencies
@@ -231,6 +225,7 @@ cd Resource-Reserver
 - Opens Tilt UI at http://localhost:10350
 
 **Alternative simple commands:**
+
 ```bash
 # If you prefer make
 make setup  # One-time setup
@@ -242,12 +237,14 @@ make dev                # Start development
 ```
 
 **Access your system:**
+
 - Tilt Dashboard: http://localhost:10350
 - Web Interface: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
 **All available commands:**
+
 ```bash
 make help  # View all commands
 ```
@@ -290,27 +287,24 @@ resource-reserver-cli --help
 
 **For detailed development instructions, see [docs/development.md](docs/development.md)**
 
----
+______________________________________________________________________
 
 ## Real-World Impact
 
 ### Manufacturing Company Case Study
 
-> "Before Resource Reserver, our production line had 3-4 equipment conflicts per
-> week, causing costly delays. Now we have zero conflicts and 23% better
-> equipment utilization."
+> "Before Resource Reserver, our production line had 3-4 equipment conflicts per week, causing costly delays. Now we have zero conflicts and 23% better equipment utilization."
 
 **Results:**
 
 - 100% elimination of scheduling conflicts
-- 23% improvement in equipment utilization  
+- 23% improvement in equipment utilization
 - 40 hours/week saved in manual coordination
 - Complete compliance audit trail
 
 ### University Research Lab
 
-> "Students can now book lab time 24/7 without administrator approval, while we
-> maintain complete oversight and compliance."
+> "Students can now book lab time 24/7 without administrator approval, while we maintain complete oversight and compliance."
 
 **Results:**
 
@@ -319,7 +313,7 @@ resource-reserver-cli --help
 - Complete usage tracking for grant reporting
 - 95% student satisfaction improvement
 
----
+______________________________________________________________________
 
 ## Technical Excellence
 
@@ -344,7 +338,7 @@ resource-reserver-cli --help
 - **Full Test Suite**: 95%+ code coverage
 - **CI/CD Pipeline**: Automated testing and deployment
 
----
+______________________________________________________________________
 
 ## System Requirements
 
@@ -356,7 +350,7 @@ resource-reserver-cli --help
 
 ### Recommended (Enterprise)
 
-- **Server**: 4 CPU, 8GB RAM, 50GB disk  
+- **Server**: 4 CPU, 8GB RAM, 50GB disk
 - **Users**: 500+ concurrent users
 - **Resources**: Unlimited
 
@@ -366,7 +360,7 @@ resource-reserver-cli --help
 - **macOS** (Intel and Apple Silicon)
 - **Windows** (with Docker Desktop)
 
----
+______________________________________________________________________
 
 ## API-First Design
 
@@ -382,11 +376,11 @@ Resource Reserver is built API-first, making it perfect for integration:
 ### Example Integrations
 
 - **Slack/Teams Bots**: Book resources from chat
-- **Calendar Systems**: Sync with Outlook/Google Calendar  
+- **Calendar Systems**: Sync with Outlook/Google Calendar
 - **Access Control**: Integrate with door locks and security systems
 - **Billing Systems**: Track usage for cost allocation
 
----
+______________________________________________________________________
 
 ## Support & Community
 
@@ -401,6 +395,7 @@ Resource Reserver is built API-first, making it perfect for integration:
 ### CLI Command Reference
 
 **Authentication**
+
 ```bash
 resource-reserver-cli auth login              # Login to your account
 resource-reserver-cli auth logout             # Logout
@@ -408,6 +403,7 @@ resource-reserver-cli auth status             # Check login status
 ```
 
 **Multi-Factor Authentication**
+
 ```bash
 resource-reserver-cli mfa setup               # Setup MFA with QR code
 resource-reserver-cli mfa enable              # Enable MFA
@@ -416,6 +412,7 @@ resource-reserver-cli mfa backup-codes        # Regenerate backup codes
 ```
 
 **Role Management**
+
 ```bash
 resource-reserver-cli roles list              # List all roles
 resource-reserver-cli roles my-roles          # Show your roles
@@ -424,6 +421,7 @@ resource-reserver-cli roles remove <id> <role>  # Remove role (admin)
 ```
 
 **OAuth2 Clients**
+
 ```bash
 resource-reserver-cli oauth create <name> <uri>  # Create OAuth2 client
 resource-reserver-cli oauth list                # List your clients
@@ -431,6 +429,7 @@ resource-reserver-cli oauth delete <client_id>  # Delete client
 ```
 
 **Resources & Reservations**
+
 ```bash
 resource-reserver-cli resources list          # List resources
 resource-reserver-cli resources search        # Search with filters
@@ -450,7 +449,7 @@ resource-reserver-cli reservations list       # List your reservations
 - **Migration Guides**: Smooth upgrades between versions
 - **Security Updates**: Prompt security patches
 
----
+______________________________________________________________________
 
 ## Ready to Eliminate Scheduling Chaos?
 
@@ -470,7 +469,7 @@ Contact us for enterprise features:
 - Multi-tenant support
 - Priority support
 
----
+______________________________________________________________________
 
 ## Version History
 
@@ -490,7 +489,7 @@ Contact us for enterprise features:
 - Typer-based CLI for automation
 - Complete test suite and documentation
 
----
+______________________________________________________________________
 
 ## License & Contributing
 
@@ -499,9 +498,8 @@ Contact us for enterprise features:
 **Contributing Welcome!**
 
 1. Fork the repository
-2. Create a feature branch  
-3. Add tests for new features
-4. Submit a pull request
+1. Create a feature branch
+1. Add tests for new features
+1. Submit a pull request
 
 Built using FastAPI, Express.js, Alpine.js, and modern Python tools.
-

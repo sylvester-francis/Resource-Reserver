@@ -38,15 +38,18 @@ if ! command -v mise &> /dev/null; then
 
     # Add mise to shell
     if ! grep -q "mise activate" "$SHELL_RC" 2>/dev/null; then
-        echo "" >> "$SHELL_RC"
-        echo '# mise - tool version manager' >> "$SHELL_RC"
-        echo 'eval "$(~/.local/bin/mise activate '"$SHELL_TYPE"')"' >> "$SHELL_RC"
+        {
+            echo ""
+            echo '# mise - tool version manager'
+            # shellcheck disable=SC2016
+            echo 'eval "$(~/.local/bin/mise activate '"$SHELL_TYPE"')"'
+        } >> "$SHELL_RC"
         echo -e "${GREEN}Added mise to $SHELL_RC${NC}"
     fi
 
     # Activate mise for this session
     export PATH="$HOME/.local/bin:$PATH"
-    eval "$(~/.local/bin/mise activate $SHELL_TYPE)"
+    eval "$(~/.local/bin/mise activate "$SHELL_TYPE")"
 
     echo -e "${GREEN}✓ mise installed successfully${NC}"
 else
@@ -65,7 +68,7 @@ check_docker() {
                 echo "Waiting for Docker to start..."
 
                 # Wait up to 30 seconds for Docker to start
-                for i in {1..30}; do
+                for _ in {1..30}; do
                     if docker info &> /dev/null; then
                         echo -e "${GREEN}✓ Docker started successfully${NC}"
                         return 0
@@ -111,7 +114,7 @@ echo -e "${GREEN}✓ Python dependencies installed${NC}"
 # Install frontend dependencies
 echo ""
 echo "Installing frontend dependencies..."
-cd frontend && npm install --silent && cd ..
+cd frontend-next && bun install && cd ..
 echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 
 # Install pre-commit hooks
