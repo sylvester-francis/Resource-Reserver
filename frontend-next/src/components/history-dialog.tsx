@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
 import { History, CheckCircle, XCircle, Clock, Edit } from 'lucide-react';
 
 import api from '@/lib/api';
+import { formatDateTime } from '@/lib/date';
 import type { Reservation } from '@/types';
 
 import {
@@ -88,10 +88,6 @@ export function HistoryDialog({
             default:
                 return action.charAt(0).toUpperCase() + action.slice(1);
         }
-    };
-
-    const formatDateTime = (dateString: string) => {
-        return format(new Date(dateString), 'MMM d, yyyy h:mm a');
     };
 
     return (

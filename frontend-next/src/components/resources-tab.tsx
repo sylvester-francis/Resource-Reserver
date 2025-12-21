@@ -41,11 +41,13 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
         // Apply search filter
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(
-                r =>
+            filtered = filtered.filter(r => {
+                const tags = Array.isArray(r.tags) ? r.tags : [];
+                return (
                     r.name.toLowerCase().includes(query) ||
-                    r.tags.some(t => t.toLowerCase().includes(query))
-            );
+                    tags.some(t => t.toLowerCase().includes(query))
+                );
+            });
         }
 
         // Apply status filter
@@ -183,7 +185,9 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                                 </Button>
                             </div>
                         ) : (
-                            paginatedResources.map(resource => (
+                            paginatedResources.map(resource => {
+                                const tags = Array.isArray(resource.tags) ? resource.tags : [];
+                                return (
                                 <div
                                     key={resource.id}
                                     className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
@@ -208,14 +212,14 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                                                 {getStatusIcon(resource)}
                                                 {getStatusText(resource)}
                                             </Badge>
-                                            {resource.tags.slice(0, 3).map(tag => (
+                                            {tags.slice(0, 3).map(tag => (
                                                 <Badge key={tag} variant="outline" className="text-xs">
                                                     {tag}
                                                 </Badge>
                                             ))}
-                                            {resource.tags.length > 3 && (
+                                            {tags.length > 3 && (
                                                 <span className="text-xs text-muted-foreground">
-                                                    +{resource.tags.length - 3} more
+                                                    +{tags.length - 3} more
                                                 </span>
                                             )}
                                         </div>
@@ -237,7 +241,8 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                                         )}
                                     </div>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 

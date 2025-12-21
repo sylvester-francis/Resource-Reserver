@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
 import { RefreshCw, Calendar } from 'lucide-react';
 
 import api from '@/lib/api';
+import { formatDateKey, formatShortDay, formatTime } from '@/lib/date';
 import type { Resource } from '@/types';
 
 import { Button } from '@/components/ui/button';
@@ -64,8 +64,33 @@ export function AvailabilityDialog({
                 params: { days_ahead: parseInt(daysAhead) },
             });
 
-            const data = response.data.data || response.data;
-            setSchedule(data.reservations || []);
+            const payload = response.data?.data ?? response.data ?? {};
+            const reservations = Array.isArray(payload.reservations) ? payload.reservations : [];
+            const grouped = new Map<string, DaySchedule>();
+
+            reservations.forEach((reservation: TimeSlot & { start_time: string; end_time: string }) => {
+                const dateKey = formatDateKey(reservation.start_time);
+                const dayName = formatShortDay(reservation.start_time);
+                const slot: TimeSlot = {
+                    id: reservation.id,
+                    start_time: formatTime(reservation.start_time, reservation.start_time),
+                    end_time: formatTime(reservation.end_time, reservation.end_time),
+                    status: 'booked',
+                    user_name: reservation.user_name,
+                };
+
+                if (!grouped.has(dateKey)) {
+                    grouped.set(dateKey, {
+                        date: dateKey,
+                        dayName,
+                        time_slots: [slot],
+                    });
+                } else {
+                    grouped.get(dateKey)?.time_slots.push(slot);
+                }
+            });
+
+            setSchedule(Array.from(grouped.values()));
         } catch (err) {
             console.error('Failed to fetch availability:', err);
             setSchedule([]);
@@ -143,16 +168,18 @@ export function AvailabilityDialog({
                         </div>
                     ) : (
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {schedule.map((day, idx) => (
+                            {schedule.map((day, idx) => {
+                                const timeSlots = Array.isArray(day.time_slots) ? day.time_slots : [];
+                                return (
                                 <div key={idx} className="rounded-lg border p-4">
                                     <h4 className="mb-3 font-semibold text-sm">
-                                        {day.dayName || format(new Date(day.date), 'EEE, MMM d')}
+                                        {day.dayName || formatShortDay(day.date)}
                                     </h4>
                                     <div className="space-y-2">
-                                        {day.time_slots.length === 0 ? (
+                                        {timeSlots.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">No reservations</p>
                                         ) : (
-                                            day.time_slots.map((slot, slotIdx) => (
+                                            timeSlots.map((slot, slotIdx) => (
                                                 <div
                                                     key={slotIdx}
                                                     className={`flex items-center justify-between rounded px-2 py-1 text-xs ${slot.status === 'available'
@@ -173,7 +200,8 @@ export function AvailabilityDialog({
                                         )}
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

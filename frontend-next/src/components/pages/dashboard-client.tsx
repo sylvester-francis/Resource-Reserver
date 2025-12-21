@@ -58,9 +58,11 @@ export default function DashboardClient() {
                 api.get('/reservations/my'),
             ]);
 
-            const allResources = allResourcesRes.data as Resource[];
-            const availableResources = availableResourcesRes.data as Resource[];
-            const myReservations = reservationsRes.data as Reservation[];
+            const allResources = Array.isArray(allResourcesRes.data) ? allResourcesRes.data : [];
+            const availableResources = Array.isArray(availableResourcesRes.data)
+                ? availableResourcesRes.data
+                : [];
+            const myReservations = Array.isArray(reservationsRes.data) ? reservationsRes.data : [];
 
             setResources(allResources);
             setReservations(myReservations);

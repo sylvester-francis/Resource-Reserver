@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { Calendar, Clock, History, X } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import api from '@/lib/api';
+import { formatDateTime } from '@/lib/date';
 import type { Reservation } from '@/types';
 
 import { Button } from '@/components/ui/button';
@@ -42,10 +42,6 @@ export function ReservationsTab({
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-
-    const formatDateTime = (dateString: string) => {
-        return format(new Date(dateString), 'MMM d, yyyy h:mm a');
-    };
 
     const handleViewHistory = (reservation: Reservation) => {
         setSelectedReservation(reservation);
