@@ -1,164 +1,306 @@
 # Resource Reserver
 
-## Eliminate double-bookings and scheduling chaos with intelligent resource management
+A comprehensive resource reservation system with intelligent scheduling, conflict prevention, and enterprise-grade security.
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Express.js](https://img.shields.io/badge/Express.js-404D59?style=flat&logo=express&logoColor=white)](https://expressjs.com/) [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-
-______________________________________________________________________
-
-## What Problem Does This Solve?
-
-**The Resource Scheduling Nightmare:**
-
-- **Conference Room Chaos** - Two teams show up for the same meeting room at 2 PM
-- **Equipment Conflicts** - Critical equipment is already booked when you need it
-- **Admin Overhead** - Manual scheduling spreadsheets and endless email chains
-- **No Visibility** - You don't know what's available until you check every resource manually
-- **Compliance Issues** - No audit trail of who used what and when
-
-**Resource Reserver solves all of these problems in one intelligent platform.**
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/) [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ______________________________________________________________________
 
-## Why Organizations Choose Resource Reserver
+## Table of Contents
 
-### Immediate Cost Savings
-
-- **Stop Double-Bookings**: Automatic conflict detection prevents scheduling disasters
-- **Reduce Admin Time**: Self-service booking eliminates manual coordination
-- **Maximize Utilization**: See exactly which resources are underused vs. overbooked
-
-### Instant Efficiency Gains
-
-- **Book in Seconds**: Find and reserve resources in 3 clicks
-- **Real-Time Availability**: See what's free right now, no guesswork
-- **Automated Notifications**: Everyone knows what's booked when
-
-### Complete Visibility & Control
-
-- **Full Audit Trail**: Know exactly who booked what and when for compliance
-- **Usage Analytics**: Optimize resource allocation based on real data
-- **Flexible Access**: Web interface for users, CLI for administrators
+- [Overview](#overview)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [CLI Reference](#cli-reference)
+- [Security](#security)
+- [Development](#development)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
 
 ______________________________________________________________________
 
-## Who Benefits From This?
+## Overview
 
-### Corporate Teams
+Resource Reserver solves the common problem of resource scheduling conflicts in organizations. Whether managing meeting rooms, equipment, laboratory instruments, or shared workspaces, this system provides:
 
-> "Finally, our meeting rooms actually get used efficiently!"
+- **Conflict-free booking** with automatic overlap detection
+- **Real-time availability** visibility across all resources
+- **Complete audit trail** for compliance and accountability
+- **Flexible access** via web interface, REST API, or command-line tool
 
-- Meeting rooms, conference facilities, parking spots
-- Equipment checkout (laptops, projectors, vehicles)
-- Shared workspaces and hot desking
+### Use Cases
 
-### Educational Institutions
-
-> "Students can book lab time without administrator intervention"
-
-- Classrooms, computer labs, research equipment
-- Study rooms, maker spaces, recording studios
-- Sports facilities and equipment
-
-### Healthcare Facilities
-
-> "Critical equipment is always available when we need it"
-
-- Medical equipment, procedure rooms, imaging machines
-- Specialized tools, consultation rooms
-- Mobile equipment across multiple departments
-
-### Manufacturing & Industrial
-
-> "Our production schedule runs like clockwork now"
-
-- Production equipment, quality testing stations
-- Maintenance tools, safety equipment
-- Training facilities and certification resources
+| Sector        | Resources                                      |
+| ------------- | ---------------------------------------------- |
+| Corporate     | Meeting rooms, parking spots, shared equipment |
+| Education     | Classrooms, computer labs, research equipment  |
+| Healthcare    | Medical equipment, procedure rooms             |
+| Manufacturing | Production equipment, testing stations         |
 
 ______________________________________________________________________
 
-## See It In Action
+## Features
 
-### Web Interface - Perfect for End Users
+### Core Functionality
 
-![Login Screen](screenshots/Web%20Interface/login-web.png) *Simple, secure login gets you started immediately*
+- **Resource Management**: Create, update, and organize resources with tags and categories
+- **Reservation System**: Book resources with automatic conflict detection
+- **Availability Tracking**: Real-time status updates and availability calendar
+- **Bulk Operations**: CSV import for adding multiple resources at once
+- **Search and Filter**: Find resources by name, tags, or availability window
 
-![Resource List](screenshots/Web%20Interface/resourcelist-web.png) *Find available resources instantly with smart filtering*
+### Security and Access Control
 
-![Create Reservation](screenshots/Web%20Interface/createreservation-web.png) *Book resources in seconds with automatic conflict prevention*
+- **Multi-Factor Authentication (MFA)**: TOTP-based 2FA with backup codes
+- **Role-Based Access Control (RBAC)**: Configurable roles (Admin, User, Guest)
+- **OAuth2 Authorization Server**: Built-in support for third-party integrations
+- **JWT Authentication**: Secure token-based API access
+- **Audit Logging**: Complete history of all actions
 
-![My Reservations](screenshots/Web%20Interface/myreservations-web.png) *Manage your bookings with full control and history*
+### Interfaces
 
-### Command Line Interface - Built for Administrators
-
-![CLI Main Interface](screenshots/CLI%20Interface/cli-main.png)
-
-*Powerful CLI for system administration and automation*
-
-![CLI Resources](screenshots/CLI%20Interface/cli-resources.png)
-
-*Bulk operations and advanced management via command line*
-
-______________________________________________________________________
-
-## Key Features That Matter
-
-### Conflict-Free Booking
-
-**Problem**: "The projector is double-booked again!"\
-**Solution**: Automatic conflict detection prevents overlapping reservations entirely
-
-### Real-Time Availability
-
-**Problem**: "Is Conference Room B free at 3 PM?"\
-**Solution**: Live availability updates show exactly what's free when
-
-### Smart Resource Management
-
-**Problem**: "I can't find the equipment I need"\
-**Solution**: Advanced search and filtering across all resources
-
-### Complete Audit Trail
-
-**Problem**: "Who was using the lab equipment yesterday?"\
-**Solution**: Full activity logs for compliance and accountability
-
-### Bulk Operations
-
-**Problem**: "Adding 50 new resources will take forever"\
-**Solution**: CSV upload for adding hundreds of resources at once
-
-### Two Interfaces, One System
-
-- **Web Interface**: Perfect for daily users who need visual booking
-- **CLI Interface**: Ideal for administrators and automation scripts
+- **Web Application**: Modern Next.js frontend with responsive design
+- **REST API**: Full-featured API with OpenAPI documentation
+- **Command-Line Interface**: Typer-based CLI for automation and administration
 
 ______________________________________________________________________
 
-## Enterprise Security & Access Control
+## Quick Start
 
-### Multi-Factor Authentication (MFA)
+### Prerequisites
 
-**Problem**: "Passwords alone aren't secure enough for our compliance requirements"\
-**Solution**: TOTP-based two-factor authentication with backup codes
+- [Docker](https://www.docker.com/get-started) and Docker Compose
+- [mise](https://mise.jdx.dev/) (optional, for development)
 
-- Compatible with Google Authenticator, Authy, 1Password, and other authenticator apps
-- QR code setup for easy onboarding
-- 10 backup codes per user for account recovery
-- Easy enable/disable from web or CLI
+### One-Command Start
 
-### Role-Based Access Control (RBAC)
+```bash
+# Clone the repository
+git clone https://github.com/sylvester-francis/Resource-Reserver.git
+cd Resource-Reserver
 
-**Problem**: "Not everyone should be able to delete resources or modify system settings"\
-**Solution**: Flexible role-based permissions powered by Casbin
+# Start all services
+mise run up
 
-- **Default Roles**: Admin, User, Guest with predefined permissions
-- **Custom Roles**: Create roles tailored to your organization
-- **Resource-Level Permissions**: Fine-grained control per resource
-- **Easy Management**: Assign/remove roles via API or CLI
+# Stop all services
+mise run down
+```
 
-#### Default Role Permissions
+### Access Points
+
+| Service           | URL                        |
+| ----------------- | -------------------------- |
+| Web Interface     | http://localhost:3000      |
+| Backend API       | http://localhost:8000      |
+| API Documentation | http://localhost:8000/docs |
+
+### Alternative: Docker Compose Only
+
+```bash
+# Start services
+docker compose up -d
+
+# Stop services
+docker compose down
+```
+
+### Default Credentials
+
+Create a new account through the web interface at http://localhost:3000/register or use the CLI:
+
+```bash
+resource-reserver-cli auth register
+```
+
+______________________________________________________________________
+
+## Architecture
+
+### Technology Stack
+
+| Component      | Technology                                    |
+| -------------- | --------------------------------------------- |
+| Frontend       | Next.js 14, React 18, Tailwind CSS, Radix UI  |
+| Backend        | FastAPI, Python 3.11, SQLAlchemy              |
+| Database       | SQLite (development), PostgreSQL (production) |
+| CLI            | Typer, Rich                                   |
+| Authentication | JWT, bcrypt, TOTP                             |
+| Authorization  | Casbin RBAC                                   |
+| Container      | Docker, Docker Compose                        |
+
+### Project Structure
+
+```
+Resource-Reserver/
+├── app/                    # FastAPI backend application
+│   ├── main.py            # Application entry point
+│   ├── models.py          # SQLAlchemy models
+│   ├── schemas.py         # Pydantic schemas
+│   ├── auth_routes.py     # Authentication endpoints
+│   ├── oauth2.py          # OAuth2 server implementation
+│   ├── rbac.py            # Role-based access control
+│   └── mfa.py             # Multi-factor authentication
+├── cli/                    # Command-line interface
+│   ├── main.py            # CLI entry point
+│   ├── client.py          # API client
+│   └── auth_commands.py   # Authentication commands
+├── frontend-next/          # Next.js frontend application
+│   ├── src/
+│   │   ├── app/           # Next.js app router pages
+│   │   ├── components/    # React components
+│   │   ├── hooks/         # Custom React hooks
+│   │   └── lib/           # Utilities and API client
+│   └── package.json
+├── tests/                  # Test suite
+├── docs/                   # Documentation
+├── docker-compose.yml      # Docker Compose configuration
+├── Dockerfile.backend      # Backend container
+├── Dockerfile.frontend     # Frontend container
+├── .mise.toml             # mise task runner configuration
+└── pyproject.toml         # Python project configuration
+```
+
+______________________________________________________________________
+
+## Configuration
+
+### Environment Variables
+
+| Variable       | Description                | Default                                 |
+| -------------- | -------------------------- | --------------------------------------- |
+| `DATABASE_URL` | Database connection string | `sqlite:///./data/resource_reserver.db` |
+| `SECRET_KEY`   | JWT signing key            | Required in production                  |
+| `ENVIRONMENT`  | Runtime environment        | `development`                           |
+| `API_BASE_URL` | Backend API URL            | `http://localhost:8000`                 |
+
+### Database Options
+
+**SQLite (Development)**
+
+```bash
+DATABASE_URL=sqlite:///./data/resource_reserver.db
+```
+
+**PostgreSQL (Production)**
+
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/resource_reserver
+```
+
+To enable PostgreSQL with Docker Compose:
+
+```bash
+docker compose --profile postgres up -d
+```
+
+______________________________________________________________________
+
+## API Reference
+
+The API documentation is available at http://localhost:8000/docs when the backend is running.
+
+### Key Endpoints
+
+| Method | Endpoint                       | Description                 |
+| ------ | ------------------------------ | --------------------------- |
+| POST   | `/auth/register`               | Create new user account     |
+| POST   | `/auth/login`                  | Authenticate user           |
+| GET    | `/resources`                   | List all resources          |
+| POST   | `/resources`                   | Create new resource         |
+| GET    | `/resources/{id}/availability` | Check resource availability |
+| POST   | `/reservations`                | Create reservation          |
+| GET    | `/reservations`                | List user reservations      |
+| DELETE | `/reservations/{id}`           | Cancel reservation          |
+
+### Authentication
+
+All protected endpoints require a JWT token in the Authorization header:
+
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:8000/resources
+```
+
+For detailed API documentation, see [docs/api-reference.md](docs/api-reference.md).
+
+______________________________________________________________________
+
+## CLI Reference
+
+Install the CLI tool:
+
+```bash
+pip install -e .
+```
+
+### Authentication Commands
+
+```bash
+resource-reserver-cli auth register     # Create new account
+resource-reserver-cli auth login        # Login to account
+resource-reserver-cli auth logout       # Logout
+resource-reserver-cli auth status       # Check login status
+```
+
+### MFA Commands
+
+```bash
+resource-reserver-cli mfa setup         # Setup MFA with QR code
+resource-reserver-cli mfa enable        # Enable MFA
+resource-reserver-cli mfa disable       # Disable MFA
+resource-reserver-cli mfa backup-codes  # Regenerate backup codes
+```
+
+### Resource Commands
+
+```bash
+resource-reserver-cli resources list              # List all resources
+resource-reserver-cli resources search            # Search resources
+resource-reserver-cli resources create <name>     # Create resource
+resource-reserver-cli resources availability <id> # Check availability
+```
+
+### Reservation Commands
+
+```bash
+resource-reserver-cli reservations list           # List your reservations
+resource-reserver-cli reservations create         # Create reservation
+resource-reserver-cli reservations cancel <id>    # Cancel reservation
+resource-reserver-cli reservations upcoming       # Show upcoming reservations
+```
+
+### Role Management (Admin)
+
+```bash
+resource-reserver-cli roles list                  # List all roles
+resource-reserver-cli roles my-roles              # Show your roles
+resource-reserver-cli roles assign <user> <role>  # Assign role
+resource-reserver-cli roles remove <user> <role>  # Remove role
+```
+
+### OAuth2 Client Management
+
+```bash
+resource-reserver-cli oauth create <name> <uri>   # Create OAuth2 client
+resource-reserver-cli oauth list                  # List your clients
+resource-reserver-cli oauth delete <client_id>    # Delete client
+```
+
+______________________________________________________________________
+
+## Security
+
+### Authentication Methods
+
+1. **Username/Password**: Standard credential-based authentication
+1. **Multi-Factor Authentication**: TOTP-based 2FA compatible with authenticator apps
+1. **OAuth2**: Authorization code and client credentials flows
+
+### Role-Based Access Control
 
 | Role  | Resources    | Reservations      | Users        | OAuth2             |
 | ----- | ------------ | ----------------- | ------------ | ------------------ |
@@ -166,340 +308,203 @@ ______________________________________________________________________
 | User  | Read only    | Create/manage own | Read only    | Manage own clients |
 | Guest | Read only    | None              | None         | None               |
 
-### OAuth2 Authorization Server
+### OAuth2 Scopes
 
-**Problem**: "We need to integrate Resource Reserver with our other applications"\
-**Solution**: Built-in OAuth2 server for secure API access
+- `read`: View resources and reservations
+- `write`: Create and modify resources and reservations
+- `delete`: Remove resources and reservations
+- `admin`: Administrative access
+- `user:profile`: Access user profile information
 
-- **Authorization Code Flow**: For web applications
-- **Client Credentials Flow**: For server-to-server authentication
-- **Refresh Tokens**: Long-lived access without re-authentication
-- **Token Management**: Revocation, introspection, and scope control
-- **PKCE Support**: Enhanced security for public clients
-
-#### OAuth2 Scopes
-
-- `read` - View resources and reservations
-- `write` - Create and modify resources and reservations
-- `delete` - Remove resources and reservations
-- `admin` - Administrative access
-- `user:profile` - Access user profile information
-
-### Security Features
-
-- Hashed passwords with bcrypt
-- JWT-based authentication tokens
-- Encrypted MFA secrets and backup codes
-- Time-limited authorization codes (10 minutes)
-- Short-lived access tokens (1 hour) with refresh tokens
-- Comprehensive audit logging
-
-**Learn more**: See [docs/auth-guide.md](docs/auth-guide.md) for complete authentication documentation
+For complete security documentation, see [docs/auth-guide.md](docs/auth-guide.md).
 
 ______________________________________________________________________
 
-## Quick Start - One Command, Zero Manual Steps
+## Development
 
-### For New Contributors (Recommended)
-
-**Truly one command - everything automated:**
+### Setup Development Environment
 
 ```bash
-# Clone and go
+# Install mise (if not already installed)
+curl https://mise.run | sh
+
+# Clone and setup
 git clone https://github.com/sylvester-francis/Resource-Reserver.git
 cd Resource-Reserver
 
-# ONE COMMAND - that's it!
-./dev
+# Install dependencies
+mise install
+mise run setup
+
+# Start development environment with hot reload
+mise run dev
 ```
 
-**What happens automatically:**
+### Available Commands
 
-- Installs mise if needed
-- Installs Python 3.11, Node 24, Tilt
-- Installs all dependencies
-- Starts Docker if not running
-- Builds Docker images
-- Configures git hooks
-- Starts development environment
-- Opens Tilt UI at http://localhost:10350
+| Command           | Description                                |
+| ----------------- | ------------------------------------------ |
+| `mise run up`     | Start all services with Docker Compose     |
+| `mise run down`   | Stop all services                          |
+| `mise run dev`    | Start development environment with Tilt UI |
+| `mise run test`   | Run all tests                              |
+| `mise run lint`   | Run linters (ruff, eslint)                 |
+| `mise run format` | Format code (ruff)                         |
+| `mise run build`  | Build frontend for production              |
+| `mise run logs`   | View service logs                          |
+| `mise run clean`  | Clean caches and temporary files           |
 
-**Alternative simple commands:**
+### Code Quality
+
+The project uses pre-commit hooks for code quality:
 
 ```bash
-# If you prefer make
-make setup  # One-time setup
-make dev    # Start development
+# Install hooks
+mise run setup-hooks
 
-# Or step-by-step
-./scripts/setup-dev.sh  # Setup once
-make dev                # Start development
+# Run manually
+pre-commit run --all-files
 ```
 
-**Access your system:**
+Linting and formatting tools:
 
-- Tilt Dashboard: http://localhost:10350
-- Web Interface: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+- **Python**: ruff (linting and formatting)
+- **TypeScript**: ESLint
+- **Dockerfiles**: hadolint
+- **Shell scripts**: shellcheck
+- **YAML**: yamllint
 
-**All available commands:**
+______________________________________________________________________
+
+## Testing
+
+### Run All Tests
 
 ```bash
-make help  # View all commands
+mise run test
 ```
 
-### For Production/Quick Testing
-
-Docker Compose with pre-built images:
+### Run Specific Tests
 
 ```bash
-# Download and run
-curl -O https://raw.githubusercontent.com/sylvester-francis/Resource-Reserver/main/docker-compose.registry.yml
-docker compose -f docker-compose.registry.yml up -d
+# Backend tests only
+pytest tests/ -v
 
-# Access at http://localhost:3000
+# Frontend tests only
+cd frontend-next && bun run test
+
+# With coverage
+pytest tests/ --cov=app --cov=cli --cov-report=html
 ```
 
-### For Source Build
+### Test Structure
+
+```
+tests/
+├── test_auth_endpoints.py    # Authentication API tests
+├── test_auth_features.py     # MFA and RBAC tests
+├── test_reservations.py      # Reservation logic tests
+└── conftest.py               # Pytest fixtures
+```
+
+______________________________________________________________________
+
+## Deployment
+
+### Docker Compose (Recommended)
 
 ```bash
-# Clone and start
-git clone https://github.com/sylvester-francis/Resource-Reserver.git
-cd Resource-Reserver
+# Production deployment
 docker compose up -d
+
+# With PostgreSQL
+docker compose --profile postgres up -d
 ```
 
-### For Manual Local Development
+### Pre-built Images
 
 ```bash
-# Backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+# Download compose file
+curl -O https://raw.githubusercontent.com/sylvester-francis/Resource-Reserver/main/docker-compose.registry.yml
 
-# Frontend (separate terminal)
-cd frontend && npm install && npm start
-
-# CLI (optional)
-pip install -e .
-resource-reserver-cli --help
+# Start with pre-built images
+docker compose -f docker-compose.registry.yml up -d
 ```
 
-**For detailed development instructions, see [docs/development.md](docs/development.md)**
+### Environment Configuration
 
-______________________________________________________________________
+Create a `.env` file for production:
 
-## Real-World Impact
+```bash
+SECRET_KEY=your-secure-secret-key
+DATABASE_URL=postgresql://user:password@postgres:5432/resource_reserver
+ENVIRONMENT=production
+```
 
-### Manufacturing Company Case Study
-
-> "Before Resource Reserver, our production line had 3-4 equipment conflicts per week, causing costly delays. Now we have zero conflicts and 23% better equipment utilization."
-
-**Results:**
-
-- 100% elimination of scheduling conflicts
-- 23% improvement in equipment utilization
-- 40 hours/week saved in manual coordination
-- Complete compliance audit trail
-
-### University Research Lab
-
-> "Students can now book lab time 24/7 without administrator approval, while we maintain complete oversight and compliance."
-
-**Results:**
-
-- Self-service booking for 200+ students
-- Zero administrator intervention required
-- Complete usage tracking for grant reporting
-- 95% student satisfaction improvement
-
-______________________________________________________________________
-
-## Technical Excellence
-
-### Modern Architecture
-
-- **Frontend**: Express.js + Alpine.js (no build complexity)
-- **Backend**: FastAPI + Python (high performance, auto-documentation)
-- **CLI**: Typer framework (professional command-line tools)
-- **Database**: SQLite or PostgreSQL (scales from development to enterprise)
-
-### Production Ready
-
-- **Docker Images**: Available on GitHub Container Registry
-- **Zero Downtime**: Rolling updates and health checks
-- **Scalable**: Horizontal scaling for enterprise deployments
-- **Secure**: JWT authentication, input validation, audit logging
-
-### Developer Friendly
-
-- **No Build Process**: Direct development, no compilation steps
-- **Auto-Documentation**: Interactive API docs at `/docs`
-- **Full Test Suite**: 95%+ code coverage
-- **CI/CD Pipeline**: Automated testing and deployment
+For detailed deployment instructions, see [docs/deployment.md](docs/deployment.md).
 
 ______________________________________________________________________
 
 ## System Requirements
 
-### Minimum (Small Office)
+### Minimum
 
-- **Server**: 1 CPU, 1GB RAM, 5GB disk
-- **Users**: Up to 50 concurrent users
-- **Resources**: Up to 1,000 resources
+- CPU: 1 core
+- RAM: 1 GB
+- Disk: 5 GB
+- Users: Up to 50 concurrent
 
-### Recommended (Enterprise)
+### Recommended
 
-- **Server**: 4 CPU, 8GB RAM, 50GB disk
-- **Users**: 500+ concurrent users
-- **Resources**: Unlimited
+- CPU: 4 cores
+- RAM: 8 GB
+- Disk: 50 GB
+- Users: 500+ concurrent
 
 ### Supported Platforms
 
-- **Linux** (Ubuntu, CentOS, RHEL)
-- **macOS** (Intel and Apple Silicon)
-- **Windows** (with Docker Desktop)
+- Linux (Ubuntu, CentOS, RHEL)
+- macOS (Intel and Apple Silicon)
+- Windows (with Docker Desktop)
 
 ______________________________________________________________________
 
-## API-First Design
-
-Resource Reserver is built API-first, making it perfect for integration:
-
-### REST API Features
-
-- **Complete Documentation**: Auto-generated OpenAPI/Swagger docs
-- **Easy Integration**: Standard REST endpoints for all operations
-- **Webhook Support**: Real-time notifications for external systems
-- **Bulk Operations**: Efficient endpoints for mass operations
-
-### Example Integrations
-
-- **Slack/Teams Bots**: Book resources from chat
-- **Calendar Systems**: Sync with Outlook/Google Calendar
-- **Access Control**: Integrate with door locks and security systems
-- **Billing Systems**: Track usage for cost allocation
-
-______________________________________________________________________
-
-## Support & Community
-
-### Documentation
-
-- **User Guide**: Complete web interface walkthrough
-- **Administrator Guide**: CLI and system management
-- **API Reference**: Interactive documentation at `/docs`
-- **Integration Examples**: Sample code for common use cases
-- **Authentication Guide**: [docs/auth-guide.md](docs/auth-guide.md) - MFA, RBAC, and OAuth2
-
-### CLI Command Reference
-
-**Authentication**
-
-```bash
-resource-reserver-cli auth login              # Login to your account
-resource-reserver-cli auth logout             # Logout
-resource-reserver-cli auth status             # Check login status
-```
-
-**Multi-Factor Authentication**
-
-```bash
-resource-reserver-cli mfa setup               # Setup MFA with QR code
-resource-reserver-cli mfa enable              # Enable MFA
-resource-reserver-cli mfa disable             # Disable MFA
-resource-reserver-cli mfa backup-codes        # Regenerate backup codes
-```
-
-**Role Management**
-
-```bash
-resource-reserver-cli roles list              # List all roles
-resource-reserver-cli roles my-roles          # Show your roles
-resource-reserver-cli roles assign <id> <role>  # Assign role (admin)
-resource-reserver-cli roles remove <id> <role>  # Remove role (admin)
-```
-
-**OAuth2 Clients**
-
-```bash
-resource-reserver-cli oauth create <name> <uri>  # Create OAuth2 client
-resource-reserver-cli oauth list                # List your clients
-resource-reserver-cli oauth delete <client_id>  # Delete client
-```
-
-**Resources & Reservations**
-
-```bash
-resource-reserver-cli resources list          # List resources
-resource-reserver-cli resources search        # Search with filters
-resource-reserver-cli reservations create     # Create reservation
-resource-reserver-cli reservations list       # List your reservations
-```
-
-### Getting Help
-
-- **GitHub Issues**: Bug reports and feature requests
-- **GitHub Discussions**: Community support and questions
-- **Enterprise Support**: Available for production deployments
-
-### Stay Updated
-
-- **Release Notes**: Clear information about new features
-- **Migration Guides**: Smooth upgrades between versions
-- **Security Updates**: Prompt security patches
-
-______________________________________________________________________
-
-## Ready to Eliminate Scheduling Chaos?
-
-### Start Free Trial
-
-```bash
-# Get running in 60 seconds
-docker run -p 3000:3000 -p 8000:8000 ghcr.io/sylvester-francis/resource-reserver:latest
-```
-
-### Enterprise Deployment
-
-Contact us for enterprise features:
-
-- Single Sign-On (SSO) integration
-- Advanced reporting and analytics
-- Multi-tenant support
-- Priority support
-
-______________________________________________________________________
-
-## Version History
-
-### Version 2.0 (Current) - Modern Architecture
-
-- **Complete Frontend Rewrite**: Express.js + Alpine.js for better performance
-- **Production Containers**: Docker images on GitHub Container Registry
-- **Enhanced CLI**: Improved user experience with Rich terminal output
-- **Zero Build Process**: Direct development and deployment
-- **Better Performance**: Server-side rendering + client reactivity
-
-### Version 1.0 - Foundation
-
-- Core reservation and resource management
-- TypeScript frontend with Vite build system
-- FastAPI backend with comprehensive API
-- Typer-based CLI for automation
-- Complete test suite and documentation
-
-______________________________________________________________________
-
-## License & Contributing
-
-**MIT License** - Free for commercial and personal use
-
-**Contributing Welcome!**
+## Contributing
 
 1. Fork the repository
-1. Create a feature branch
-1. Add tests for new features
-1. Submit a pull request
+1. Create a feature branch (`git checkout -b feature/new-feature`)
+1. Make changes and add tests
+1. Run linting and tests (`mise run lint && mise run test`)
+1. Commit changes (`git commit -m "Add new feature"`)
+1. Push to branch (`git push origin feature/new-feature`)
+1. Open a Pull Request
 
-Built using FastAPI, Express.js, Alpine.js, and modern Python tools.
+### Development Guidelines
+
+- Follow existing code style (enforced by pre-commit hooks)
+- Add tests for new functionality
+- Update documentation as needed
+- Keep commits focused and atomic
+
+______________________________________________________________________
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+______________________________________________________________________
+
+## Documentation
+
+- [API Reference](docs/api-reference.md)
+- [Authentication Guide](docs/auth-guide.md)
+- [Deployment Guide](docs/deployment.md)
+- [Development Guide](docs/development.md)
+- [Troubleshooting](docs/troubleshooting.md)
+
+______________________________________________________________________
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/sylvester-francis/Resource-Reserver/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sylvester-francis/Resource-Reserver/discussions)

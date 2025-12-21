@@ -54,13 +54,36 @@ cd frontend-next && bun install
 echo "✅ Setup complete!"
 """
 
-[tasks.dev]
-description = "Start development environment with Tilt"
-run = "tilt up"
+[tasks.up]
+description = "Start all services with Docker Compose"
+run = """
+#!/usr/bin/env bash
+set -e
+echo "Starting Resource-Reserver..."
+docker compose up -d --build
+echo ""
+echo "Services started successfully!"
+echo "  Backend API:  http://localhost:8000"
+echo "  Frontend:     http://localhost:3000"
+echo "  API Docs:     http://localhost:8000/docs"
+echo ""
+echo "Run 'mise run down' to stop services"
+echo "Run 'mise run logs' to view logs"
+"""
 
 [tasks.down]
-description = "Stop Tilt development environment"
-run = "tilt down"
+description = "Stop all services"
+run = """
+#!/usr/bin/env bash
+echo "Stopping services..."
+tilt down 2>/dev/null || true
+docker compose down 2>/dev/null || true
+echo "All services stopped."
+"""
+
+[tasks.dev]
+description = "Start development environment with Tilt UI"
+run = "tilt up"
 
 [tasks.build]
 description = "Build all projects"
@@ -87,23 +110,27 @@ run = "pytest tests/test_cli/"
 description = "Run all linters"
 run = """
 #!/usr/bin/env bash
-echo "🔍 Linting Python..."
+echo "Linting Python..."
 ruff check .
-black --check .
-echo "🔍 Linting frontend..."
+ruff format --check .
+echo "Linting frontend..."
 cd frontend-next && bun run lint
-echo "✅ Linting complete!"
+echo "Linting complete!"
 """
 
 [tasks.format]
 description = "Format all code"
 run = """
 #!/usr/bin/env bash
-echo "✨ Formatting Python..."
-black .
+echo "Formatting Python..."
+ruff format .
 ruff check --fix .
-echo "✅ Formatting complete!"
+echo "Formatting complete!"
 """
+
+[tasks.logs]
+description = "View service logs"
+run = "docker compose logs -f"
 
 [tasks.setup-hooks]
 description = "Install git hooks"

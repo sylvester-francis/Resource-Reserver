@@ -248,14 +248,19 @@ services:
 
 #### Prometheus Metrics (Optional)
 
-```python
-# Add to requirements.txt
-prometheus-client==0.16.0
+Add to `requirements.txt`:
 
-# Add to main.py
+```
+prometheus-client==0.16.0
+```
+
+Add to `main.py`:
+
+```python
 from prometheus_client import Counter, Histogram, generate_latest
-request_count = Counter('requests_total', 'Total requests')
-request_duration = Histogram('request_duration_seconds', 'Request duration')
+
+request_count = Counter("requests_total", "Total requests")
+request_duration = Histogram("request_duration_seconds", "Request duration")
 ```
 
 ### Security Considerations
