@@ -9,6 +9,7 @@ export default function HomeClient() {
     const router = useRouter();
     const { isAuthenticated, loading } = useAuth();
     const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
+    const [userCount, setUserCount] = useState<number | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -17,8 +18,14 @@ export default function HomeClient() {
                 const response = await api.get('/setup/status');
                 if (!active) return;
                 setSetupComplete(!!response.data?.setup_complete);
+                setUserCount(
+                    typeof response.data?.user_count === 'number' ? response.data.user_count : null
+                );
             } catch {
-                if (active) setSetupComplete(true);
+                if (active) {
+                    setSetupComplete(true);
+                    setUserCount(null);
+                }
             }
         };
         checkSetup();
@@ -28,6 +35,10 @@ export default function HomeClient() {
     }, []);
 
     useEffect(() => {
+        if (userCount === 0) {
+            router.replace('/setup');
+            return;
+        }
         if (setupComplete === false) {
             router.replace('/setup');
             return;

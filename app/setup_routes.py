@@ -13,9 +13,11 @@ setup_router = APIRouter(prefix="/setup", tags=["Setup"])
 @setup_router.get("/status")
 def get_setup_status(db: Session = Depends(get_db)):
     setup_complete, setup_reopened = setup.get_setup_status(db)
+    user_count = db.query(models.User).count()
     return {
         "setup_complete": setup_complete,
         "setup_reopened": setup_reopened,
+        "user_count": user_count,
     }
 
 

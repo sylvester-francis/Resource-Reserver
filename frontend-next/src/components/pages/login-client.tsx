@@ -42,7 +42,9 @@ function LoginContent() {
             try {
                 const response = await api.get('/setup/status');
                 if (!active) return;
-                if (!response.data?.setup_complete) {
+                const count =
+                    typeof response.data?.user_count === 'number' ? response.data.user_count : null;
+                if (count === 0 || !response.data?.setup_complete) {
                     router.replace('/setup');
                     return;
                 }
