@@ -262,6 +262,16 @@ class APIClient:
         response = self.session.get(f"{self.base_url}/roles/", headers=headers)
         return self._handle_response(response)
 
+    def create_role(self, name: str, description: str | None = None) -> dict[str, Any]:
+        """Create a new role (admin only)."""
+        headers = config.get_auth_headers()
+        response = self.session.post(
+            f"{self.base_url}/roles/",
+            json={"name": name, "description": description},
+            headers=headers,
+        )
+        return self._handle_response(response)
+
     def get_my_roles(self) -> list[dict[str, Any]]:
         """Get current user's roles."""
         headers = config.get_auth_headers()
@@ -286,6 +296,31 @@ class APIClient:
             json={"user_id": user_id, "role_name": role_name},
             headers=headers,
         )
+        return self._handle_response(response)
+
+    # ========================================================================
+    # Setup Methods
+    # ========================================================================
+
+    def setup_status(self) -> dict[str, Any]:
+        """Get setup completion status."""
+        response = self.session.get(f"{self.base_url}/setup/status")
+        return self._handle_response(response)
+
+    def setup_initialize(
+        self, payload: dict[str, Any], token: str | None = None
+    ) -> dict[str, Any]:
+        """Initialize setup with a new admin or promote existing user."""
+        headers = {"X-Setup-Token": token} if token else None
+        response = self.session.post(
+            f"{self.base_url}/setup/initialize", json=payload, headers=headers
+        )
+        return self._handle_response(response)
+
+    def setup_unlock(self, token: str) -> dict[str, Any]:
+        """Reopen setup using a secure token."""
+        headers = {"X-Setup-Token": token}
+        response = self.session.post(f"{self.base_url}/setup/unlock", headers=headers)
         return self._handle_response(response)
 
     # ========================================================================

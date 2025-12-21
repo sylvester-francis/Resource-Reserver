@@ -48,6 +48,14 @@ class User(Base):
     )
 
 
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key = Column(String(64), primary_key=True)
+    value = Column(String, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 class Resource(Base):
     __tablename__ = "resources"
 

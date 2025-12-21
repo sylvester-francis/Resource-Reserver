@@ -12,11 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import models, rbac, schemas, setup
 from app.auth import authenticate_user, create_access_token, get_current_user
 from app.auth_routes import mfa_router, oauth_router, roles_router
-from app.database import engine, get_db
+from app.database import SessionLocal, engine, get_db
 from app.services import ReservationService, ResourceService, UserService
+from app.setup_routes import setup_router
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -149,6 +150,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
 
+    # Ensure default RBAC roles exist
+    try:
+        db = SessionLocal()
+        rbac.create_default_roles(db)
+        setup.ensure_setup_state(db)
+        db.close()
+        logger.info("Default roles verified/created")
+    except Exception as e:
+        logger.error(f"Error creating default roles: {e}")
+
     # Start the background cleanup task
     cleanup_task = asyncio.create_task(cleanup_expired_reservations())
     logger.info("Background cleanup task started")
@@ -196,6 +207,7 @@ app.add_middleware(
 app.include_router(mfa_router)
 app.include_router(roles_router)
 app.include_router(oauth_router)
+app.include_router(setup_router)
 
 # API-only backend - frontend served by Express.js
 

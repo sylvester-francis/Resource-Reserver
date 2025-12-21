@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, LogOut, Activity, Settings, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, LogOut, Activity, Settings, CheckCircle2, Clock, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -185,6 +185,10 @@ export default function DashboardClient() {
                                 <DropdownMenuItem onClick={() => setMfaDialogOpen(true)}>
                                     <Settings className="mr-2 h-4 w-4" />
                                     Security Settings
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => router.push('/admin/roles')}>
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    Role Management
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">

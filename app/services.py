@@ -624,11 +624,27 @@ class UserService:
 
     def create_user(self, user_data: schemas.UserCreate) -> models.User:
         """Create a new user with hashed password."""
+        existing_users = self.db.query(models.User).count()
+        setup_complete = None
+        setup_reopened = None
+        if existing_users == 0:
+            from app import setup
+
+            setup_complete, setup_reopened = setup.get_setup_status(self.db)
+
         hashed_password = hash_password(user_data.password)
         user = models.User(username=user_data.username, hashed_password=hashed_password)
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
+
+        if existing_users == 0 and setup_complete is False and setup_reopened is False:
+            from app import rbac, setup
+
+            rbac.create_default_roles(self.db)
+            rbac.assign_role(user.id, "admin", self.db)
+            setup.mark_setup_complete(self.db)
+
         return user
 
     def get_user_by_username(self, username: str) -> models.User | None:

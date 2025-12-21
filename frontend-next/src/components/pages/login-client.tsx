@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/hooks/use-auth';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ function LoginContent() {
     const [success, setSuccess] = useState<string | null>(searchParams?.get('success') ?? null);
     const [showMfaInput, setShowMfaInput] = useState(false);
     const [pendingCredentials, setPendingCredentials] = useState<{ username: string; password: string } | null>(null);
+    const [setupChecked, setSetupChecked] = useState(false);
 
     // Form states
     const [loginUsername, setLoginUsername] = useState('');
@@ -33,6 +35,47 @@ function LoginContent() {
     const [registerUsername, setRegisterUsername] = useState('');
     const [registerPassword, setRegisterPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    useEffect(() => {
+        let active = true;
+        const checkSetup = async () => {
+            try {
+                const response = await api.get('/setup/status');
+                if (!active) return;
+                if (!response.data?.setup_complete) {
+                    router.replace('/setup');
+                    return;
+                }
+            } catch {
+                // Fall back to login if setup check fails.
+            } finally {
+                if (active) setSetupChecked(true);
+            }
+        };
+        checkSetup();
+        return () => {
+            active = false;
+        };
+    }, [router]);
+
+    if (!setupChecked) {
+        return (
+            <div className="flex min-h-screen items-center justify-center px-4">
+                <Card className="w-full max-w-md">
+                    <CardHeader className="space-y-2 text-center">
+                        <Skeleton className="h-12 w-12 rounded-2xl mx-auto" />
+                        <Skeleton className="h-6 w-40 mx-auto" />
+                        <Skeleton className="h-4 w-56 mx-auto" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -239,6 +239,38 @@ def list_roles():
         raise typer.Exit(1) from None
 
 
+@role_app.command("create")
+def create_role(
+    name: str = typer.Argument(..., help="Role name (e.g., admin, user, guest)"),
+    description: str | None = typer.Option(
+        None, "--description", "-d", help="Role description"
+    ),
+):
+    """Create a new role (admin only)."""
+    client = APIClient()
+
+    try:
+        config.get_auth_headers()
+    except ValueError:
+        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        raise typer.Exit(1) from None
+
+    try:
+        role = client.create_role(name, description)
+        print(f"✅ [bold green]Role '{role['name']}' created[/bold green]")
+        if role.get("description"):
+            print(f"   Description: {role['description']}")
+
+    except requests.exceptions.HTTPError as e:
+        if "already exists" in str(e).lower():
+            print(f"❌ Role '{name}' already exists")
+        elif "403" in str(e) or "Forbidden" in str(e):
+            print("❌ Permission denied - admin role required")
+        else:
+            print(f"❌ Failed to create role: {e}")
+        raise typer.Exit(1) from None
+
+
 @role_app.command("my-roles")
 def my_roles():
     """Show your assigned roles."""
