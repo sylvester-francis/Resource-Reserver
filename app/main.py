@@ -17,6 +17,7 @@ from fastapi import (
     Query,
     Request,
     UploadFile,
+    WebSocket,
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,6 +43,7 @@ from app.database import SessionLocal, engine, get_db
 from app.routers.notifications import router as notifications_router
 from app.services import ReservationService, ResourceService, UserService
 from app.setup_routes import setup_router
+from app.websocket import manager as ws_manager
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -112,6 +114,11 @@ def convert_reservation_timezone(reservation, tz: ZoneInfo):
     if hasattr(reservation, "cancelled_at") and reservation.cancelled_at:
         reservation.cancelled_at = reservation.cancelled_at.astimezone(tz)
     return reservation
+
+
+# =============================================================================
+# WebSocket endpoint
+# =============================================================================
 
 
 async def cleanup_expired_reservations():
@@ -262,6 +269,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# =============================================================================
+# WebSocket endpoint
+# =============================================================================
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):
+    """Authenticate via query param token or deny connection, then register connection."""
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # Verify token and extract user
+    from jose import JWTError, jwt  # Local import to avoid cycles
+
+    settings = get_settings()
+    try:
+        payload = jwt.decode(
+            token, settings.secret_key, algorithms=[settings.algorithm]
+        )
+        username: str | None = payload.get("sub")
+        if username is None:
+            raise JWTError("Missing subject")
+    except JWTError:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # Lookup user ID
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    try:
+        await ws_manager.connect(websocket, user.id)
+        while True:
+            await websocket.receive_text()  # Keep alive; ignore messages for now
+    except Exception as exc:  # noqa: BLE001 - broad catch to ensure clean disconnects
+        logger.warning("WebSocket connection closed unexpectedly: %s", exc)
+    finally:
+        ws_manager.disconnect(websocket, user.id)
 
 
 # Health check at root level (no versioning needed)
