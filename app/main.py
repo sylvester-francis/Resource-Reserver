@@ -38,6 +38,7 @@ from app.auth import (
 from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.database import SessionLocal, engine, get_db
+from app.routers.notifications import router as notifications_router
 from app.services import ReservationService, ResourceService, UserService
 from app.setup_routes import setup_router
 
@@ -1008,6 +1009,7 @@ v1_auth_router.include_router(oauth_router)
 v1_auth_router.include_router(setup_router)
 
 app.include_router(v1_auth_router)
+app.include_router(notifications_router)
 
 
 # =============================================================================

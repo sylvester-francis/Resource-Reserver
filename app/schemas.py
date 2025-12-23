@@ -1,6 +1,7 @@
 """Pydantic schemas for request/response validation."""
 
 from datetime import UTC, datetime, timedelta
+from enum import Enum
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
@@ -208,3 +209,30 @@ class ResourceStatusUpdate(BaseModel):
         if v < 1 or v > 168:  # 1 hour to 1 week
             raise ValueError("Auto reset hours must be between 1 and 168 (1 week)")
         return v
+
+
+class NotificationType(str, Enum):
+    RESERVATION_CONFIRMED = "reservation_confirmed"
+    RESERVATION_CANCELLED = "reservation_cancelled"
+    RESERVATION_REMINDER = "reservation_reminder"
+    RESOURCE_AVAILABLE = "resource_available"
+    SYSTEM_ANNOUNCEMENT = "system_announcement"
+
+
+class NotificationBase(BaseModel):
+    type: NotificationType
+    title: str
+    message: str
+    link: str | None = None
+
+
+class NotificationCreate(NotificationBase):
+    user_id: int
+
+
+class NotificationResponse(NotificationBase):
+    id: int
+    read: bool = False
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
