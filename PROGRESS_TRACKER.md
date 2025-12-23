@@ -11,7 +11,7 @@
 - [x] Update frontend API base path
 - [x] Update tests for /api/v1 prefix
 - [x] Run tests: `pytest tests/test_api/`
-- [ ] Create PR
+- [x] Create PR (#12)
 - [ ] Merge PR
 
 ### PR #2: Refresh Tokens
