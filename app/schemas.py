@@ -192,6 +192,9 @@ class ReservationResponse(BaseModel):
     created_at: datetime
     cancelled_at: datetime | None = None
     cancellation_reason: str | None = None
+    recurrence_rule_id: int | None = None
+    parent_reservation_id: int | None = None
+    is_recurring_instance: bool | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -236,3 +239,75 @@ class NotificationResponse(NotificationBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RecurrenceFrequency(str, Enum):
+    daily = "daily"
+    weekly = "weekly"
+    monthly = "monthly"
+
+
+class RecurrenceEndType(str, Enum):
+    never = "never"
+    on_date = "on_date"
+    after_count = "after_count"
+
+
+class RecurrenceRuleBase(BaseModel):
+    frequency: RecurrenceFrequency
+    interval: int = 1
+    days_of_week: list[int] | None = None
+    end_type: RecurrenceEndType = RecurrenceEndType.after_count
+    end_date: datetime | None = None
+    occurrence_count: int | None = Field(default=5, ge=1, le=100)
+
+    @field_validator("interval")
+    @classmethod
+    def validate_interval(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("Interval must be at least 1")
+        return v
+
+    @field_validator("days_of_week")
+    @classmethod
+    def validate_days(
+        cls, v: list[int] | None, info: ValidationInfo
+    ) -> list[int] | None:
+        frequency = info.data.get("frequency")
+        if frequency == RecurrenceFrequency.weekly and v:
+            for day in v:
+                if day < 0 or day > 6:
+                    raise ValueError("days_of_week must be between 0 (Mon) and 6 (Sun)")
+        return v
+
+    @field_validator("end_date")
+    @classmethod
+    def validate_end_date(
+        cls, v: datetime | None, info: ValidationInfo
+    ) -> datetime | None:
+        end_type = info.data.get("end_type")
+        if end_type == RecurrenceEndType.on_date and v is None:
+            raise ValueError("end_date is required when end_type is on_date")
+        return v
+
+
+class RecurrenceRuleCreate(RecurrenceRuleBase):
+    pass
+
+
+class RecurrenceRuleResponse(RecurrenceRuleBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RecurringReservationCreate(BaseModel):
+    resource_id: int
+    start_time: datetime
+    end_time: datetime
+    recurrence: RecurrenceRuleCreate
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def ensure_tz(cls, v: datetime) -> datetime:
+        return ensure_timezone_aware(v)

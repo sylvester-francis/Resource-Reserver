@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-import api from '@/lib/api';
-import type { Resource } from '@/types';
+import { reservationsApi } from '@/lib/api';
+import type { RecurrenceRule, Resource } from '@/types';
+import { RecurrenceSelector } from '@/components/RecurrenceSelector';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +44,13 @@ export function ReservationDialog({
     const [endTime, setEndTime] = useState(format(new Date(nextHour.getTime() + 60 * 60 * 1000), 'HH:00'));
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [recurring, setRecurring] = useState(false);
+    const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>({
+        frequency: 'daily',
+        interval: 1,
+        end_type: 'after_count',
+        occurrence_count: 5,
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,11 +76,20 @@ export function ReservationDialog({
         setIsLoading(true);
 
         try {
-            await api.post('/reservations', {
+            const payload = {
                 resource_id: resource.id,
                 start_time: startDateTime.toISOString(),
                 end_time: endDateTime.toISOString(),
-            });
+            };
+
+            if (recurring) {
+                await reservationsApi.createRecurring({
+                    ...payload,
+                    recurrence: recurrenceRule,
+                });
+            } else {
+                await reservationsApi.create(payload);
+            }
 
             toast.success('Reservation created successfully');
             onSuccess();
@@ -150,6 +167,12 @@ export function ReservationDialog({
                                 />
                             </div>
                         </div>
+                        <RecurrenceSelector
+                            enabled={recurring}
+                            value={recurrenceRule}
+                            onToggle={setRecurring}
+                            onChange={setRecurrenceRule}
+                        />
                         {error && (
                             <p className="text-sm text-destructive">{error}</p>
                         )}

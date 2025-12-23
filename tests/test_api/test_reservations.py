@@ -265,3 +265,65 @@ class TestReservations:
         ids_first = {item["id"] for item in payload["data"]}
         ids_next = {item["id"] for item in payload_next["data"]}
         assert ids_first.isdisjoint(ids_next)
+
+    def test_create_recurring_reservations(
+        self, client, auth_headers, test_resource, future_datetime
+    ):
+        """Test creating a recurring reservation series"""
+        start_time = future_datetime
+        end_time = start_time + timedelta(hours=1)
+
+        request_data = {
+            "resource_id": test_resource.id,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "recurrence": {
+                "frequency": "daily",
+                "interval": 1,
+                "end_type": "after_count",
+                "occurrence_count": 3,
+            },
+        }
+
+        response = client.post(
+            f"{API_V1}/reservations/recurring", json=request_data, headers=auth_headers
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 3
+        assert all(res["recurrence_rule_id"] is not None for res in data)
+
+    def test_recurring_reservations_conflict(
+        self, client, auth_headers, test_resource, future_datetime
+    ):
+        """Test conflict detection for recurring reservations"""
+        # Create an existing reservation to force conflict
+        client.post(
+            f"{API_V1}/reservations",
+            json={
+                "resource_id": test_resource.id,
+                "start_time": future_datetime.isoformat(),
+                "end_time": (future_datetime + timedelta(hours=1)).isoformat(),
+            },
+            headers=auth_headers,
+        )
+
+        request_data = {
+            "resource_id": test_resource.id,
+            "start_time": future_datetime.isoformat(),
+            "end_time": (future_datetime + timedelta(hours=1)).isoformat(),
+            "recurrence": {
+                "frequency": "daily",
+                "interval": 1,
+                "end_type": "after_count",
+                "occurrence_count": 2,
+            },
+        }
+
+        response = client.post(
+            f"{API_V1}/reservations/recurring", json=request_data, headers=auth_headers
+        )
+
+        assert response.status_code == status.HTTP_409_CONFLICT

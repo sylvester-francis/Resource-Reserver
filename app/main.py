@@ -832,6 +832,33 @@ def create_reservation(
             ) from e
 
 
+@app.post(
+    "/api/v1/reservations/recurring",
+    response_model=list[schemas.ReservationResponse],
+    status_code=status.HTTP_201_CREATED,
+    tags=["Reservations"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def create_recurring_reservations(
+    request: Request,
+    reservation_data: schemas.RecurringReservationCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Create a series of recurring reservations."""
+    reservation_service = ReservationService(db)
+    try:
+        reservations = reservation_service.create_recurring_reservations(
+            reservation_data, current_user.id
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+
+    return reservations
+
+
 @app.get(
     "/api/v1/reservations/my",
     response_model=schemas.PaginatedResponse[schemas.ReservationResponse],

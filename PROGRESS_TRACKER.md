@@ -59,18 +59,18 @@ ______________________________________________________________________
 
 ### PR #5: Notifications
 
-- [ ] Create branch `feat/notifications`
-- [ ] Add Notification model
-- [ ] Create NotificationService
-- [ ] Create app/routers/notifications.py
-- [ ] Register router in main.py
-- [ ] Create NotificationCenter component
-- [ ] Create NotificationBadge component
-- [ ] Create useNotifications hook
-- [ ] Update dashboard with notification center
-- [ ] Add tests
-- [ ] Create PR
-- [ ] Merge PR
+- [x] Create branch `feat/notifications`
+- [x] Add Notification model
+- [x] Create NotificationService
+- [x] Create app/routers/notifications.py
+- [x] Register router in main.py
+- [x] Create NotificationCenter component
+- [x] Create NotificationBadge component
+- [x] Create useNotifications hook
+- [x] Update dashboard with notification center
+- [x] Add tests
+- [x] Create PR (#16)
+- [x] Merge PR
 
 ### PR #6: Recurring Reservations
 

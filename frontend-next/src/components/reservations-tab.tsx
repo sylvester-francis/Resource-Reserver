@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { HistoryDialog } from '@/components/history-dialog';
 import { Pagination } from '@/components/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RecurringBadge } from '@/components/RecurringBadge';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -54,6 +55,7 @@ export function ReservationsTab({
     const [isLoading, setIsLoading] = useState(false);
     const [sortBy, setSortBy] = useState('start_time');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const timeZoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const handleViewHistory = (reservation: Reservation) => {
         setSelectedReservation(reservation);
@@ -213,16 +215,24 @@ export function ReservationsTab({
                                     className="flex items-center justify-between rounded-lg border p-4"
                                 >
                                     <div className="space-y-1">
-                                        <h3 className="font-medium">Resource #{reservation.resource_id}</h3>
+                                        <h3 className="font-medium">
+                                            {reservation.resource?.name
+                                                ? reservation.resource.name
+                                                : `Resource #${reservation.resource_id}`}
+                                        </h3>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Clock className="h-4 w-4" />
                                             <span>{formatDateTime(reservation.start_time)}</span>
                                             <span>-</span>
                                             <span>{formatDateTime(reservation.end_time)}</span>
                                         </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            All times shown in {timeZoneLabel}
+                                        </p>
                                         <Badge variant={getStatusVariant(reservation.status)}>
                                             {reservation.status}
                                         </Badge>
+                                        {reservation.recurrence_rule_id ? <RecurringBadge /> : null}
                                     </div>
                                     <div className="flex gap-2">
                                         <Button

@@ -8,14 +8,8 @@ const toDate = (value: string | Date | null | undefined) => {
     const direct = new Date(value);
     if (!Number.isNaN(direct.getTime())) return direct;
 
-    const normalized =
+    const candidate =
         value.includes(' ') && !value.includes('T') ? value.replace(' ', 'T') : value;
-    let candidate = normalized;
-
-    if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(candidate)) {
-        candidate = `${candidate}Z`;
-    }
-
     const parsed = new Date(candidate);
     if (!Number.isNaN(parsed.getTime())) return parsed;
 

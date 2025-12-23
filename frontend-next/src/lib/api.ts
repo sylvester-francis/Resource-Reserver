@@ -165,3 +165,9 @@ export const notificationsApi = {
   markRead: (id: number) => api.post(`/notifications/${id}/read`),
   markAllRead: () => api.post('/notifications/mark-all-read'),
 };
+
+export const reservationsApi = {
+  create: (payload: Record<string, unknown>) => api.post('/reservations', payload),
+  createRecurring: (payload: Record<string, unknown>) =>
+    api.post('/reservations/recurring', payload),
+};
