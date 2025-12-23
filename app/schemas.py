@@ -311,3 +311,68 @@ class RecurringReservationCreate(BaseModel):
     @classmethod
     def ensure_tz(cls, v: datetime) -> datetime:
         return ensure_timezone_aware(v)
+
+
+# ============================================================================
+# Waitlist Schemas
+# ============================================================================
+
+
+class WaitlistStatus(str, Enum):
+    WAITING = "waiting"
+    OFFERED = "offered"
+    EXPIRED = "expired"
+    FULFILLED = "fulfilled"
+    CANCELLED = "cancelled"
+
+
+class WaitlistCreate(BaseModel):
+    resource_id: int
+    desired_start: datetime
+    desired_end: datetime
+    flexible_time: bool = False
+
+    @field_validator("desired_start")
+    @classmethod
+    def validate_desired_start(cls, v: datetime) -> datetime:
+        v = ensure_timezone_aware(v)
+        if v <= utcnow():
+            raise ValueError("Desired start time must be in the future")
+        return v
+
+    @field_validator("desired_end")
+    @classmethod
+    def validate_desired_end(cls, v: datetime, info) -> datetime:
+        v = ensure_timezone_aware(v)
+        start = info.data.get("desired_start")
+        if start:
+            start = ensure_timezone_aware(start)
+            if v <= start:
+                raise ValueError("End time must be after start time")
+        return v
+
+
+class WaitlistResponse(BaseModel):
+    id: int
+    resource_id: int
+    user_id: int
+    desired_start: datetime
+    desired_end: datetime
+    flexible_time: bool
+    status: str
+    position: int
+    created_at: datetime
+    offered_at: datetime | None = None
+    offer_expires_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WaitlistWithResourceResponse(WaitlistResponse):
+    resource: ResourceResponse
+
+
+class WaitlistAcceptOffer(BaseModel):
+    """Schema for accepting a waitlist offer."""
+
+    pass  # No additional fields needed, ID comes from path

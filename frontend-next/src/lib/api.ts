@@ -171,3 +171,19 @@ export const reservationsApi = {
   createRecurring: (payload: Record<string, unknown>) =>
     api.post('/reservations/recurring', payload),
 };
+
+export const waitlistApi = {
+  join: (payload: {
+    resource_id: number;
+    desired_start: string;
+    desired_end: string;
+    flexible_time?: boolean;
+  }) => api.post('/waitlist', payload),
+  list: (params?: Record<string, unknown>) =>
+    api.get('/waitlist', { params }),
+  get: (id: number) => api.get(`/waitlist/${id}`),
+  leave: (id: number) => api.delete(`/waitlist/${id}`),
+  accept: (id: number) => api.post(`/waitlist/${id}/accept`),
+  getResourceWaitlist: (resourceId: number) =>
+    api.get(`/waitlist/resource/${resourceId}`),
+};

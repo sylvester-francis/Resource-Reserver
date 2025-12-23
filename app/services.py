@@ -964,6 +964,17 @@ class ReservationService:
             },
         )
 
+        # Check if anyone is waiting for this slot and offer it to them
+        # Import here to avoid circular imports
+        from app.services import WaitlistService
+
+        waitlist_service = WaitlistService(self.db)
+        waitlist_service.check_and_offer_slot(
+            reservation.resource_id,
+            reservation.start_time,
+            reservation.end_time,
+        )
+
         return reservation
 
     def get_user_reservations(
@@ -1113,5 +1124,345 @@ class UserService:
         return (
             self.db.query(models.User)
             .filter(models.User.username == normalized_username)
+            .first()
+        )
+
+
+class WaitlistService:
+    """Service for waitlist management operations."""
+
+    # Offer expires after 30 minutes
+    OFFER_EXPIRY_MINUTES = 30
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def join_waitlist(
+        self, waitlist_data: schemas.WaitlistCreate, user_id: int
+    ) -> models.Waitlist:
+        """Add user to waitlist for a resource."""
+        # Validate resource exists
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == waitlist_data.resource_id)
+            .first()
+        )
+        if not resource:
+            raise ValueError("Resource not found")
+
+        # Check if user is already on waitlist for this resource/time slot
+        existing_entry = (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.resource_id == waitlist_data.resource_id,
+                models.Waitlist.user_id == user_id,
+                models.Waitlist.status.in_(["waiting", "offered"]),
+                models.Waitlist.desired_start == waitlist_data.desired_start,
+                models.Waitlist.desired_end == waitlist_data.desired_end,
+            )
+            .first()
+        )
+        if existing_entry:
+            raise ValueError("Already on waitlist for this time slot")
+
+        # Get current position (last position + 1)
+        last_position = (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.resource_id == waitlist_data.resource_id,
+                models.Waitlist.status == "waiting",
+            )
+            .count()
+        )
+
+        waitlist_entry = models.Waitlist(
+            resource_id=waitlist_data.resource_id,
+            user_id=user_id,
+            desired_start=ensure_timezone_aware(waitlist_data.desired_start),
+            desired_end=ensure_timezone_aware(waitlist_data.desired_end),
+            flexible_time=waitlist_data.flexible_time,
+            status="waiting",
+            position=last_position + 1,
+        )
+
+        self.db.add(waitlist_entry)
+        self.db.commit()
+        self.db.refresh(waitlist_entry)
+
+        # Notify user
+        NotificationService(self.db).create_notification(
+            user_id=user_id,
+            type=schemas.NotificationType.SYSTEM_ANNOUNCEMENT,
+            title="Joined waitlist",
+            message=f"You're #{waitlist_entry.position} on the waitlist for {resource.name}",
+            link=f"/waitlist/{waitlist_entry.id}",
+        )
+
+        return waitlist_entry
+
+    def leave_waitlist(self, waitlist_id: int, user_id: int) -> models.Waitlist:
+        """Remove user from waitlist."""
+        entry = (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.id == waitlist_id,
+                models.Waitlist.user_id == user_id,
+            )
+            .first()
+        )
+        if not entry:
+            raise ValueError("Waitlist entry not found")
+
+        if entry.status not in ["waiting", "offered"]:
+            raise ValueError("Cannot leave waitlist - entry is no longer active")
+
+        old_position = entry.position
+        entry.status = "cancelled"
+        self.db.commit()
+
+        # Update positions for remaining entries
+        self._update_positions_after_removal(entry.resource_id, old_position)
+
+        self.db.refresh(entry)
+        return entry
+
+    def get_user_waitlist_entries(
+        self,
+        user_id: int,
+        pagination: schemas.PaginationParams,
+        include_completed: bool = False,
+    ) -> tuple[list[models.Waitlist], str | None, bool, int | None]:
+        """Get all waitlist entries for a user."""
+        query = self.db.query(models.Waitlist).filter(
+            models.Waitlist.user_id == user_id
+        )
+
+        if not include_completed:
+            query = query.filter(models.Waitlist.status.in_(["waiting", "offered"]))
+
+        entries = query.options(joinedload(models.Waitlist.resource)).all()
+
+        total_count = len(entries)
+        sort_by = pagination.sort_by or "created_at"
+        sort_order = (pagination.sort_order or "desc").lower()
+
+        sort_options = {
+            "id": lambda w: w.id,
+            "created_at": lambda w: ensure_timezone_aware(w.created_at),
+            "position": lambda w: w.position,
+            "desired_start": lambda w: ensure_timezone_aware(w.desired_start),
+        }
+
+        if sort_order not in {"asc", "desc"}:
+            raise ValueError("Invalid sort_order. Must be 'asc' or 'desc'.")
+        if sort_by not in sort_options:
+            raise ValueError(
+                "Invalid sort_by. Must be one of: id, created_at, position, desired_start."
+            )
+
+        def parse_datetime(value: Any) -> datetime:
+            if isinstance(value, datetime):
+                return value
+            try:
+                return ensure_timezone_aware(datetime.fromisoformat(str(value)))
+            except ValueError as exc:
+                raise ValueError("Invalid cursor value") from exc
+
+        value_parser = (
+            parse_datetime if sort_by in {"created_at", "desired_start"} else None
+        )
+
+        page_items, next_cursor, has_more = _paginate_items(
+            entries,
+            sort_key=sort_options[sort_by],
+            sort_order=sort_order,
+            limit=pagination.limit,
+            cursor=pagination.cursor,
+            value_parser=value_parser,
+        )
+
+        return page_items, next_cursor, has_more, total_count
+
+    def get_waitlist_for_resource(self, resource_id: int) -> list[models.Waitlist]:
+        """Get waitlist entries for a specific resource."""
+        return (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.resource_id == resource_id,
+                models.Waitlist.status == "waiting",
+            )
+            .order_by(models.Waitlist.position)
+            .all()
+        )
+
+    def check_and_offer_slot(
+        self, resource_id: int, start_time: datetime, end_time: datetime
+    ):
+        """Check if a slot became available and offer it to the next person on waitlist."""
+        start_time = ensure_timezone_aware(start_time)
+        end_time = ensure_timezone_aware(end_time)
+
+        # Find matching waitlist entries
+        matching_entries = (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.resource_id == resource_id,
+                models.Waitlist.status == "waiting",
+                models.Waitlist.desired_start <= end_time,
+                models.Waitlist.desired_end >= start_time,
+            )
+            .order_by(models.Waitlist.position)
+            .all()
+        )
+
+        for entry in matching_entries:
+            # Check if the slot matches exactly or user is flexible
+            exact_match = (
+                entry.desired_start == start_time and entry.desired_end == end_time
+            )
+            if exact_match or entry.flexible_time:
+                self._offer_slot_to_user(entry)
+                break
+
+    def _offer_slot_to_user(self, entry: models.Waitlist):
+        """Offer the slot to a waitlist entry."""
+        now = utcnow()
+        entry.status = "offered"
+        entry.offered_at = now
+        entry.offer_expires_at = now + timedelta(minutes=self.OFFER_EXPIRY_MINUTES)
+        self.db.commit()
+
+        # Get resource for notification
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == entry.resource_id)
+            .first()
+        )
+
+        # Notify user
+        NotificationService(self.db).create_notification(
+            user_id=entry.user_id,
+            type=schemas.NotificationType.RESOURCE_AVAILABLE,
+            title="Slot available!",
+            message=f"{resource.name if resource else 'Resource'} is now available! "
+            f"Accept within {self.OFFER_EXPIRY_MINUTES} minutes.",
+            link=f"/waitlist/{entry.id}/accept",
+        )
+
+        # Broadcast to user via WebSocket
+        anyio.from_thread.run(
+            ws_manager.broadcast_to_user,
+            entry.user_id,
+            {
+                "type": "waitlist_offer",
+                "waitlist_id": entry.id,
+                "resource_id": entry.resource_id,
+                "resource_name": resource.name if resource else "Resource",
+                "expires_at": entry.offer_expires_at.isoformat(),
+            },
+        )
+
+    def accept_offer(self, waitlist_id: int, user_id: int) -> models.Reservation:
+        """Accept a waitlist offer and create a reservation."""
+        entry = (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.id == waitlist_id,
+                models.Waitlist.user_id == user_id,
+            )
+            .first()
+        )
+        if not entry:
+            raise ValueError("Waitlist entry not found")
+
+        if entry.status != "offered":
+            raise ValueError("No active offer for this waitlist entry")
+
+        # Check if offer has expired
+        now = utcnow()
+        if entry.offer_expires_at and now > entry.offer_expires_at:
+            entry.status = "expired"
+            self.db.commit()
+            raise ValueError("Offer has expired")
+
+        # Create the reservation
+        reservation_service = ReservationService(self.db)
+        try:
+            reservation_data = schemas.ReservationCreate(
+                resource_id=entry.resource_id,
+                start_time=entry.desired_start,
+                end_time=entry.desired_end,
+            )
+            reservation = reservation_service.create_reservation(
+                reservation_data, user_id
+            )
+
+            # Update waitlist entry
+            entry.status = "fulfilled"
+            self.db.commit()
+
+            # Update positions for remaining entries
+            self._update_positions_after_removal(entry.resource_id, entry.position)
+
+            return reservation
+        except ValueError as e:
+            # If reservation fails (conflict), mark offer as expired
+            entry.status = "expired"
+            self.db.commit()
+            raise ValueError(f"Could not create reservation: {str(e)}") from e
+
+    def expire_old_offers(self):
+        """Expire offers that have passed their expiry time."""
+        now = utcnow()
+        expired_offers = (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.status == "offered",
+                models.Waitlist.offer_expires_at < now,
+            )
+            .all()
+        )
+
+        for offer in expired_offers:
+            offer.status = "expired"
+
+            # Notify user that offer expired
+            NotificationService(self.db).create_notification(
+                user_id=offer.user_id,
+                type=schemas.NotificationType.SYSTEM_ANNOUNCEMENT,
+                title="Offer expired",
+                message="Your waitlist offer has expired.",
+            )
+
+            # Check if there's another person in line who might want it
+            self.check_and_offer_slot(
+                offer.resource_id, offer.desired_start, offer.desired_end
+            )
+
+        self.db.commit()
+
+    def _update_positions_after_removal(self, resource_id: int, removed_position: int):
+        """Update positions for remaining waitlist entries after a removal."""
+        entries_to_update = (
+            self.db.query(models.Waitlist)
+            .filter(
+                models.Waitlist.resource_id == resource_id,
+                models.Waitlist.status == "waiting",
+                models.Waitlist.position > removed_position,
+            )
+            .all()
+        )
+
+        for entry in entries_to_update:
+            entry.position -= 1
+
+        self.db.commit()
+
+    def get_waitlist_entry(self, waitlist_id: int) -> models.Waitlist | None:
+        """Get a single waitlist entry by ID."""
+        return (
+            self.db.query(models.Waitlist)
+            .options(joinedload(models.Waitlist.resource))
+            .filter(models.Waitlist.id == waitlist_id)
             .first()
         )
