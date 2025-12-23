@@ -51,9 +51,17 @@ ______________________________________________________________________
 
 - **Resource Management**: Create, update, and organize resources with tags and categories
 - **Reservation System**: Book resources with automatic conflict detection
+- **Recurring Reservations**: Schedule daily, weekly, or monthly recurring bookings
+- **Waitlist System**: Join waitlists for busy resources and receive automatic offers when slots become available
 - **Availability Tracking**: Real-time status updates and availability calendar
 - **Bulk Operations**: CSV import for adding multiple resources at once
 - **Search and Filter**: Find resources by name, tags, or availability window
+
+### Real-time Features
+
+- **WebSocket Notifications**: Live updates for reservation changes and resource availability
+- **Notification Center**: In-app notifications for confirmations, reminders, and system announcements
+- **Waitlist Alerts**: Instant notification when a waitlisted slot becomes available
 
 ### Security and Access Control
 
@@ -142,10 +150,16 @@ Resource-Reserver/
 │   ├── main.py            # Application entry point
 │   ├── models.py          # SQLAlchemy models
 │   ├── schemas.py         # Pydantic schemas
+│   ├── services.py        # Business logic services
+│   ├── auth.py            # Authentication logic
 │   ├── auth_routes.py     # Authentication endpoints
 │   ├── oauth2.py          # OAuth2 server implementation
 │   ├── rbac.py            # Role-based access control
-│   └── mfa.py             # Multi-factor authentication
+│   ├── mfa.py             # Multi-factor authentication
+│   ├── websocket.py       # WebSocket connection manager
+│   └── routers/           # API route modules
+│       ├── notifications.py  # Notification endpoints
+│       └── waitlist.py       # Waitlist endpoints
 ├── cli/                    # Command-line interface
 │   ├── main.py            # CLI entry point
 │   ├── client.py          # API client
@@ -207,16 +221,25 @@ The API documentation is available at http://localhost:8000/docs when the backen
 
 ### Key Endpoints
 
-| Method | Endpoint                       | Description                 |
-| ------ | ------------------------------ | --------------------------- |
-| POST   | `/auth/register`               | Create new user account     |
-| POST   | `/auth/login`                  | Authenticate user           |
-| GET    | `/resources`                   | List all resources          |
-| POST   | `/resources`                   | Create new resource         |
-| GET    | `/resources/{id}/availability` | Check resource availability |
-| POST   | `/reservations`                | Create reservation          |
-| GET    | `/reservations`                | List user reservations      |
-| DELETE | `/reservations/{id}`           | Cancel reservation          |
+| Method | Endpoint                           | Description                     |
+| ------ | ---------------------------------- | ------------------------------- |
+| POST   | `/api/v1/register`                 | Create new user account         |
+| POST   | `/api/v1/token`                    | Authenticate user               |
+| POST   | `/api/v1/token/refresh`            | Refresh access token            |
+| GET    | `/api/v1/resources`                | List all resources              |
+| POST   | `/api/v1/resources`                | Create new resource             |
+| GET    | `/api/v1/resources/search`         | Search resources with filters   |
+| GET    | `/api/v1/resources/{id}/status`    | Check resource availability     |
+| POST   | `/api/v1/reservations`             | Create reservation              |
+| POST   | `/api/v1/reservations/recurring`   | Create recurring reservations   |
+| GET    | `/api/v1/reservations/my`          | List user reservations          |
+| POST   | `/api/v1/reservations/{id}/cancel` | Cancel reservation              |
+| POST   | `/api/v1/waitlist`                 | Join waitlist for a resource    |
+| GET    | `/api/v1/waitlist`                 | List user waitlist entries      |
+| POST   | `/api/v1/waitlist/{id}/accept`     | Accept waitlist offer           |
+| DELETE | `/api/v1/waitlist/{id}`            | Leave waitlist                  |
+| GET    | `/api/v1/notifications`            | List user notifications         |
+| WS     | `/ws`                              | WebSocket for real-time updates |
 
 ### Authentication
 
@@ -272,6 +295,7 @@ resource-reserver-cli reservations list           # List your reservations
 resource-reserver-cli reservations create         # Create reservation
 resource-reserver-cli reservations cancel <id>    # Cancel reservation
 resource-reserver-cli reservations upcoming       # Show upcoming reservations
+resource-reserver-cli reservations recurring      # Create recurring reservation
 ```
 
 ### Role Management (Admin)
@@ -402,9 +426,14 @@ pytest tests/ --cov=app --cov=cli --cov-report=html
 
 ```
 tests/
-├── test_auth_endpoints.py    # Authentication API tests
-├── test_auth_features.py     # MFA and RBAC tests
-├── test_reservations.py      # Reservation logic tests
+├── test_api/
+│   ├── test_auth.py          # Authentication API tests
+│   ├── test_resources.py     # Resource management tests
+│   ├── test_reservations.py  # Reservation logic tests
+│   ├── test_notifications.py # Notification tests
+│   └── test_waitlist.py      # Waitlist functionality tests
+├── test_cli/                 # CLI command tests
+├── test_services/            # Service layer tests
 └── conftest.py               # Pytest fixtures
 ```
 

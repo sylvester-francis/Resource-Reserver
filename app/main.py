@@ -257,9 +257,51 @@ async def lifespan(app: FastAPI):
 # Initialize FastAPI app with lifespan
 app = FastAPI(
     title="Resource Reservation System",
-    description="A clean, scalable resource booking system",
-    version="2.0.1",
+    description="""
+A comprehensive resource booking system with intelligent scheduling and real-time updates.
+
+## Features
+
+- **Resource Management**: Create, organize, and track resources with tags and availability status
+- **Reservation System**: Book resources with automatic conflict detection and recurring reservations
+- **Waitlist**: Join waitlists for busy resources and receive offers when slots become available
+- **Real-time Updates**: WebSocket-based notifications for reservation changes and availability alerts
+- **Notifications**: In-app notification center for reservation confirmations, reminders, and system announcements
+- **Security**: JWT authentication, MFA support, role-based access control, and OAuth2 authorization server
+
+## Authentication
+
+All protected endpoints require a Bearer token in the Authorization header.
+Use the `/api/v1/token` endpoint to obtain access and refresh tokens.
+""",
+    version="2.1.0",
     lifespan=lifespan,
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "User registration, login, token management, and logout",
+        },
+        {
+            "name": "Resources",
+            "description": "Resource management, availability tracking, and status updates",
+        },
+        {
+            "name": "Reservations",
+            "description": "Create, manage, and cancel reservations including recurring bookings",
+        },
+        {
+            "name": "Waitlist",
+            "description": "Join waitlists for resources and accept slot offers",
+        },
+        {
+            "name": "Notifications",
+            "description": "View and manage user notifications",
+        },
+        {
+            "name": "Admin",
+            "description": "Administrative operations and system maintenance",
+        },
+    ],
 )
 
 # Add rate limiter to app state and exception handler
