@@ -189,20 +189,21 @@ export function ReservationsTab({
                             </SelectContent>
                         </Select>
                         <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="gap-2 rounded-full border border-primary/30 bg-primary/5 text-sm font-semibold"
+                            className="gap-2 rounded-full border border-border/70 bg-background text-sm font-medium"
                             onClick={() => setSortOrder(order => (order === 'asc' ? 'desc' : 'asc'))}
+                            aria-label={`Toggle sort order, current: ${sortOrder === 'asc' ? 'ascending' : 'descending'}`}
                         >
                             {sortOrder === 'asc' ? (
                                 <>
                                     <ArrowUpWideNarrow className="h-4 w-4" />
-                                    Ascending
+                                    Sort ascending
                                 </>
                             ) : (
                                 <>
                                     <ArrowDownWideNarrow className="h-4 w-4" />
-                                    Descending
+                                    Sort descending
                                 </>
                             )}
                         </Button>
