@@ -15,6 +15,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PasswordStrengthMeter } from '@/components/password-strength-meter';
+
+const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+        const response = (err as { response?: { data?: { detail?: string; message?: string } } }).response;
+        const detail = response?.data?.detail ?? response?.data?.message;
+        if (detail) {
+            return String(detail);
+        }
+    }
+    if (err instanceof Error) {
+        return err.message;
+    }
+    return fallback;
+};
 
 function LoginContent() {
     const router = useRouter();
@@ -89,7 +104,7 @@ function LoginContent() {
             toast.success('Welcome back!');
             router.push('/dashboard');
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Login failed';
+            const message = getErrorMessage(err, 'Login failed');
 
             // Check if MFA is required
             if (message.toLowerCase().includes('mfa') || message.toLowerCase().includes('2fa')) {
@@ -131,8 +146,31 @@ function LoginContent() {
             return;
         }
 
-        if (registerPassword.length < 6) {
-            setError('Password must be at least 6 characters');
+        // Password policy validation (matches backend)
+        const passwordErrors: string[] = [];
+        if (registerPassword.length < 8) {
+            passwordErrors.push('Password must be at least 8 characters');
+        }
+        if (!/[A-Z]/.test(registerPassword)) {
+            passwordErrors.push('Password must contain an uppercase letter');
+        }
+        if (!/[a-z]/.test(registerPassword)) {
+            passwordErrors.push('Password must contain a lowercase letter');
+        }
+        if (!/\d/.test(registerPassword)) {
+            passwordErrors.push('Password must contain a number');
+        }
+        if (!/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'/`~]/.test(registerPassword)) {
+            passwordErrors.push('Password must contain a special character');
+        }
+        if (registerUsername && registerUsername.length >= 3) {
+            if (registerPassword.toLowerCase().includes(registerUsername.toLowerCase())) {
+                passwordErrors.push('Password cannot contain your username');
+            }
+        }
+
+        if (passwordErrors.length > 0) {
+            setError(passwordErrors.join('; '));
             return;
         }
 
@@ -146,7 +184,7 @@ function LoginContent() {
             setConfirmPassword('');
             toast.success('Account created successfully!');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Registration failed');
+            setError(getErrorMessage(err, 'Registration failed'));
         } finally {
             setIsLoading(false);
         }
@@ -341,6 +379,7 @@ function LoginContent() {
                                                     onChange={(e) => setRegisterPassword(e.target.value)}
                                                     required
                                                 />
+                                                <PasswordStrengthMeter password={registerPassword} />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="confirm-password">Confirm Password</Label>

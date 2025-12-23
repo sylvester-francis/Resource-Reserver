@@ -14,15 +14,15 @@ class TestUserService:
         db = test_db()
         service = UserService(db)
 
-        user_data = schemas.UserCreate(username="testuser", password="securepass123")
+        user_data = schemas.UserCreate(username="testuser", password="SecurePass123!")
 
         try:
             user = service.create_user(user_data)
 
             assert user.id is not None
             assert user.username == "testuser"
-            assert user.hashed_password != "securepass123"  # Should be hashed
-            assert verify_password("securepass123", user.hashed_password)
+            assert user.hashed_password != "SecurePass123!"  # Should be hashed
+            assert verify_password("SecurePass123!", user.hashed_password)
         finally:
             db.close()
 
@@ -31,7 +31,7 @@ class TestUserService:
         db = test_db()
         service = UserService(db)
 
-        user_data = schemas.UserCreate(username="duplicate", password="password123")
+        user_data = schemas.UserCreate(username="duplicate", password="Password123!")
 
         try:
             # Create first user
