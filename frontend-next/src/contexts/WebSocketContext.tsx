@@ -13,7 +13,7 @@ import { API_HOST } from '@/lib/api';
 
 type WebSocketStatus = 'connecting' | 'connected' | 'disconnected';
 
-type WebSocketMessage = { type?: string; [key: string]: any };
+type WebSocketMessage = { type?: string; [key: string]: unknown };
 type MessageHandler = (message: WebSocketMessage) => void;
 
 interface WebSocketContextValue {
