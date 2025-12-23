@@ -106,3 +106,25 @@ export interface HistoryEntry {
   timestamp: string;
   details?: string;
 }
+
+export type WaitlistStatus =
+  | 'waiting'
+  | 'offered'
+  | 'expired'
+  | 'fulfilled'
+  | 'cancelled';
+
+export interface WaitlistEntry {
+  id: number;
+  resource_id: number;
+  user_id: number;
+  desired_start: string;
+  desired_end: string;
+  flexible_time: boolean;
+  status: WaitlistStatus;
+  position: number;
+  created_at: string;
+  offered_at?: string | null;
+  offer_expires_at?: string | null;
+  resource?: Resource;
+}

@@ -49,6 +49,9 @@ class User(Base):
     notifications = relationship(
         "Notification", back_populates="user", cascade="all, delete-orphan"
     )
+    waitlist_entries = relationship(
+        "Waitlist", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class SystemSetting(Base):
@@ -72,6 +75,9 @@ class Resource(Base):
 
     # Relationships
     reservations = relationship("Reservation", back_populates="resource")
+    waitlist_entries = relationship(
+        "Waitlist", back_populates="resource", cascade="all, delete-orphan"
+    )
 
     @property
     def is_available_for_reservation(self) -> bool:
@@ -340,3 +346,30 @@ class LoginAttempt(Base):
     failure_reason = Column(
         String(100), nullable=True
     )  # e.g., "invalid_password", "account_locked"
+
+
+# ============================================================================
+# Waitlist Model
+# ============================================================================
+
+
+class Waitlist(Base):
+    __tablename__ = "waitlist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(Integer, ForeignKey("resources.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    desired_start = Column(DateTime(timezone=True), nullable=False)
+    desired_end = Column(DateTime(timezone=True), nullable=False)
+    flexible_time = Column(Boolean, default=False)  # Can adjust time if needed
+    status = Column(
+        String(20), default="waiting"
+    )  # waiting, offered, expired, fulfilled, cancelled
+    position = Column(Integer, nullable=False)  # Queue position
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    offered_at = Column(DateTime(timezone=True), nullable=True)
+    offer_expires_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    resource = relationship("Resource", back_populates="waitlist_entries")
+    user = relationship("User", back_populates="waitlist_entries")

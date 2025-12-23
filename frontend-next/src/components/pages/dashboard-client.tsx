@@ -30,6 +30,7 @@ import { HealthDialog } from '@/components/health-dialog';
 import { MfaDialog } from '@/components/mfa-dialog';
 import { NotificationBadge } from '@/components/NotificationBadge';
 import { LiveIndicator } from '@/components/LiveIndicator';
+import { WaitlistManager } from '@/components/WaitlistManager';
 
 interface Stats {
     totalResources: number;
@@ -143,10 +144,20 @@ export default function DashboardClient() {
             fetchData();
         });
 
+        const unsubscribeWaitlist = subscribe('waitlist_offer', (message) => {
+            if (message.resource_name) {
+                toast.success(`Slot available!`, {
+                    description: `${message.resource_name} is now available. Check your waitlist!`,
+                    duration: 10000,
+                });
+            }
+        });
+
         return () => {
             unsubscribeCreated();
             unsubscribeCancelled();
             unsubscribeResource();
+            unsubscribeWaitlist();
         };
     }, [subscribe, fetchData]);
 
@@ -377,6 +388,10 @@ export default function DashboardClient() {
                         <TabsTrigger value="upcoming" className="gap-2">
                             Upcoming
                         </TabsTrigger>
+                        <TabsTrigger value="waitlist" className="gap-2">
+                            <Clock className="h-4 w-4" />
+                            Waitlist
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="resources">
@@ -394,6 +409,10 @@ export default function DashboardClient() {
                             emptyMessage="No upcoming reservations"
                             emptyDescription="You don't have any upcoming reservations. Book a resource now to secure your spot."
                         />
+                    </TabsContent>
+
+                    <TabsContent value="waitlist">
+                        <WaitlistManager onReservationCreated={fetchData} />
                     </TabsContent>
                 </Tabs>
             </main>
