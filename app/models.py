@@ -261,3 +261,23 @@ class ResourcePermission(Base):
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
     action = Column(String(50), nullable=False)  # 'read', 'update', 'delete', 'reserve'
     created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+# ============================================================================
+# Refresh Token Model
+# ============================================================================
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(String(36), primary_key=True)  # UUID
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String(64), nullable=False, index=True)  # SHA-256 hash
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    revoked = Column(Boolean, default=False, nullable=False)
+    family_id = Column(String(36), nullable=False, index=True)  # For token rotation
+
+    # Relationships
+    user = relationship("User", backref="refresh_tokens")

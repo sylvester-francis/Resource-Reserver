@@ -12,18 +12,18 @@
 - [x] Update tests for /api/v1 prefix
 - [x] Run tests: `pytest tests/test_api/`
 - [x] Create PR (#12)
-- [ ] Merge PR
+- [x] Merge PR
 
 ### PR #2: Refresh Tokens
 
-- [ ] Create branch `feat/refresh-tokens`
-- [ ] Add RefreshToken model to app/models.py
-- [ ] Add refresh logic to app/auth.py
-- [ ] Add /token/refresh endpoint
-- [ ] Update frontend AuthContext
-- [ ] Add axios interceptor for auto-refresh
-- [ ] Add tests
-- [ ] Run tests: `pytest tests/test_api/test_auth.py`
+- [x] Create branch `feat/refresh-tokens`
+- [x] Add RefreshToken model to app/models.py
+- [x] Add refresh logic to app/auth.py
+- [x] Add /token/refresh endpoint
+- [x] Update frontend AuthContext
+- [x] Add axios interceptor for auto-refresh
+- [x] Add tests
+- [x] Run tests: `pytest tests/test_api/test_auth.py`
 - [ ] Create PR
 - [ ] Merge PR
 

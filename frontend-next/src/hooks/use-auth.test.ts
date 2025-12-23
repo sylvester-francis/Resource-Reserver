@@ -158,6 +158,10 @@ describe('useAuth Hook', () => {
             vi.mocked(api.get).mockResolvedValueOnce({
                 data: { id: 1, username: 'testuser' },
             });
+            // Mock logout API call
+            vi.mocked(api.post).mockResolvedValueOnce({
+                data: { message: 'Successfully logged out', revoked_tokens: 1 },
+            });
 
             // Mock window.location
             const originalLocation = window.location;
@@ -172,8 +176,9 @@ describe('useAuth Hook', () => {
                 expect(result.current.isAuthenticated).toBe(true);
             });
 
-            act(() => {
-                result.current.logout();
+            // logout is now async
+            await act(async () => {
+                await result.current.logout();
             });
 
             expect(result.current.user).toBe(null);
