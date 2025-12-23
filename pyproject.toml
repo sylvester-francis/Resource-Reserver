@@ -23,7 +23,7 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
     "sqlalchemy>=2.0.0",
-    "pydantic>=2.11.0",
+    "pydantic==2.9.2",
     "typer>=0.16.0",
     "rich>=14.0.0",
     "bcrypt>=3.2.0",
@@ -53,6 +53,10 @@ dev = [
 
 [project.scripts]
 resource-reserver-cli = "cli.main:app"
+
+[tool.setuptools.packages.find]
+include = ["app*", "cli*"]
+exclude = ["tests*", "data*", "screenshots*"]
 
 [tool.ruff]
 target-version = "py311"
