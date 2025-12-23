@@ -8,6 +8,14 @@ export interface User {
   mfa_enabled: boolean;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  next_cursor?: string | null;
+  prev_cursor?: string | null;
+  has_more: boolean;
+  total_count?: number | null;
+}
+
 export interface Resource {
   id: number;
   name: string;

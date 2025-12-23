@@ -58,7 +58,8 @@ class TestResources:
         response = client.get(f"{API_V1}/resources")
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        payload = response.json()
+        data = payload["data"]
         assert isinstance(data, list)
         assert len(data) >= 1
 
@@ -71,7 +72,8 @@ class TestResources:
         response = client.get(f"{API_V1}/resources/search?q=conference")
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        payload = response.json()
+        data = payload["data"]
         assert isinstance(data, list)
 
         # Should find the test resource
@@ -87,7 +89,8 @@ class TestResources:
         response = client.get(f"{API_V1}/resources/search?available_only=true")
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        payload = response.json()
+        data = payload["data"]
         assert isinstance(data, list)
 
         # All returned resources should be available
@@ -111,7 +114,8 @@ class TestResources:
         response = client.get(f"{API_V1}/resources/search", params=params)
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        payload = response.json()
+        data = payload["data"]
         assert isinstance(data, list)
 
     def test_search_resources_invalid_time_range(self, client):
@@ -166,3 +170,41 @@ class TestResources:
 
         response = client.post(f"{API_V1}/resources/upload", files=files)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_list_resources_pagination(self, client, auth_headers):
+        """Test cursor pagination for resources"""
+        for idx in range(3):
+            client.post(
+                f"{API_V1}/resources",
+                json={
+                    "name": f"Paged Resource {idx}",
+                    "tags": ["paging"],
+                    "available": True,
+                },
+                headers=auth_headers,
+            )
+
+        first_page = client.get(
+            f"{API_V1}/resources",
+            params={"limit": 2, "sort_by": "id", "sort_order": "asc"},
+        )
+        assert first_page.status_code == status.HTTP_200_OK
+        payload = first_page.json()
+        assert len(payload["data"]) == 2
+        assert payload["has_more"] is True
+        assert payload["next_cursor"]
+
+        second_page = client.get(
+            f"{API_V1}/resources",
+            params={
+                "limit": 2,
+                "sort_by": "id",
+                "sort_order": "asc",
+                "cursor": payload["next_cursor"],
+            },
+        )
+        assert second_page.status_code == status.HTTP_200_OK
+        payload_next = second_page.json()
+        ids_first = {item["id"] for item in payload["data"]}
+        ids_next = {item["id"] for item in payload_next["data"]}
+        assert ids_first.isdisjoint(ids_next)

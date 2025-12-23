@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import api from '@/lib/api';
 import { formatDateTime } from '@/lib/date';
-import type { Resource, Reservation } from '@/types';
+import type { PaginatedResponse, Reservation } from '@/types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,7 +39,6 @@ export default function DashboardClient() {
     const router = useRouter();
     const { user, loading: authLoading, logout, isAuthenticated } = useAuth();
 
-    const [resources, setResources] = useState<Resource[]>([]);
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [stats, setStats] = useState<Stats>({
         totalResources: 0,
@@ -52,29 +51,48 @@ export default function DashboardClient() {
     const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
 
     const fetchData = useCallback(async () => {
+        const fetchActiveReservations = async () => {
+            const allReservations: Reservation[] = [];
+            let cursor: string | null = null;
+            let hasMore = true;
+
+            while (hasMore) {
+                const { data: payload }: { data: PaginatedResponse<Reservation> } = await api.get(
+                    '/reservations/my',
+                    {
+                        params: {
+                            limit: 100,
+                            cursor,
+                            sort_by: 'start_time',
+                            sort_order: 'asc',
+                        },
+                    }
+                );
+                const data = Array.isArray(payload?.data) ? payload.data : [];
+                allReservations.push(...data);
+                cursor = payload?.next_cursor ?? null;
+                hasMore = Boolean(payload?.has_more);
+            }
+
+            return allReservations;
+        };
+
         try {
-            const [allResourcesRes, availableResourcesRes, reservationsRes] = await Promise.all([
-                api.get('/resources/search', { params: { status: 'all' } }),
-                api.get('/resources/search', { params: { status: 'available' } }),
-                api.get('/reservations/my'),
+            const [summaryRes, activeReservations] = await Promise.all([
+                api.get('/resources/availability/summary'),
+                fetchActiveReservations(),
             ]);
 
-            const allResources = Array.isArray(allResourcesRes.data) ? allResourcesRes.data : [];
-            const availableResources = Array.isArray(availableResourcesRes.data)
-                ? availableResourcesRes.data
-                : [];
-            const myReservations = Array.isArray(reservationsRes.data) ? reservationsRes.data : [];
-
-            setResources(allResources);
-            setReservations(myReservations);
-
+            const summary = summaryRes.data || {};
             const now = new Date();
-            const activeReservations = myReservations.filter(r => r.status === 'active');
-            const upcomingReservations = activeReservations.filter(r => new Date(r.start_time) > now);
+            const upcomingReservations = activeReservations.filter(
+                reservation => new Date(reservation.start_time) > now
+            );
 
+            setReservations(activeReservations);
             setStats({
-                totalResources: allResources.length,
-                availableResources: availableResources.length,
+                totalResources: summary.total_resources ?? 0,
+                availableResources: summary.available_now ?? 0,
                 activeReservations: activeReservations.length,
                 upcomingReservations: upcomingReservations.length,
             });
@@ -320,17 +338,17 @@ export default function DashboardClient() {
                     </TabsList>
 
                     <TabsContent value="resources">
-                        <ResourcesTab resources={resources} onRefresh={fetchData} />
+                        <ResourcesTab onRefresh={fetchData} />
                     </TabsContent>
 
                     <TabsContent value="reservations">
-                        <ReservationsTab reservations={reservations} onRefresh={fetchData} showAll />
+                        <ReservationsTab onRefresh={fetchData} showAll />
                     </TabsContent>
 
                     <TabsContent value="upcoming">
                         <ReservationsTab
-                            reservations={upcomingReservations}
                             onRefresh={fetchData}
+                            upcomingOnly
                             emptyMessage="No upcoming reservations"
                             emptyDescription="You don't have any upcoming reservations. Book a resource now to secure your spot."
                         />

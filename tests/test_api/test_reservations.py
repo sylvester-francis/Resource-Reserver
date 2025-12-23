@@ -124,7 +124,8 @@ class TestReservations:
         response = client.get(f"{API_V1}/reservations/my", headers=auth_headers)
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        payload = response.json()
+        data = payload["data"]
         assert isinstance(data, list)
         assert len(data) >= 1
 
@@ -215,3 +216,52 @@ class TestReservations:
         actions = [entry["action"] for entry in data]
         assert "created" in actions
         assert "cancelled" in actions
+
+    def test_reservations_pagination(
+        self, client, auth_headers, test_resource, future_datetime
+    ):
+        """Test cursor pagination for reservations"""
+        start_time = future_datetime
+        for offset in range(4):
+            reservation_data = {
+                "resource_id": test_resource.id,
+                "start_time": (start_time + timedelta(hours=offset * 2)).isoformat(),
+                "end_time": (start_time + timedelta(hours=offset * 2 + 1)).isoformat(),
+            }
+            response = client.post(
+                f"{API_V1}/reservations",
+                json=reservation_data,
+                headers=auth_headers,
+            )
+            assert response.status_code == status.HTTP_201_CREATED
+
+        first_page = client.get(
+            f"{API_V1}/reservations/my",
+            headers=auth_headers,
+            params={
+                "limit": 2,
+                "sort_by": "start_time",
+                "sort_order": "asc",
+            },
+        )
+        assert first_page.status_code == status.HTTP_200_OK
+        payload = first_page.json()
+        assert len(payload["data"]) == 2
+        assert payload["has_more"] is True
+        assert payload["next_cursor"]
+
+        second_page = client.get(
+            f"{API_V1}/reservations/my",
+            headers=auth_headers,
+            params={
+                "limit": 2,
+                "sort_by": "start_time",
+                "sort_order": "asc",
+                "cursor": payload["next_cursor"],
+            },
+        )
+        assert second_page.status_code == status.HTTP_200_OK
+        payload_next = second_page.json()
+        ids_first = {item["id"] for item in payload["data"]}
+        ids_next = {item["id"] for item in payload_next["data"]}
+        assert ids_first.isdisjoint(ids_next)

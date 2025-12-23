@@ -439,19 +439,48 @@ def create_resource(
 
 @app.get(
     "/api/v1/resources",
-    response_model=list[schemas.ResourceResponse],
+    response_model=schemas.PaginatedResponse[schemas.ResourceResponse],
     tags=["Resources"],
 )
 @limiter.limit(settings.rate_limit_authenticated)
-def list_resources(request: Request, db: Session = Depends(get_db)):
+def list_resources(
+    request: Request,
+    cursor: str | None = Query(None, description="Pagination cursor"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: str = Query("name", description="Sort by: id, name, status"),
+    sort_order: str = Query("asc", description="Sort order: asc, desc"),
+    include_total: bool = Query(False, description="Include total count"),
+    db: Session = Depends(get_db),
+):
     """List all resources."""
     resource_service = ResourceService(db)
-    return resource_service.get_all_resources()
+    pagination = schemas.PaginationParams(
+        cursor=cursor, limit=limit, sort_by=sort_by, sort_order=sort_order
+    )
+
+    try:
+        resources, next_cursor, has_more, total_count = (
+            resource_service.get_resources_paginated(
+                pagination=pagination, include_total=include_total
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    return schemas.PaginatedResponse(
+        data=resources,
+        next_cursor=next_cursor,
+        prev_cursor=None,
+        has_more=has_more,
+        total_count=total_count,
+    )
 
 
 @app.get(
     "/api/v1/resources/search",
-    response_model=list[schemas.ResourceResponse],
+    response_model=schemas.PaginatedResponse[schemas.ResourceResponse],
     tags=["Resources"],
 )
 @limiter.limit(settings.rate_limit_authenticated)
@@ -472,6 +501,12 @@ def search_resources(
     available_until: datetime | None = Query(
         None, description="Check availability until this time"
     ),
+    tags: list[str] | None = Query(None, description="Filter by tags"),
+    cursor: str | None = Query(None, description="Pagination cursor"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: str = Query("name", description="Sort by: id, name, status"),
+    sort_order: str = Query("asc", description="Sort order: asc, desc"),
+    include_total: bool = Query(False, description="Include total count"),
     db: Session = Depends(get_db),
 ):
     """Search resources with optional time-based availability filtering."""
@@ -508,8 +543,32 @@ def search_resources(
         final_status_filter = "available"
 
     resource_service = ResourceService(db)
-    return resource_service.search_resources(
-        q, final_status_filter, available_from, available_until
+    pagination = schemas.PaginationParams(
+        cursor=cursor, limit=limit, sort_by=sort_by, sort_order=sort_order
+    )
+    try:
+        resources, next_cursor, has_more, total_count = (
+            resource_service.get_resources_paginated(
+                pagination=pagination,
+                query=q,
+                status_filter=final_status_filter,
+                available_from=available_from,
+                available_until=available_until,
+                tags=tags,
+                include_total=include_total,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    return schemas.PaginatedResponse(
+        data=resources,
+        next_cursor=next_cursor,
+        prev_cursor=None,
+        has_more=has_more,
+        total_count=total_count,
     )
 
 
@@ -774,7 +833,7 @@ def create_reservation(
 
 @app.get(
     "/api/v1/reservations/my",
-    response_model=list[schemas.ReservationResponse],
+    response_model=schemas.PaginatedResponse[schemas.ReservationResponse],
     tags=["Reservations"],
 )
 @limiter.limit(settings.rate_limit_authenticated)
@@ -783,12 +842,42 @@ def get_my_reservations(
     include_cancelled: bool = Query(
         False, description="Include cancelled reservations"
     ),
+    cursor: str | None = Query(None, description="Pagination cursor"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: str = Query(
+        "start_time", description="Sort by: id, start_time, end_time, created_at"
+    ),
+    sort_order: str = Query("desc", description="Sort order: asc, desc"),
+    include_total: bool = Query(False, description="Include total count"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     """Get current user's reservations."""
     reservation_service = ReservationService(db)
-    return reservation_service.get_user_reservations(current_user.id, include_cancelled)
+    pagination = schemas.PaginationParams(
+        cursor=cursor, limit=limit, sort_by=sort_by, sort_order=sort_order
+    )
+    try:
+        reservations, next_cursor, has_more, total_count = (
+            reservation_service.get_user_reservations_paginated(
+                current_user.id,
+                include_cancelled=include_cancelled,
+                pagination=pagination,
+                include_total=include_total,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    return schemas.PaginatedResponse(
+        data=reservations,
+        next_cursor=next_cursor,
+        prev_cursor=None,
+        has_more=has_more,
+        total_count=total_count,
+    )
 
 
 @app.post("/api/v1/reservations/{reservation_id}/cancel", tags=["Reservations"])

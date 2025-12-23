@@ -31,6 +31,12 @@ interface HistoryEntry {
     details?: string;
 }
 
+const HISTORY_DATE_PATTERN =
+    /\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?/g;
+
+const formatHistoryDetails = (details: string) =>
+    details.replace(HISTORY_DATE_PATTERN, (match) => formatDateTime(match, match));
+
 export function HistoryDialog({
     open,
     onOpenChange,
@@ -172,7 +178,9 @@ export function HistoryDialog({
                                                 {formatDateTime(entry.timestamp)}
                                             </div>
                                             {entry.details && (
-                                                <p className="mt-1 text-sm text-muted-foreground">{entry.details}</p>
+                                                <p className="mt-1 text-sm text-muted-foreground">
+                                                    {formatHistoryDetails(entry.details)}
+                                                </p>
                                             )}
                                         </div>
                                     </div>

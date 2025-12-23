@@ -2,7 +2,11 @@
 
 """Business logic layer with clear separation of concerns."""
 
+import base64
+import json
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -24,6 +28,64 @@ def ensure_timezone_aware(dt):
 def utcnow():
     """Get current UTC datetime that's timezone-aware."""
     return datetime.now(UTC)
+
+
+def _encode_cursor(sort_value: Any, record_id: int) -> str:
+    if isinstance(sort_value, datetime):
+        sort_value = sort_value.isoformat()
+    payload = {"v": sort_value, "id": record_id}
+    raw = json.dumps(payload).encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("utf-8")
+
+
+def _decode_cursor(cursor: str) -> tuple[Any, int]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode("utf-8")).decode("utf-8")
+        payload = json.loads(raw)
+        return payload["v"], int(payload["id"])
+    except (ValueError, KeyError, json.JSONDecodeError) as exc:
+        raise ValueError("Invalid cursor") from exc
+
+
+def _paginate_items(
+    items: list[Any],
+    sort_key: Callable[[Any], Any],
+    sort_order: str,
+    limit: int,
+    cursor: str | None,
+    value_parser: Callable[[Any], Any] | None = None,
+) -> tuple[list[Any], str | None, bool]:
+    reverse = sort_order == "desc"
+    sorted_items = sorted(
+        items, key=lambda item: (sort_key(item), item.id), reverse=reverse
+    )
+
+    if cursor:
+        cursor_value_raw, cursor_id = _decode_cursor(cursor)
+        cursor_value = (
+            value_parser(cursor_value_raw) if value_parser else cursor_value_raw
+        )
+
+        def is_after(item: Any) -> bool:
+            value = sort_key(item)
+            if reverse:
+                return value < cursor_value or (
+                    value == cursor_value and item.id < cursor_id
+                )
+            return value > cursor_value or (
+                value == cursor_value and item.id > cursor_id
+            )
+
+        sorted_items = [item for item in sorted_items if is_after(item)]
+
+    page_items = sorted_items[:limit]
+    has_more = len(sorted_items) > limit
+    next_cursor = (
+        _encode_cursor(sort_key(page_items[-1]), page_items[-1].id)
+        if has_more and page_items
+        else None
+    )
+    return page_items, next_cursor, has_more
 
 
 class ResourceService:
@@ -92,6 +154,7 @@ class ResourceService:
         status_filter: str = "available",
         available_from: datetime = None,
         available_until: datetime = None,
+        tags: list[str] | None = None,
     ) -> list[models.Resource]:
         """Search resources with optional time-based filtering and real-time availability."""  # noqa
 
@@ -113,6 +176,20 @@ class ResourceService:
             )
 
             for resource in resources:
+                if status_filter != "all":
+                    if status_filter == "available" and not resource.available:
+                        continue
+                    if status_filter == "unavailable" and resource.available:
+                        continue
+                    if status_filter == "in_use" and resource.status != "in_use":
+                        continue
+
+                if tags:
+                    tag_set = {tag.lower() for tag in tags}
+                    resource_tags = {tag.lower() for tag in (resource.tags or [])}
+                    if not tag_set.intersection(resource_tags):
+                        continue
+
                 if not self._has_conflict(resource.id, available_from, available_until):
                     # Set current availability for time-based search
                     resource.current_availability = True
@@ -138,7 +215,17 @@ class ResourceService:
         for resource in resources:
             # Apply status filter (use existing status, don't update it)
             if status_filter != "all":
-                if resource.status != status_filter:
+                if status_filter == "available" and not resource.available:
+                    continue
+                if status_filter == "unavailable" and resource.available:
+                    continue
+                if status_filter == "in_use" and resource.status != "in_use":
+                    continue
+
+            if tags:
+                tag_set = {tag.lower() for tag in tags}
+                resource_tags = {tag.lower() for tag in (resource.tags or [])}
+                if not tag_set.intersection(resource_tags):
                     continue
 
             # Apply text search filter
@@ -157,6 +244,52 @@ class ResourceService:
             filtered_resources.append(resource)
 
         return filtered_resources
+
+    def get_resources_paginated(
+        self,
+        pagination: schemas.PaginationParams,
+        query: str | None = None,
+        status_filter: str = "all",
+        available_from: datetime | None = None,
+        available_until: datetime | None = None,
+        tags: list[str] | None = None,
+        include_total: bool = False,
+    ) -> tuple[list[models.Resource], str | None, bool, int | None]:
+        resources = self.search_resources(
+            query=query,
+            status_filter=status_filter,
+            available_from=available_from,
+            available_until=available_until,
+            tags=tags,
+        )
+
+        total_count = len(resources) if include_total else None
+        sort_by = pagination.sort_by or "name"
+        sort_order = (pagination.sort_order or "asc").lower()
+
+        sort_options = {
+            "id": lambda r: r.id,
+            "name": lambda r: r.name.lower(),
+            "status": lambda r: r.status,
+            "created_at": lambda r: r.id,
+        }
+
+        if sort_order not in {"asc", "desc"}:
+            raise ValueError("Invalid sort_order. Must be 'asc' or 'desc'.")
+        if sort_by not in sort_options:
+            raise ValueError(
+                "Invalid sort_by. Must be one of: id, name, status, created_at."
+            )
+
+        page_items, next_cursor, has_more = _paginate_items(
+            resources,
+            sort_key=sort_options[sort_by],
+            sort_order=sort_order,
+            limit=pagination.limit,
+            cursor=pagination.cursor,
+        )
+
+        return page_items, next_cursor, has_more, total_count
 
     def _is_resource_currently_available(self, resource_id: int) -> bool:
         """Check if a resource is currently available (not in an active reservation)."""
@@ -573,6 +706,58 @@ class ReservationService:
             query = query.filter(models.Reservation.status == "active")
 
         return query.order_by(models.Reservation.start_time.desc()).all()
+
+    def get_user_reservations_paginated(
+        self,
+        user_id: int,
+        include_cancelled: bool,
+        pagination: schemas.PaginationParams,
+        include_total: bool = False,
+    ) -> tuple[list[models.Reservation], str | None, bool, int | None]:
+        reservations = self.get_user_reservations(user_id, include_cancelled)
+        total_count = len(reservations) if include_total else None
+
+        sort_by = pagination.sort_by or "start_time"
+        sort_order = (pagination.sort_order or "desc").lower()
+
+        sort_options = {
+            "id": lambda r: r.id,
+            "start_time": lambda r: ensure_timezone_aware(r.start_time),
+            "end_time": lambda r: ensure_timezone_aware(r.end_time),
+            "created_at": lambda r: ensure_timezone_aware(r.created_at),
+        }
+
+        if sort_order not in {"asc", "desc"}:
+            raise ValueError("Invalid sort_order. Must be 'asc' or 'desc'.")
+        if sort_by not in sort_options:
+            raise ValueError(
+                "Invalid sort_by. Must be one of: id, start_time, end_time, created_at."
+            )
+
+        def parse_datetime(value: Any) -> datetime:
+            if isinstance(value, datetime):
+                return value
+            try:
+                return ensure_timezone_aware(datetime.fromisoformat(str(value)))
+            except ValueError as exc:
+                raise ValueError("Invalid cursor value") from exc
+
+        value_parser = (
+            parse_datetime
+            if sort_by in {"start_time", "end_time", "created_at"}
+            else None
+        )
+
+        page_items, next_cursor, has_more = _paginate_items(
+            reservations,
+            sort_key=sort_options[sort_by],
+            sort_order=sort_order,
+            limit=pagination.limit,
+            cursor=pagination.cursor,
+            value_parser=value_parser,
+        )
+
+        return page_items, next_cursor, has_more, total_count
 
     def get_reservation_history(
         self, reservation_id: int
