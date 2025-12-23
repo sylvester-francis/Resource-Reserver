@@ -19,8 +19,26 @@ class APIClient:
     def __init__(self):
         self.base_url = config.api_url
         self.session = requests.Session()
+        # Wrap session.request to centralize error handling
+        self._raw_request = self.session.request
+        self.session.request = self._request_with_handling
         # Set default timeout for all requests
         self.session.timeout = 30
+
+    def _request_with_handling(self, method: str, url: str, **kwargs):
+        """Send an HTTP request with graceful error handling."""
+        try:
+            return self._raw_request(method, url, **kwargs)
+        except requests.exceptions.RequestException as exc:
+            # Surface as HTTPError so CLI handlers can display concise messages
+            if isinstance(exc, requests.exceptions.ConnectionError):
+                message = (
+                    f"Unable to reach API at {url}. "
+                    "Please ensure the server is running and reachable."
+                )
+            else:
+                message = str(exc)
+            raise requests.exceptions.HTTPError(message) from exc
 
     def _handle_response(self, response: requests.Response) -> dict[str, Any]:
         """Handle API response with proper error handling."""

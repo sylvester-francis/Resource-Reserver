@@ -343,6 +343,10 @@ def list_resources(
         if has_more and next_cursor:
             hint(f"More results available. Use --cursor '{next_cursor}' for next page.")
 
+    except requests.exceptions.ConnectionError as exc:
+        error("Unable to reach the API. Is the server running?")
+        hint(f"Tried: {config.api_url}")
+        raise typer.Exit(1) from exc
     except requests.exceptions.HTTPError as e:
         error(f"Failed to fetch resources: {e}")
         raise typer.Exit(1) from e
