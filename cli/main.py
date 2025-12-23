@@ -4,14 +4,17 @@ from pathlib import Path
 
 import requests
 import typer
-from rich import print
-from rich.console import Console
-from rich.table import Table
 
 from cli.auth_commands import mfa_app, oauth_app, role_app
-from cli.client import APIClient
+from cli.client import (
+    APIClient,
+    is_lockout_error,
+    is_password_policy_error,
+    parse_lockout_time,
+)
 from cli.config import config
 from cli.setup_commands import setup_app
+from cli.ui import console, error, hint, info, render_table, section, success, warning
 from cli.utils import (
     confirm_action,
     format_datetime,
@@ -24,11 +27,10 @@ from cli.utils import (
 
 # Initialize CLI app and API client
 app = typer.Typer(
-    help="Resource Reservation System CLI - Professional interface for resource management",  # noqa : E501
+    help="Resource Reservation System CLI - Professional interface for resource management",
     rich_markup_mode="rich",
 )
 client = APIClient()
-console = Console()
 
 # Authentication commands
 auth_app = typer.Typer(help="Authentication commands")
@@ -44,7 +46,7 @@ app.add_typer(setup_app, name="setup")
 @auth_app.command("register")
 def register():
     """Register a new user account."""
-    print("🔐 Create a new account")
+    section("Create a new account")
     username = typer.prompt("Username")
 
     while True:
@@ -53,43 +55,74 @@ def register():
 
         if password == confirm_password:
             break
-        print("❌ Passwords do not match. Please try again.")
+        warning("Passwords do not match. Please try again.")
 
     try:
         user = client.register(username, password)
-        print(
-            f"✅ Successfully registered user: [bold green]{user['username']}[/bold green]"  # noqa : E501
-        )
-        print("💡 You can now login with: [cyan]cli auth login[/cyan]")
+        success(f"Successfully registered user {user['username']}")
+        hint("Next: run `cli auth login` to sign in.")
     except requests.exceptions.HTTPError as e:
-        if "already" in str(e).lower():
-            print("❌ Username already exists. Please choose a different username.")  # noqa : E501
+        error_msg = str(e)
+        if "already" in error_msg.lower():
+            error("Username already exists. Please choose a different username.")
+        elif is_password_policy_error(error_msg):
+            error("Password does not meet requirements:")
+            # Split on semicolon to show each requirement
+            for msg in error_msg.split(";"):
+                msg = msg.strip()
+                if msg:
+                    hint(f"- {msg}")
+            hint("Expected: 8+ chars, upper/lower, digit, special character.")
         else:
-            print(f"❌ Registration failed: {e}")
+            error(f"Registration failed: {e}")
         raise typer.Exit(1) from e
 
 
 @auth_app.command("login")
 def login():
     """Login to your account."""
-    print("🔑 Login to your account")
+    section("Login to your account")
     username = typer.prompt("Username")
     password = getpass("Password: ")
 
     try:
-        token = client.login(username, password)
-        config.save_token(token)
-        print(f"✅ Welcome back, [bold green]{username}[/bold green]!")
+        token_data = client.login(username, password)
+        # Save both access token and refresh token
+        config.save_token(
+            access_token=token_data["access_token"],
+            refresh_token=token_data.get("refresh_token"),
+        )
+        success(f"Welcome back, {username}.")
     except requests.exceptions.HTTPError as e:
-        print("❌ Invalid username or password")
+        error_msg = str(e)
+        if is_lockout_error(error_msg):
+            lockout_time = parse_lockout_time(error_msg)
+            error("Account temporarily locked.")
+            if lockout_time:
+                minutes = lockout_time // 60
+                if minutes > 0:
+                    warning(f"Please try again in {minutes} minute(s).")
+                else:
+                    warning(f"Please try again in {lockout_time} second(s).")
+            else:
+                warning("Please try again later.")
+        else:
+            error("Invalid username or password.")
         raise typer.Exit(1) from e
 
 
 @auth_app.command("logout")
 def logout():
     """Logout from your account."""
-    config.clear_token()
-    print("👋 Successfully logged out")
+    try:
+        # Try to logout from server (revoke refresh tokens)
+        client.logout()
+        success("Successfully logged out. All sessions revoked.")
+    except Exception:
+        # If server logout fails, still clear local token
+        config.clear_token()
+        success("Successfully logged out.")
+        hint("Local tokens cleared; server revoke may not have completed.")
 
 
 @auth_app.command("status")
@@ -97,16 +130,51 @@ def auth_status():
     """Check authentication status."""
     token = config.load_token()
     if token:
-        print("✅ You are logged in")
+        success("You are logged in.")
+
+        # Check token expiry
+        if config.is_token_expired():
+            refresh_token = config.load_refresh_token()
+            if refresh_token:
+                warning("Access token expired, attempting refresh...")
+                try:
+                    client.refresh_access_token(refresh_token)
+                    success("Token refreshed successfully.")
+                except Exception as exc:
+                    error("Failed to refresh token. Please login again.")
+                    raise typer.Exit(1) from exc
+            else:
+                warning("Token expired. Please login again.")
+
         try:
             # Test the token by making a request
-            client.get_my_reservations()
-            print("🔗 Connection to API: [green]OK[/green]")
+            user_info = client.get_current_user()
+            info("Connection to API: OK")
+            info(f"User: {user_info.get('username', 'unknown')}")
+            if user_info.get("mfa_enabled"):
+                info("MFA: enabled")
         except Exception:
-            print("⚠️  Token may be expired. Please login again.")
+            warning("Token may be expired. Please login again.")
     else:
-        print("❌ You are not logged in")
-        print("💡 Use [cyan]cli auth login[/cyan] to sign in")
+        error("You are not logged in.")
+        hint("Use `cli auth login` to sign in.")
+
+
+@auth_app.command("refresh")
+def refresh_token():
+    """Manually refresh the access token."""
+    refresh = config.load_refresh_token()
+    if not refresh:
+        error("No refresh token available. Please login again.")
+        raise typer.Exit(1)
+
+    try:
+        client.refresh_access_token(refresh)
+        success("Token refreshed successfully.")
+    except requests.exceptions.HTTPError as e:
+        error(f"Failed to refresh token: {e}")
+        hint("Please login again with: cli auth login")
+        raise typer.Exit(1) from e
 
 
 # Resource commands
@@ -119,54 +187,119 @@ def list_resources(
     show_details: bool = typer.Option(
         False, "--details", "-d", help="Show detailed information"
     ),
+    limit: int = typer.Option(20, "--limit", "-l", help="Number of items per page"),
+    cursor: str | None = typer.Option(None, "--cursor", "-c", help="Pagination cursor"),
+    fetch_all: bool = typer.Option(False, "--all", "-a", help="Fetch all resources"),
+    sort_by: str = typer.Option(
+        "name", "--sort", "-s", help="Sort by: id, name, status"
+    ),
+    sort_order: str = typer.Option(
+        "asc", "--order", "-o", help="Sort order: asc, desc"
+    ),
 ):
     """List all available resources."""
     try:
-        resources = client.list_resources()
+        # Fetch all pages if requested
+        if fetch_all:
+            if not confirm_action(
+                "Fetch all resources? This may take a while for large datasets."
+            ):
+                warning("Operation cancelled.")
+                return
+            all_resources = []
+            current_cursor = None
+            page = 1
+            while True:
+                result = client.list_resources(
+                    cursor=current_cursor,
+                    limit=100,  # Max per page
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                )
+                all_resources.extend(result.get("data", []))
+                info(f"Fetched page {page} ({len(all_resources)} total)")
+                if not result.get("has_more"):
+                    break
+                current_cursor = result.get("next_cursor")
+                page += 1
+            resources = all_resources
+            next_cursor = None
+            has_more = False
+            total_count = len(all_resources)
+        else:
+            result = client.list_resources(
+                cursor=cursor,
+                limit=limit,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                include_total=True,
+            )
+            resources = result.get("data", [])
+            next_cursor = result.get("next_cursor")
+            has_more = result.get("has_more", False)
+            total_count = result.get("total_count")
 
         if not resources:
-            print("📦 No resources found")
+            info("No resources found.")
             return
 
-        print(f"\n📦 [bold]Resources ({len(resources)} total)[/bold]")
-        print("─" * 50)
+        subtitle = (
+            f"showing {len(resources)} of {total_count}"
+            if total_count
+            else f"{len(resources)} item(s)"
+        )
+        section("Resources", subtitle=subtitle)
 
+        rows = []
         for resource in resources:
-            # Enhanced status display
-            base_status = "🟢 Enabled" if resource["available"] else "🔴 Disabled"
-
             # Show detailed status if available
             if "status" in resource:
-                status_icons = {"available": "🟢", "in_use": "🟡", "unavailable": "🔴"}
-                status_icon = status_icons.get(resource["status"], "❓")
                 status_text = resource["status"].replace("_", " ").title()
-                current_status = f"{status_icon} {status_text}"
+                current_status = status_text
             else:
                 # Fallback to old logic
                 current_status = (
-                    "🟢 Available"
+                    "Available"
                     if resource.get("current_availability", resource["available"])
-                    else "🔴 Unavailable"
+                    else "Unavailable"
                 )
 
-            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")
-            print(f"     │ Status: {current_status}")
+            tags = ", ".join(resource.get("tags", [])) if resource.get("tags") else "-"
+            base_text = "Enabled" if resource["available"] else "Disabled"
 
             if show_details:
-                print(f"     │ Base: {base_status}")
-                if resource.get("tags"):
-                    print(f"     │ Tags: {', '.join(resource['tags'])}")
+                rows.append(
+                    (
+                        resource["id"],
+                        resource["name"],
+                        current_status,
+                        base_text,
+                        tags,
+                    )
+                )
+            else:
+                rows.append((resource["id"], resource["name"], current_status, tags))
 
-            print()
+        columns = ["ID", "Name", "Status", "Tags"]
+        if show_details:
+            columns.insert(3, "Base")
+            render_table(columns, rows, title="Resources")
+            hint("Tags: shown in the table above.")
+        else:
+            render_table(columns, rows, title="Resources")
+
+        # Show pagination info
+        if has_more and next_cursor:
+            hint(f"More results available. Use --cursor '{next_cursor}' for next page.")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to fetch resources: {e}")
+        error(f"Failed to fetch resources: {e}")
         raise typer.Exit(1) from e
 
 
 @resource_app.command("search")
 def search_resources(
-    query: str | None = typer.Option(None, "--query", "-q", help="Search query"),  # noqa : E501
+    query: str | None = typer.Option(None, "--query", "-q", help="Search query"),
     available_from: str | None = typer.Option(
         None, "--from", help="Available from (YYYY-MM-DD HH:MM)"
     ),
@@ -179,17 +312,26 @@ def search_resources(
     interactive: bool = typer.Option(
         False, "--interactive", "-i", help="Interactive mode"
     ),
+    limit: int = typer.Option(20, "--limit", "-l", help="Number of items per page"),
+    cursor: str | None = typer.Option(None, "--cursor", "-c", help="Pagination cursor"),
+    sort_by: str = typer.Option(
+        "name", "--sort", "-s", help="Sort by: id, name, status"
+    ),
+    sort_order: str = typer.Option(
+        "asc", "--order", "-o", help="Sort order: asc, desc"
+    ),
 ):
     """Search for resources with advanced filtering."""
+    section("Search resources")
 
     # Interactive mode
     if interactive:
-        print("🔍 [bold]Interactive Resource Search[/bold]")
+        info("Interactive mode: press Enter to skip optional values.")
         query = prompt_for_optional("Search query (press Enter to skip)")
 
-        if typer.confirm("Check availability for specific time period?", default=False):  # noqa : E501
+        if typer.confirm("Check availability for specific time period?", default=False):
             available_from = typer.prompt("Available from (YYYY-MM-DD HH:MM)")
-            available_until = typer.prompt("Available until (YYYY-MM-DD HH:MM)")  # noqa : E501
+            available_until = typer.prompt("Available until (YYYY-MM-DD HH:MM)")
 
     # Parse datetime inputs
     start_time = None
@@ -197,7 +339,7 @@ def search_resources(
 
     if available_from or available_until:
         if not (available_from and available_until):
-            print("❌ Both --from and --until must be specified for time filtering")  # noqa : E501
+            error("Both --from and --until must be specified for time filtering.")
             raise typer.Exit(1)
 
         try:
@@ -205,51 +347,76 @@ def search_resources(
             end_time = parse_datetime(available_until)
 
             if end_time <= start_time:
-                print("❌ End time must be after start time")
+                error("End time must be after start time.")
                 raise typer.Exit(1)
 
         except ValueError as e:
-            print(f"❌ {e}")
+            error(str(e))
             raise typer.Exit(1) from e
 
     try:
-        resources = client.search_resources(query, start_time, end_time, available_only)  # noqa : E501
+        result = client.search_resources(
+            query=query,
+            available_from=start_time,
+            available_until=end_time,
+            available_only=available_only,
+            cursor=cursor,
+            limit=limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            include_total=True,
+        )
+        resources = result.get("data", [])
+        next_cursor = result.get("next_cursor")
+        has_more = result.get("has_more", False)
+        total_count = result.get("total_count")
 
         if not resources:
             if start_time and end_time:
-                print(
-                    f"😞 No resources available from {format_datetime(start_time)} to {format_datetime(end_time)}"  # noqa : E501
+                info(
+                    f"No resources available from {format_datetime(start_time)} to {format_datetime(end_time)}."
                 )
             else:
-                print("😞 No resources found matching your search")
+                info("No resources found matching your search.")
             return
 
         # Display results
         if start_time and end_time:
             duration = format_duration(start_time, end_time)
-            print(f"\n✅ [bold]Found {len(resources)} resources available[/bold]")  # noqa : E501
-            print(
-                f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)} ({duration})"  # noqa : E501
-            )
+            subtitle = f"available window: {format_datetime(start_time)} to {format_datetime(end_time)} ({duration})"
         else:
-            print(f"\n🔍 [bold]Found {len(resources)} resources[/bold]")
+            subtitle = None
 
-        print("─" * 60)
+        result_count = (
+            f"showing {len(resources)} of {total_count}"
+            if total_count
+            else f"{len(resources)} match(es)"
+        )
+        section(
+            "Results",
+            subtitle=result_count if not subtitle else f"{result_count} | {subtitle}",
+        )
 
+        rows = []
         for resource in resources:
-            print(f"[cyan]{resource['id']:3}[/cyan] │ [bold]{resource['name']}[/bold]")  # noqa : E501
-            if resource.get("tags"):
-                print(f"     │ Tags: {', '.join(resource['tags'])}")
-            print()
+            status_text = resource.get("status", "available").replace("_", " ").title()
+            tags = ", ".join(resource.get("tags", [])) if resource.get("tags") else "-"
+            rows.append((resource["id"], resource["name"], status_text, tags))
+
+        render_table(["ID", "Name", "Status", "Tags"], rows, title="Resources")
+
+        # Show pagination info
+        if has_more and next_cursor:
+            hint(f"More results available. Use --cursor '{next_cursor}' for next page.")
 
         # Offer to make a reservation if time period was specified
         if start_time and end_time and resources:
-            if typer.confirm("Would you like to make a reservation?", default=False):  # noqa : E501
+            if typer.confirm("Would you like to make a reservation?", default=False):
                 resource_id = typer.prompt("Enter resource ID", type=int)
 
                 # Validate resource ID
                 if resource_id not in [r["id"] for r in resources]:
-                    print("❌ Invalid resource ID")
+                    error("Invalid resource ID.")
                     return
 
                 try:
@@ -260,141 +427,134 @@ def search_resources(
                         r for r in resources if r["id"] == resource_id
                     )
 
-                    print("🎉 [bold green]Reservation created![/bold green]")
-                    print(f"📋 ID: {reservation['id']}")
-                    print(f"🏢 Resource: {selected_resource['name']}")
-                    print(
-                        f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}"  # noqa : E501
+                    success("Reservation created.")
+                    info(f"ID: {reservation['id']}")
+                    info(f"Resource: {selected_resource['name']}")
+                    info(
+                        f"Time: {format_datetime(start_time)} to {format_datetime(end_time)}"
                     )
 
                 except requests.exceptions.HTTPError as e:
-                    print(f"❌ Failed to create reservation: {e}")
+                    error(f"Failed to create reservation: {e}")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Search failed: {e}")
+        error(f"Search failed: {e}")
         raise typer.Exit(1) from e
 
 
 @resource_app.command("availability")
 def resource_availability(
     resource_id: int = typer.Argument(..., help="Resource ID"),
-    days: int = typer.Option(7, "--days", "-d", help="Number of days to check ahead"),  # noqa : E501
-    detailed: bool = typer.Option(False, "--detailed", help="Show detailed schedule"),  # noqa : E501
+    days: int = typer.Option(7, "--days", "-d", help="Number of days to check ahead"),
+    detailed: bool = typer.Option(False, "--detailed", help="Show detailed schedule"),
 ):
     """Get availability schedule for a resource."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     try:
         availability = client.get_resource_availability(resource_id, days)
 
-        print(f"\n📅 [bold]Availability for {availability['resource_name']}[/bold]")  # noqa : E501
-        print(f"🆔 Resource ID: {availability['resource_id']}")
-        print(
-            f"🕐 Current time: {format_datetime(datetime.fromisoformat(availability['current_time'].replace('Z', '')))}"  # noqa : E501
+        section(f"Availability for {availability['resource_name']}")
+        info(f"Resource ID: {availability['resource_id']}")
+        info(
+            f"Current time: {format_datetime(datetime.fromisoformat(availability['current_time'].replace('Z', '')))}"
         )
 
         current_status = (
-            "🟢 Available"
-            if availability["is_currently_available"]
-            else "🔴 Unavailable"
+            "Available" if availability["is_currently_available"] else "Unavailable"
         )
-        print(f"📊 Current status: {current_status}")
+        info(f"Current status: {current_status}")
 
-        base_status = "🟢 Enabled" if availability["base_available"] else "🔴 Disabled"  # noqa : E501
-        print(f"⚙️  Base setting: {base_status}")
+        base_status = "Enabled" if availability["base_available"] else "Disabled"
+        info(f"Base setting: {base_status}")
 
         reservations = availability.get("reservations", [])
         if reservations:
-            print(f"\n📋 [bold]Upcoming Reservations ({len(reservations)})[/bold]")  # noqa : E501
-            print("─" * 60)
+            section(f"Upcoming reservations ({len(reservations)})")
 
             for i, res in enumerate(reservations, 1):
-                start = datetime.fromisoformat(res["start_time"].replace("Z", ""))  # noqa : E501
+                start = datetime.fromisoformat(res["start_time"].replace("Z", ""))
                 end = datetime.fromisoformat(res["end_time"].replace("Z", ""))
                 duration = format_duration(start, end)
 
-                print(f"{i:2}. {format_datetime(start)} - {format_datetime(end)}")  # noqa : E501
-                print(f"    Duration: {duration} | Status: {res['status']}")
+                info(f"{i:2}. {format_datetime(start)} - {format_datetime(end)}")
+                hint(f"    Duration: {duration} | Status: {res['status']}")
                 if detailed:
-                    print(
-                        f"    Reservation ID: {res['id']} | User ID: {res['user_id']}"  # noqa : E501
-                    )
-                print()
+                    hint(f"    Reservation ID: {res['id']} | User ID: {res['user_id']}")
+                console.print()
         else:
-            print("\n🎉 No upcoming reservations - fully available!")
+            info("No upcoming reservations; resource is fully available.")
 
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Resource not found")
+            error("Resource not found.")
         else:
-            print(f"❌ Failed to get availability: {e}")
+            error(f"Failed to get availability: {e}")
         raise typer.Exit(1) from e
 
 
 @resource_app.command("enable")
 def enable_resource(
     resource_id: int = typer.Argument(..., help="Resource ID"),
-    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),  # noqa : E501
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ):
     """Enable a resource (for maintenance mode)."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     if not force:
         if not confirm_action(f"Enable resource {resource_id}?"):
-            print("Operation cancelled")
+            warning("Operation cancelled.")
             return
 
     try:
         result = client.update_resource_availability(resource_id, True)
-        print(
-            f"✅ [bold green]Resource {resource_id} enabled successfully[/bold green]"  # noqa : E501
-        )
-        print(f"🏢 Resource: {result['resource']['name']}")
+        success(f"Resource {resource_id} enabled successfully.")
+        info(f"Resource name: {result['resource']['name']}")
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Resource not found")
+            error("Resource not found.")
         else:
-            print(f"❌ Failed to enable resource: {e}")
+            error(f"Failed to enable resource: {e}")
         raise typer.Exit(1) from e
 
 
 @resource_app.command("disable")
 def disable_resource(
     resource_id: int = typer.Argument(..., help="Resource ID"),
-    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),  # noqa : E501
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ):
     """Disable a resource (for maintenance mode)."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     if not force:
         if not confirm_action(
-            f"Disable resource {resource_id}? This will prevent new reservations."  # noqa : E501
+            f"Disable resource {resource_id}? This will prevent new reservations."
         ):
-            print("Operation cancelled")
+            warning("Operation cancelled.")
             return
 
     try:
         result = client.update_resource_availability(resource_id, False)
-        print(f"✅ [bold orange1]Resource {resource_id} disabled[/bold orange1]")  # noqa : E501
-        print(f"🏢 Resource: {result['resource']['name']}")
-        print("ℹ️  Resource is now in maintenance mode")
+        success(f"Resource {resource_id} disabled.")
+        info(f"Resource: {result['resource']['name']}")
+        hint("Resource is now in maintenance mode.")
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Resource not found")
+            error("Resource not found.")
         else:
-            print(f"❌ Failed to disable resource: {e}")
+            error(f"Failed to disable resource: {e}")
         raise typer.Exit(1) from e
 
 
@@ -406,30 +566,28 @@ def resource_status(
     try:
         status_info = client.get_resource_status(resource_id)
 
-        print(f"\n📊 [bold]Status for {status_info['resource_name']}[/bold]")
-        print(f"🆔 Resource ID: {status_info['resource_id']}")
+        section(f"Status for {status_info['resource_name']}")
+        info(f"Resource ID: {status_info['resource_id']}")
         current_time = datetime.fromisoformat(
             status_info["current_time"].replace("Z", "")
         )
-        print(f"🕐 Current time: {format_datetime(current_time)}")
+        info(f"Current time: {format_datetime(current_time)}")
 
         # Base availability
-        base_status = "🟢 Enabled" if status_info["base_available"] else "🔴 Disabled"
-        print(f"⚙️  Base setting: {base_status}")
+        base_status = "Enabled" if status_info["base_available"] else "Disabled"
+        info(f"Base setting: {base_status}")
 
         # Current status
-        status_icons = {"available": "🟢", "in_use": "🟡", "unavailable": "🔴"}
-        status_icon = status_icons.get(status_info["status"], "❓")
         status_text = status_info["status"].replace("_", " ").title()
-        print(f"📊 Current status: {status_icon} {status_text}")
+        info(f"Current status: {status_text}")
 
         # Additional status info
         reservation_status = (
-            "✅ Yes" if status_info["is_available_for_reservation"] else "❌ No"
+            "Yes" if status_info["is_available_for_reservation"] else "No"
         )
-        print(f"🎯 Available for reservation: {reservation_status}")
-        in_use_status = "✅ Yes" if status_info["is_currently_in_use"] else "❌ No"
-        print(f"🔄 Currently in use: {in_use_status}")
+        info(f"Available for reservation: {reservation_status}")
+        in_use_status = "Yes" if status_info["is_currently_in_use"] else "No"
+        info(f"Currently in use: {in_use_status}")
 
         # Unavailable details
         if status_info["is_unavailable"] and "unavailable_since" in status_info:
@@ -438,16 +596,16 @@ def resource_status(
                     status_info["unavailable_since"].replace("Z", "")
                 )
             )
-            print("\n🔧 [bold]Maintenance Details:[/bold]")
-            print(f"📅 Unavailable since: {unavailable_since}")
+            section("Maintenance details")
+            info(f"Unavailable since: {unavailable_since}")
             reset_hours = status_info["hours_until_auto_reset"]
-            print(f"⏰ Auto-reset in: {reset_hours:.1f} hours")
+            info(f"Auto-reset in: {reset_hours:.1f} hours")
             config_hours = status_info["auto_reset_hours"]
-            print(f"⚙️  Auto-reset configured: {config_hours} hours")
+            info(f"Auto-reset configured: {config_hours} hours")
             if status_info.get("will_auto_reset"):
-                print("✅ Will automatically reset to available")
+                success("Will automatically reset to available.")
             else:
-                print("⚠️  Auto-reset period has passed")
+                warning("Auto-reset period has passed.")
 
         # Current reservation info
         if "current_reservation" in status_info:
@@ -458,16 +616,16 @@ def resource_status(
             end = format_datetime(
                 datetime.fromisoformat(res["end_time"].replace("Z", ""))
             )
-            print("\n🎯 [bold]Current Reservation:[/bold]")
-            print(f"📋 ID: {res['id']}")
-            print(f"👤 User ID: {res['user_id']}")
-            print(f"📅 Time: {start} to {end}")
+            section("Current reservation")
+            info(f"ID: {res['id']}")
+            info(f"User ID: {res['user_id']}")
+            info(f"Time: {start} to {end}")
 
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Resource not found")
+            error("Resource not found.")
         else:
-            print(f"❌ Failed to get resource status: {e}")
+            error(f"Failed to get resource status: {e}")
         raise typer.Exit(1) from e
 
 
@@ -483,11 +641,11 @@ def set_maintenance(
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     if auto_reset_hours < 1 or auto_reset_hours > 168:
-        print("❌ Auto-reset hours must be between 1 and 168 (1 week)")
+        error("Auto-reset hours must be between 1 and 168 (1 week).")
         raise typer.Exit(1)
 
     if not force:
@@ -495,23 +653,20 @@ def set_maintenance(
             f"Set resource {resource_id} to maintenance mode "
             f"(auto-reset in {auto_reset_hours} hours)?"
         ):
-            print("Operation cancelled")
+            warning("Operation cancelled.")
             return
 
     try:
         result = client.set_resource_unavailable(resource_id, auto_reset_hours)
-        print(
-            f"🔧 [bold orange1]Resource {resource_id} set to maintenance mode"
-            "[/bold orange1]"
-        )
-        print(f"🏢 Resource: {result['resource']['name']}")
-        print(f"⏰ Auto-reset in: {auto_reset_hours} hours")
-        print("ℹ️  Resource is now unavailable for new reservations")
+        success(f"Resource {resource_id} set to maintenance mode.")
+        info(f"Resource: {result['resource']['name']}")
+        info(f"Auto-reset in: {auto_reset_hours} hours")
+        hint("Resource is now unavailable for new reservations.")
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Resource not found")
+            error("Resource not found.")
         else:
-            print(f"❌ Failed to set maintenance mode: {e}")
+            error(f"Failed to set maintenance mode: {e}")
         raise typer.Exit(1) from e
 
 
@@ -524,31 +679,31 @@ def reset_resource(
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     if not force:
         if not confirm_action(f"Reset resource {resource_id} to available status?"):
-            print("Operation cancelled")
+            warning("Operation cancelled.")
             return
 
     try:
         result = client.reset_resource_to_available(resource_id)
-        print(f"✅ [bold green]Resource {resource_id} reset to available[/bold green]")
-        print(f"🏢 Resource: {result['resource']['name']}")
-        print("ℹ️  Resource is now available for reservations")
+        success(f"Resource {resource_id} reset to available.")
+        info(f"Resource: {result['resource']['name']}")
+        hint("Resource is now available for reservations.")
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Resource not found")
+            error("Resource not found.")
         else:
-            print(f"❌ Failed to reset resource: {e}")
+            error(f"Failed to reset resource: {e}")
         raise typer.Exit(1) from e
 
 
 @resource_app.command("create")
 def create_resource(
     name: str = typer.Argument(..., help="Resource name"),
-    tags: str | None = typer.Option("", "--tags", "-t", help="Comma-separated tags"),  # noqa : E501
+    tags: str | None = typer.Option("", "--tags", "-t", help="Comma-separated tags"),
     available: bool = typer.Option(
         True, "--available/--unavailable", help="Resource availability"
     ),
@@ -557,19 +712,19 @@ def create_resource(
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
-    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []  # noqa : E501
+    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []
 
     try:
         resource = client.create_resource(name, tag_list, available)
-        print(f"✅ [bold green]Created resource:[/bold green] {resource['name']}")  # noqa : E501
-        print(f"📋 ID: {resource['id']}")
+        success(f"Created resource: {resource['name']}")
+        info(f"ID: {resource['id']}")
         if tag_list:
-            print(f"🏷️  Tags: {', '.join(tag_list)}")
+            info(f"Tags: {', '.join(tag_list)}")
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to create resource: {e}")
+        error(f"Failed to create resource: {e}")
         raise typer.Exit(1) from e
 
 
@@ -584,17 +739,17 @@ def upload_resources(
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     # Validate file exists
     csv_file = Path(file_path)
     if not csv_file.exists():
-        print(f"❌ File not found: {file_path}")
+        error(f"File not found: {file_path}")
         raise typer.Exit(1)
 
     if not csv_file.suffix.lower() == ".csv":
-        print("❌ File must be a CSV file")
+        error("File must be a CSV file.")
         raise typer.Exit(1)
 
     # Preview option
@@ -604,38 +759,37 @@ def upload_resources(
 
             with open(csv_file) as f:
                 reader = csv.DictReader(f)
-                print(f"\n📄 [bold]Preview of {csv_file.name}:[/bold]")
-                print("─" * 50)
+                section(f"Preview of {csv_file.name}")
 
                 for i, row in enumerate(reader):
                     if i >= 5:  # Show first 5 rows
-                        print("... (showing first 5 rows)")
+                        hint("... (showing first 5 rows)")
                         break
-                    print(f"Row {i + 1}: {dict(row)}")
+                    info(f"Row {i + 1}: {dict(row)}")
 
                 if not typer.confirm("\nProceed with upload?", default=True):
-                    print("Upload cancelled")
+                    warning("Upload cancelled.")
                     return
         except Exception as e:
-            print(f"❌ Error reading file: {e}")
+            error(f"Error reading file: {e}")
             raise typer.Exit(1) from e
 
     try:
-        print(f"📤 Uploading {csv_file.name}...")
+        info(f"Uploading {csv_file.name}...")
         result = client.upload_resources_csv(str(csv_file))
 
-        print("✅ [bold green]Upload completed![/bold green]")
-        print(f"📊 Created: {result['created_count']} resources")
+        success("Upload completed.")
+        info(f"Created: {result['created_count']} resources")
 
         if "errors" in result and result["errors"]:
-            print(f"⚠️  Errors: {len(result['errors'])}")
-            for error in result["errors"][:3]:  # Show first 3 errors
-                print(f"   • {error}")
+            warning(f"Errors: {len(result['errors'])}")
+            for err_msg in result["errors"][:3]:  # Show first 3 errors
+                hint(f"- {err_msg}")
             if len(result["errors"]) > 3:
-                print(f"   ... and {len(result['errors']) - 3} more")
+                hint(f"... and {len(result['errors']) - 3} more")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Upload failed: {e}")
+        error(f"Upload failed: {e}")
         raise typer.Exit(1) from e
 
 
@@ -647,59 +801,50 @@ app.add_typer(system_app, name="system")
 @system_app.command("status")
 def system_status():
     """Check system status and connectivity."""
-    print("🔍 [bold]System Status Check[/bold]")
-    print("─" * 40)
+    section("System Status Check")
 
     # Check API connectivity
     try:
         health = client.health_check()
-        print("🌐 API Connection: [green]✅ OK[/green]")
-        print(f"📊 API Status: {health.get('status', 'unknown')}")
+        success("API Connection: OK")
+        info(f"API status: {health.get('status', 'unknown')}")
+        info(f"Version: {health.get('version', 'unknown')}")
 
         if "timestamp" in health:
-            api_time = datetime.fromisoformat(health["timestamp"].replace("Z", ""))  # noqa : E501
-            print(f"🕐 API Time: {format_datetime(api_time)}")
+            api_time = datetime.fromisoformat(health["timestamp"].replace("Z", ""))
+            info(f"API time: {format_datetime(api_time)}")
 
         # Show background task status if available
         if "background_tasks" in health:
             tasks = health["background_tasks"]
             for task_name, task_status in tasks.items():
-                status_emoji = {
-                    "running": "🟢",
-                    "completed": "✅",
-                    "failed": "❌",
-                    "cancelled": "⏹️",
-                    "not_started": "⏸️",
-                }.get(task_status, "❓")
-                print(f"🔧 {task_name}: {status_emoji} {task_status}")
+                info(f"Task {task_name}: {task_status}")
 
     except requests.exceptions.HTTPError as e:
-        print("🌐 API Connection: [red]❌ Failed[/red]")
-        print(f"   Error: {e}")
+        error("API Connection: Failed.")
+        hint(f"Error: {e}")
         return
     except Exception as e:
-        print("🌐 API Connection: [red]❌ Error[/red]")
-        print(f"   Error: {e}")
+        error("API Connection: Error.")
+        hint(f"Error: {e}")
         return
 
     # Check authentication
     token = config.load_token()
     if token:
         try:
-            client.get_my_reservations()
-            print("🔐 Authentication: [green]✅ Valid[/green]")
+            client.get_current_user()
+            success("Authentication valid.")
         except requests.exceptions.HTTPError:
-            print("🔐 Authentication: [yellow]⚠️ Token expired[/yellow]")
-            print("   Use: [cyan]cli auth login[/cyan]")
+            warning("Authentication token expired. Use `cli auth login`.")
         except Exception:
-            print("🔐 Authentication: [red]❌ Error[/red]")
+            error("Authentication check failed.")
     else:
-        print("🔐 Authentication: [red]❌ Not logged in[/red]")
-        print("   Use: [cyan]cli auth login[/cyan]")
+        warning("Not logged in. Use `cli auth login`.")
 
     # Check configuration
-    print(f"⚙️  API URL: {config.api_url}")
-    print(f"📁 Config Dir: {config.config_dir}")
+    info(f"API URL: {config.api_url}")
+    info(f"Config Dir: {config.config_dir}")
 
 
 @system_app.command("summary")
@@ -708,14 +853,7 @@ def availability_summary():
     try:
         summary = client.get_availability_summary()
 
-        print("\n📊 [bold]System Availability Summary[/bold]")
-        print("═" * 50)
-
-        # Create a nice table
-        table = Table(show_header=True, header_style="bold blue")
-        table.add_column("Metric", style="cyan")
-        table.add_column("Count", style="green", justify="right")
-        table.add_column("Percentage", style="yellow", justify="right")
+        section("System Availability Summary")
 
         total = summary["total_resources"]
         available = summary["available_now"]
@@ -727,19 +865,25 @@ def availability_summary():
         unavail_pct = (unavailable / total * 100) if total > 0 else 0
         usage_pct = (in_use / total * 100) if total > 0 else 0
 
-        table.add_row("Total Resources", str(total), "100%")
-        table.add_row("Available Now", str(available), f"{avail_pct:.1f}%")
-        table.add_row("Unavailable", str(unavailable), f"{unavail_pct:.1f}%")
-        table.add_row("Currently In Use", str(in_use), f"{usage_pct:.1f}%")
+        rows = [
+            ("Total Resources", total, "100%"),
+            ("Available Now", available, f"{avail_pct:.1f}%"),
+            ("Unavailable", unavailable, f"{unavail_pct:.1f}%"),
+            ("Currently In Use", in_use, f"{usage_pct:.1f}%"),
+        ]
 
-        console.print(table)
+        render_table(
+            ["Metric", "Count", "Percentage"],
+            rows,
+            title="Availability",
+        )
 
         # Show timestamp
-        timestamp = datetime.fromisoformat(summary["timestamp"].replace("Z", ""))  # noqa : E501
-        print(f"\n🕐 Last updated: {format_datetime(timestamp)}")
+        timestamp = datetime.fromisoformat(summary["timestamp"].replace("Z", ""))
+        hint(f"Last updated: {format_datetime(timestamp)}")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to get summary: {e}")
+        error(f"Failed to get summary: {e}")
         raise typer.Exit(1) from e
 
 
@@ -749,41 +893,52 @@ def manual_cleanup():
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     if not confirm_action("Trigger manual cleanup of expired reservations?"):
-        print("Cleanup cancelled")
+        warning("Cleanup cancelled.")
         return
 
     try:
         result = client.manual_cleanup_expired()
-        print("✅ [bold green]Cleanup completed![/bold green]")
-        print(f"🧹 Cleaned up: {result['expired_count']} expired reservations")
+        success("Cleanup completed.")
+        info(f"Cleaned up: {result['expired_count']} expired reservations")
 
         if result["expired_count"] == 0:
-            print("🎉 No expired reservations found - system is clean!")
+            info("No expired reservations found.")
 
-        timestamp = datetime.fromisoformat(result["timestamp"].replace("Z", ""))  # noqa : E501
-        print(f"🕐 Completed at: {format_datetime(timestamp)}")
+        timestamp = datetime.fromisoformat(result["timestamp"].replace("Z", ""))
+        hint(f"Completed at: {format_datetime(timestamp)}")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Cleanup failed: {e}")
+        error(f"Cleanup failed: {e}")
         raise typer.Exit(1) from e
 
 
 @system_app.command("config")
 def show_config():
     """Show current configuration."""
-    print("⚙️  [bold]Current Configuration[/bold]")
-    print("─" * 40)
-    print(f"API URL: {config.api_url}")
-    print(f"Config Directory: {config.config_dir}")
-    print(f"Token File: {config.token_file}")
-    print(f"Authenticated: {'Yes' if config.load_token() else 'No'}")
+    section("Current Configuration")
+    info(f"API URL: {config.api_url}")
+    info(f"Base URL: {config.base_url}")
+    info(f"API Version: {config.API_VERSION}")
+    info(f"Config Directory: {config.config_dir}")
+    info(f"Token File: {config.token_file}")
+    info(f"Authenticated: {'Yes' if config.load_token() else 'No'}")
+    if config.load_token():
+        info(
+            f"Refresh Token: {'Available' if config.load_refresh_token() else 'Not available'}"
+        )
+        if config.is_token_expired():
+            warning("Token status: expired.")
+        else:
+            expiry = config.get_token_expiry_time()
+            if expiry:
+                info(f"Token Expires: {format_datetime(expiry)}")
 
 
-# Reservation commands (keeping existing ones but adding new features)
+# Reservation commands
 reservation_app = typer.Typer(help="Reservation management commands")
 app.add_typer(reservation_app, name="reservations")
 
@@ -795,12 +950,27 @@ def create_reservation(
     end: str | None = typer.Argument(
         None, help="End time (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"
     ),
+    recurrence: str | None = typer.Option(
+        None, "--recurrence", "-r", help="Recurrence: daily, weekly, monthly"
+    ),
+    days: str | None = typer.Option(
+        None,
+        "--days",
+        "-d",
+        help="Days for weekly recurrence (e.g., 1,3,5 for Mon,Wed,Fri)",
+    ),
+    recurrence_end: str | None = typer.Option(
+        None, "--recurrence-end", help="End date (YYYY-MM-DD) or count (e.g., 10)"
+    ),
+    recurrence_count: int | None = typer.Option(
+        None, "--recurrence-count", "-n", help="Number of occurrences (default: 5)"
+    ),
 ):
-    """Create a new reservation."""
+    """Create a new reservation (supports recurring reservations)."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     try:
@@ -817,8 +987,8 @@ def create_reservation(
                     duration = parse_duration(end)
                     end_time = start_time + duration
                 except ValueError as e:
-                    print(
-                        "❌ End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"  # noqa : E501
+                    error(
+                        "End time must be a datetime (YYYY-MM-DD HH:MM) or duration (e.g., 2h, 30m)"
                     )
                     raise typer.Exit(1) from e
         else:
@@ -833,38 +1003,112 @@ def create_reservation(
                     duration = parse_duration(end_input)
                     end_time = start_time + duration
                 except ValueError as e:
-                    print("❌ Invalid end time or duration format")
+                    error("Invalid end time or duration format.")
                     raise typer.Exit(1) from e
 
         if end_time <= start_time:
-            print("❌ End time must be after start time")
+            error("End time must be after start time.")
             raise typer.Exit(1)
 
     except ValueError as e:
-        print(f"❌ {e}")
+        error(str(e))
         raise typer.Exit(1) from e
 
     try:
-        reservation = client.create_reservation(resource_id, start_time, end_time)  # noqa : E501
-        duration = format_duration(start_time, end_time)
+        # Handle recurring reservation
+        if recurrence:
+            # Parse recurrence settings
+            frequency = recurrence.lower()
+            if frequency not in ["daily", "weekly", "monthly"]:
+                error("Recurrence must be: daily, weekly, or monthly.")
+                raise typer.Exit(1)
 
-        print("🎉 [bold green]Reservation created successfully![/bold green]")
-        print(f"📋 ID: {reservation['id']}")
-        print(f"🏢 Resource: {reservation['resource']['name']}")
-        print(f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}")  # noqa : E501
-        print(f"⏱️  Duration: {duration}")
+            # Parse days of week for weekly
+            days_of_week = None
+            if frequency == "weekly" and days:
+                try:
+                    days_of_week = [int(d.strip()) for d in days.split(",")]
+                    for d in days_of_week:
+                        if d < 0 or d > 6:
+                            raise ValueError("Days must be 0-6")
+                except ValueError as exc:
+                    error("Days must be comma-separated numbers 0-6 (0=Mon, 6=Sun).")
+                    raise typer.Exit(1) from exc
+
+            # Parse recurrence end
+            end_type = "after_count"
+            end_date = None
+            occurrence_count = recurrence_count or 5
+
+            if recurrence_end:
+                try:
+                    # Try to parse as date
+                    end_date = parse_datetime(recurrence_end + " 23:59")
+                    end_type = "on_date"
+                except ValueError:
+                    # Try to parse as count
+                    try:
+                        occurrence_count = int(recurrence_end)
+                        end_type = "after_count"
+                    except ValueError as exc_count:
+                        error(
+                            "Recurrence end must be a date (YYYY-MM-DD) or number of occurrences."
+                        )
+                        raise typer.Exit(1) from exc_count
+
+            # Create recurring reservation
+            reservations = client.create_recurring_reservation(
+                resource_id=resource_id,
+                start_time=start_time,
+                end_time=end_time,
+                frequency=frequency,
+                days_of_week=days_of_week,
+                end_type=end_type,
+                end_date=end_date,
+                occurrence_count=occurrence_count,
+            )
+
+            success(f"Created {len(reservations)} recurring reservations.")
+            info(f"Recurrence: {frequency}")
+            if days_of_week:
+                day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                info(f"Days: {', '.join(day_names[d] for d in days_of_week)}")
+
+            # Show first few reservations
+            section("Created reservations (first 5)")
+            for i, res in enumerate(reservations[:5], 1):
+                res_start = datetime.fromisoformat(res["start_time"].replace("Z", ""))
+                res_end = datetime.fromisoformat(res["end_time"].replace("Z", ""))
+                info(
+                    f"{i}. ID: {res['id']} | {format_datetime(res_start)} - {format_datetime(res_end)}"
+                )
+
+            if len(reservations) > 5:
+                hint(f"... and {len(reservations) - 5} more")
+
+        else:
+            # Create single reservation
+            reservation = client.create_reservation(resource_id, start_time, end_time)
+            duration = format_duration(start_time, end_time)
+
+            success("Reservation created successfully.")
+            info(f"ID: {reservation['id']}")
+            info(f"Resource: {reservation['resource']['name']}")
+            info(f"Time: {format_datetime(start_time)} to {format_datetime(end_time)}")
+            info(f"Duration: {duration}")
 
     except requests.exceptions.HTTPError as e:
-        if "conflicts" in str(e).lower():
-            print("❌ [red]Time slot conflicts with existing reservation[/red]")
-            print(
-                "💡 Use [cyan]cli resources search --from 'START' --until 'END'[/cyan] to find available times"  # noqa : E501
+        error_msg = str(e)
+        if "conflicts" in error_msg.lower():
+            error("Time slot conflicts with existing reservation.")
+            hint(
+                "Use `cli resources search --from 'START' --until 'END'` to find available times."
             )
-        elif "not found" in str(e).lower():
-            print("❌ Resource not found")
-            print("💡 Use [cyan]cli resources list[/cyan] to see available resources")  # noqa : E501
+        elif "not found" in error_msg.lower():
+            error("Resource not found.")
+            hint("Use `cli resources list` to see available resources.")
         else:
-            print(f"❌ Failed to create reservation: {e}")
+            error(f"Failed to create reservation: {e}")
         raise typer.Exit(1) from e
 
 
@@ -882,20 +1126,70 @@ def list_my_reservations(
     detailed: bool = typer.Option(
         False, "--detailed", "-d", help="Show detailed information"
     ),
+    limit: int = typer.Option(20, "--limit", "-l", help="Number of items per page"),
+    cursor: str | None = typer.Option(None, "--cursor", help="Pagination cursor"),
+    fetch_all: bool = typer.Option(False, "--all", "-a", help="Fetch all reservations"),
+    sort_by: str = typer.Option(
+        "start_time",
+        "--sort",
+        "-s",
+        help="Sort by: id, start_time, end_time, created_at",
+    ),
+    sort_order: str = typer.Option(
+        "desc", "--order", "-o", help="Sort order: asc, desc"
+    ),
 ):
     """List your reservations."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     try:
-        reservations = client.get_my_reservations(include_cancelled)
+        # Fetch all pages if requested
+        if fetch_all:
+            if not confirm_action("Fetch all reservations? This may take a while."):
+                warning("Operation cancelled.")
+                return
+            all_reservations = []
+            current_cursor = None
+            page = 1
+            while True:
+                result = client.get_my_reservations(
+                    include_cancelled=include_cancelled,
+                    cursor=current_cursor,
+                    limit=100,
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                )
+                all_reservations.extend(result.get("data", []))
+                info(f"Fetched page {page} ({len(all_reservations)} total)")
+                if not result.get("has_more"):
+                    break
+                current_cursor = result.get("next_cursor")
+                page += 1
+            reservations = all_reservations
+            next_cursor = None
+            has_more = False
+            total_count = len(all_reservations)
+        else:
+            result = client.get_my_reservations(
+                include_cancelled=include_cancelled,
+                cursor=cursor,
+                limit=limit,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                include_total=True,
+            )
+            reservations = result.get("data", [])
+            next_cursor = result.get("next_cursor")
+            has_more = result.get("has_more", False)
+            total_count = result.get("total_count")
 
         if not reservations:
-            print("📅 No reservations found")
-            print("💡 Create one with: [cyan]cli reservations create[/cyan]")
+            info("No reservations found.")
+            hint("Create one with: cli reservations create")
             return
 
         # Filter upcoming if requested
@@ -906,37 +1200,44 @@ def list_my_reservations(
             ]
 
         if not reservations:
-            print("📅 No upcoming reservations found")
+            info("No upcoming reservations found.")
             return
 
         # Group by status
-        active_reservations = [r for r in reservations if r["status"] == "active"]  # noqa : E501
-        cancelled_reservations = [r for r in reservations if r["status"] == "cancelled"]  # noqa : E501
+        active_reservations = [r for r in reservations if r["status"] == "active"]
+        cancelled_reservations = [r for r in reservations if r["status"] == "cancelled"]
 
-        print(f"\n📅 [bold]Your Reservations ({len(reservations)} total)[/bold]")  # noqa : E501
-        print("═" * 60)
+        if total_count:
+            section(
+                "Your Reservations",
+                subtitle=f"showing {len(reservations)} of {total_count}",
+            )
+        else:
+            section("Your Reservations", subtitle=f"{len(reservations)} total")
 
         # Show active reservations
         if active_reservations:
-            print(f"\n✅ [bold green]Active ({len(active_reservations)})[/bold green]")  # noqa : E501
-            print("─" * 40)
+            section(f"Active ({len(active_reservations)})")
 
             for reservation in active_reservations:
                 start = format_datetime(
-                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))
                 )
                 end = format_datetime(
-                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))
                 )
                 duration = format_duration(
-                    datetime.fromisoformat(reservation["start_time"].replace("Z", "")),  # noqa : E501
-                    datetime.fromisoformat(reservation["end_time"].replace("Z", "")),  # noqa : E501
+                    datetime.fromisoformat(reservation["start_time"].replace("Z", "")),
+                    datetime.fromisoformat(reservation["end_time"].replace("Z", "")),
                 )
 
-                print(
-                    f"[cyan]{reservation['id']:3}[/cyan] │ [bold]{reservation['resource']['name']}[/bold]"  # noqa : E501
+                info(
+                    f"{reservation['id']:3} │ {reservation['resource']['name']} | {start} to {end} ({duration})"
                 )
-                print(f"     │ {start} to {end} ({duration})")
+
+                # Show recurring info
+                if reservation.get("is_recurring_instance"):
+                    hint("    Part of recurring series")
 
                 if detailed:
                     created = format_datetime(
@@ -944,32 +1245,26 @@ def list_my_reservations(
                             reservation["created_at"].replace("Z", "")
                         )
                     )
-                    print(f"     │ Created: {created}")
-
-                print()
+                    hint(f"    Created: {created}")
 
         # Show cancelled reservations if requested
         if include_cancelled and cancelled_reservations:
-            print(
-                f"\n❌ [bold red]Cancelled ({len(cancelled_reservations)})[/bold red]"  # noqa : E501
-            )
-            print("─" * 40)
+            section(f"Cancelled ({len(cancelled_reservations)})")
 
             for reservation in cancelled_reservations:
                 start = format_datetime(
-                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["start_time"].replace("Z", ""))
                 )
                 end = format_datetime(
-                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))  # noqa : E501
+                    datetime.fromisoformat(reservation["end_time"].replace("Z", ""))
                 )
 
-                print(
-                    f"[cyan]{reservation['id']:3}[/cyan] │ [dim]{reservation['resource']['name']}[/dim]"  # noqa : E501
+                info(
+                    f"{reservation['id']:3} │ {reservation['resource']['name']} | {start} to {end}"
                 )
-                print(f"     │ [dim]{start} to {end}[/dim]")
 
                 if reservation.get("cancellation_reason"):
-                    print(f"     │ Reason: {reservation['cancellation_reason']}")  # noqa : E501
+                    hint(f"    Reason: {reservation['cancellation_reason']}")
 
                 if detailed and reservation.get("cancelled_at"):
                     cancelled = format_datetime(
@@ -977,12 +1272,14 @@ def list_my_reservations(
                             reservation["cancelled_at"].replace("Z", "")
                         )
                     )
-                    print(f"     │ Cancelled: {cancelled}")
+                    hint(f"    Cancelled: {cancelled}")
 
-                print()
+        # Show pagination info
+        if has_more and next_cursor:
+            hint(f"More results available. Use --cursor '{next_cursor}' for next page.")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to fetch reservations: {e}")
+        error(f"Failed to fetch reservations: {e}")
         raise typer.Exit(1) from e
 
 
@@ -992,50 +1289,50 @@ def cancel_reservation(
     reason: str | None = typer.Option(
         None, "--reason", "-r", help="Cancellation reason"
     ),
-    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt"),  # noqa : E501
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt"),
 ):
     """Cancel a reservation."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     # Get reservation details first for confirmation
     try:
-        reservations = client.get_my_reservations()
-        reservation = next((r for r in reservations if r["id"] == reservation_id), None)  # noqa : E501
+        result = client.get_my_reservations()
+        reservations = result.get("data", [])
+        reservation = next((r for r in reservations if r["id"] == reservation_id), None)
 
         if not reservation:
-            print(f"❌ Reservation {reservation_id} not found or not owned by you")  # noqa : E501
+            error(f"Reservation {reservation_id} not found or not owned by you.")
             raise typer.Exit(1)
 
         if reservation["status"] == "cancelled":
-            print(f"❌ Reservation {reservation_id} is already cancelled")
+            warning(f"Reservation {reservation_id} is already cancelled.")
             raise typer.Exit(1)
 
     except requests.exceptions.HTTPError:
-        # If we can't fetch details, proceed anyway (the API will handle validation) # noqa : E501
+        # If we can't fetch details, proceed anyway (the API will handle validation)
         reservation = None
 
     # Show confirmation with details if available
     if not force:
         if reservation:
             start = format_datetime(
-                datetime.fromisoformat(reservation["start_time"].replace("Z", ""))  # noqa : E501
+                datetime.fromisoformat(reservation["start_time"].replace("Z", ""))
             )
             end = format_datetime(
-                datetime.fromisoformat(reservation["end_time"].replace("Z", ""))  # noqa : E501
+                datetime.fromisoformat(reservation["end_time"].replace("Z", ""))
             )
 
-            print("\n📋 [bold]Reservation Details:[/bold]")
-            print(f"ID: {reservation_id}")
-            print(f"Resource: {reservation['resource']['name']}")
-            print(f"Time: {start} to {end}")
-            print()
+            section("Reservation details")
+            info(f"ID: {reservation_id}")
+            info(f"Resource: {reservation['resource']['name']}")
+            info(f"Time: {start} to {end}")
 
         if not confirm_action(f"Cancel reservation {reservation_id}?"):
-            print("Cancellation aborted")
+            warning("Cancellation aborted.")
             return
 
     # Prompt for reason if not provided
@@ -1043,23 +1340,21 @@ def cancel_reservation(
         reason = prompt_for_optional("Cancellation reason (optional)")
 
     try:
-        result = client.cancel_reservation(reservation_id, reason)  # noqa : F841
-        print(
-            f"✅ [bold green]Reservation {reservation_id} cancelled successfully[/bold green]"  # noqa : E501
-        )
+        result = client.cancel_reservation(reservation_id, reason)
+        success(f"Reservation {reservation_id} cancelled successfully.")
 
         if reason:
-            print(f"📝 Reason: {reason}")
+            info(f"Reason: {reason}")
 
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Reservation not found")
+            error("Reservation not found.")
         elif "only cancel your own" in str(e).lower():
-            print("❌ You can only cancel your own reservations")
+            error("You can only cancel your own reservations.")
         elif "already cancelled" in str(e).lower():
-            print("❌ Reservation is already cancelled")
+            warning("Reservation is already cancelled.")
         else:
-            print(f"❌ Failed to cancel reservation: {e}")
+            error(f"Failed to cancel reservation: {e}")
         raise typer.Exit(1) from e
 
 
@@ -1074,18 +1369,17 @@ def show_reservation_history(
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     try:
         history = client.get_reservation_history(reservation_id)
 
         if not history:
-            print(f"📋 No history found for reservation {reservation_id}")
+            info(f"No history found for reservation {reservation_id}.")
             return
 
-        print(f"\n📋 [bold]History for Reservation {reservation_id}[/bold]")
-        print("═" * 60)
+        section(f"History for Reservation {reservation_id}")
 
         for i, entry in enumerate(history):
             timestamp = format_datetime(
@@ -1096,30 +1390,377 @@ def show_reservation_history(
 
             # Color code actions
             if entry["action"] == "created":
-                action_colored = f"[green]✅ {action}[/green]"
+                action_colored = f"[green]{action}[/green]"
             elif entry["action"] == "cancelled":
-                action_colored = f"[red]❌ {action}[/red]"
+                action_colored = f"[red]{action}[/red]"
             elif entry["action"] == "updated":
-                action_colored = f"[yellow]📝 {action}[/yellow]"
+                action_colored = f"[yellow]{action}[/yellow]"
             else:
-                action_colored = f"[blue]📋 {action}[/blue]"
+                action_colored = f"[blue]{action}[/blue]"
 
-            print(f"{timestamp} │ {action_colored}")
+            console.print(f"{timestamp} │ {action_colored}")
             if details:
-                print(f"{'':19} │ {details}")
+                console.print(f"{'':19} │ {details}")
 
             if i < len(history) - 1:  # Don't add separator after last entry
-                print(f"{'':19} │")
+                console.print(f"{'':19} │")
 
     except requests.exceptions.HTTPError as e:
         if "not found" in str(e).lower():
-            print("❌ Reservation not found")
+            error("Reservation not found.")
         elif "access denied" in str(e).lower():
-            print(
-                "❌ Access denied - you can only view history for your own reservations"  # noqa : E501
+            error(
+                "Access denied - you can only view history for your own reservations."
             )
         else:
-            print(f"❌ Failed to fetch history: {e}")
+            error(f"Failed to fetch history: {e}")
+        raise typer.Exit(1) from e
+
+
+# Waitlist commands
+waitlist_app = typer.Typer(help="Waitlist management commands")
+app.add_typer(waitlist_app, name="waitlist")
+
+
+@waitlist_app.command("join")
+def join_waitlist(
+    resource_id: int = typer.Option(..., "--resource", "-r", help="Resource ID"),
+    start: str = typer.Option(
+        ..., "--start", "-s", help="Desired start time (YYYY-MM-DD HH:MM)"
+    ),
+    end: str = typer.Option(
+        ..., "--end", "-e", help="Desired end time (YYYY-MM-DD HH:MM)"
+    ),
+    flexible: bool = typer.Option(
+        False, "--flexible", "-f", help="Accept nearby time slots"
+    ),
+):
+    """Join the waitlist for a resource time slot."""
+    try:
+        config.get_auth_headers()
+    except ValueError as e:
+        error("Please login first: cli auth login")
+        raise typer.Exit(1) from e
+
+    try:
+        start_time = parse_datetime(start)
+        end_time = parse_datetime(end)
+
+        if end_time <= start_time:
+            error("End time must be after start time.")
+            raise typer.Exit(1)
+
+    except ValueError as e:
+        error(str(e))
+        raise typer.Exit(1) from e
+
+    try:
+        entry = client.join_waitlist(resource_id, start_time, end_time, flexible)
+
+        success("Successfully joined waitlist.")
+        info(f"Waitlist ID: {entry['id']}")
+        info(f"Resource ID: {entry['resource_id']}")
+        info(
+            f"Desired time: {format_datetime(start_time)} to {format_datetime(end_time)}"
+        )
+        info(f"Position: #{entry['position']}")
+        info(f"Flexible: {'Yes' if flexible else 'No'}")
+        hint("You'll be notified when a slot becomes available.")
+
+    except requests.exceptions.HTTPError as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            error("Resource not found.")
+        elif "already" in error_msg:
+            warning("You're already on the waitlist for this time slot.")
+        else:
+            error(f"Failed to join waitlist: {e}")
+        raise typer.Exit(1) from e
+
+
+@waitlist_app.command("leave")
+def leave_waitlist(
+    waitlist_id: int = typer.Argument(..., help="Waitlist entry ID"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+):
+    """Leave the waitlist (cancel a waitlist entry)."""
+    try:
+        config.get_auth_headers()
+    except ValueError as e:
+        error("Please login first: cli auth login")
+        raise typer.Exit(1) from e
+
+    if not force:
+        if not confirm_action(f"Leave waitlist entry {waitlist_id}?"):
+            warning("Operation cancelled.")
+            return
+
+    try:
+        result = client.leave_waitlist(waitlist_id)
+        success("Successfully left waitlist.")
+        info(f"Waitlist ID: {result['waitlist_id']}")
+
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            error("Waitlist entry not found.")
+        else:
+            error(f"Failed to leave waitlist: {e}")
+        raise typer.Exit(1) from e
+
+
+@waitlist_app.command("list")
+def list_waitlist_entries(
+    include_completed: bool = typer.Option(
+        False, "--include-completed", "-c", help="Include completed/expired entries"
+    ),
+    limit: int = typer.Option(20, "--limit", "-l", help="Number of items per page"),
+    cursor: str | None = typer.Option(None, "--cursor", help="Pagination cursor"),
+    sort_by: str = typer.Option(
+        "created_at", "--sort", "-s", help="Sort by: id, created_at, position"
+    ),
+    sort_order: str = typer.Option(
+        "desc", "--order", "-o", help="Sort order: asc, desc"
+    ),
+):
+    """List your waitlist entries."""
+    try:
+        config.get_auth_headers()
+    except ValueError as e:
+        error("Please login first: cli auth login")
+        raise typer.Exit(1) from e
+
+    try:
+        result = client.list_my_waitlist_entries(
+            cursor=cursor,
+            limit=limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            include_completed=include_completed,
+            include_total=True,
+        )
+        entries = result.get("data", [])
+        next_cursor = result.get("next_cursor")
+        has_more = result.get("has_more", False)
+        total_count = result.get("total_count")
+
+        if not entries:
+            info("No waitlist entries found.")
+            hint("Join with: cli waitlist join --resource ID --start TIME --end TIME")
+            return
+
+        if total_count:
+            section(
+                "Your Waitlist Entries",
+                subtitle=f"showing {len(entries)} of {total_count}",
+            )
+        else:
+            section("Your Waitlist Entries", subtitle=f"{len(entries)} total")
+
+        # Group by status
+        waiting = [e for e in entries if e["status"] == "waiting"]
+        offered = [e for e in entries if e["status"] == "offered"]
+        other = [e for e in entries if e["status"] not in ["waiting", "offered"]]
+
+        # Show offered first (action required)
+        if offered:
+            section(f"Offers available ({len(offered)})")
+            for entry in offered:
+                _display_waitlist_entry(entry, show_action=True)
+
+        # Show waiting
+        if waiting:
+            section(f"Waiting ({len(waiting)})")
+            for entry in waiting:
+                _display_waitlist_entry(entry)
+
+        # Show other statuses if included
+        if include_completed and other:
+            section(f"Completed/Expired ({len(other)})")
+            for entry in other:
+                _display_waitlist_entry(entry, dim=True)
+
+        # Show pagination info
+        if has_more and next_cursor:
+            hint(f"More results available. Use --cursor '{next_cursor}' for next page.")
+
+    except requests.exceptions.HTTPError as e:
+        error(f"Failed to fetch waitlist entries: {e}")
+        raise typer.Exit(1) from e
+
+
+def _display_waitlist_entry(entry: dict, show_action: bool = False, dim: bool = False):
+    """Helper to display a waitlist entry."""
+    start = format_datetime(
+        datetime.fromisoformat(entry["desired_start"].replace("Z", ""))
+    )
+    end = format_datetime(datetime.fromisoformat(entry["desired_end"].replace("Z", "")))
+
+    resource_name = entry.get("resource", {}).get(
+        "name", f"Resource #{entry['resource_id']}"
+    )
+
+    line_prefix = "[dim]" if dim else ""
+    line_suffix = "[/dim]" if dim else ""
+
+    console.print(f"{line_prefix}{entry['id']:3} │ {resource_name}{line_suffix}")
+    console.print(f"{line_prefix}    Desired: {start} to {end}{line_suffix}")
+    console.print(
+        f"{line_prefix}    Position: #{entry['position']} | Status: {entry['status']}{line_suffix}"
+    )
+
+    if entry.get("flexible_time"):
+        console.print(f"{line_prefix}    Flexible timing enabled{line_suffix}")
+
+    if show_action and entry["status"] == "offered":
+        if entry.get("offer_expires_at"):
+            expires = format_datetime(
+                datetime.fromisoformat(entry["offer_expires_at"].replace("Z", ""))
+            )
+            console.print(f"    Offer expires: {expires}")
+        console.print(f"    Accept with: cli waitlist accept {entry['id']}")
+
+
+@waitlist_app.command("status")
+def waitlist_status(
+    waitlist_id: int = typer.Argument(..., help="Waitlist entry ID"),
+):
+    """Get detailed status of a waitlist entry."""
+    try:
+        config.get_auth_headers()
+    except ValueError as e:
+        error("Please login first: cli auth login")
+        raise typer.Exit(1) from e
+
+    try:
+        entry = client.get_waitlist_entry(waitlist_id)
+
+        resource_name = entry.get("resource", {}).get(
+            "name", f"Resource #{entry['resource_id']}"
+        )
+
+        section(f"Waitlist Entry #{entry['id']}")
+        info(f"Resource: {resource_name}")
+
+        start = format_datetime(
+            datetime.fromisoformat(entry["desired_start"].replace("Z", ""))
+        )
+        end = format_datetime(
+            datetime.fromisoformat(entry["desired_end"].replace("Z", ""))
+        )
+        info(f"Desired time: {start} to {end}")
+
+        # Status with color
+        status_colors = {
+            "waiting": "[blue]Waiting[/blue]",
+            "offered": "[yellow]Offer Available[/yellow]",
+            "fulfilled": "[green]Fulfilled[/green]",
+            "expired": "[red]Expired[/red]",
+            "cancelled": "[dim]Cancelled[/dim]",
+        }
+        console.print(f"Status: {status_colors.get(entry['status'], entry['status'])}")
+        info(f"Position: #{entry['position']}")
+        info(f"Flexible: {'Yes' if entry['flexible_time'] else 'No'}")
+
+        created = format_datetime(
+            datetime.fromisoformat(entry["created_at"].replace("Z", ""))
+        )
+        info(f"Joined: {created}")
+
+        if entry.get("offered_at"):
+            offered = format_datetime(
+                datetime.fromisoformat(entry["offered_at"].replace("Z", ""))
+            )
+            info(f"Offered at: {offered}")
+
+        if entry.get("offer_expires_at"):
+            expires = format_datetime(
+                datetime.fromisoformat(entry["offer_expires_at"].replace("Z", ""))
+            )
+            info(f"Offer expires: {expires}")
+
+        if entry["status"] == "offered":
+            hint(f"Accept this offer with: cli waitlist accept {entry['id']}")
+
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            error("Waitlist entry not found.")
+        else:
+            error(f"Failed to get waitlist status: {e}")
+        raise typer.Exit(1) from e
+
+
+@waitlist_app.command("accept")
+def accept_waitlist_offer(
+    waitlist_id: int = typer.Argument(..., help="Waitlist entry ID"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+):
+    """Accept a waitlist offer and create a reservation."""
+    try:
+        config.get_auth_headers()
+    except ValueError as e:
+        error("Please login first: cli auth login")
+        raise typer.Exit(1) from e
+
+    # Get entry details for confirmation
+    try:
+        entry = client.get_waitlist_entry(waitlist_id)
+        if entry["status"] != "offered":
+            error(f"No active offer for waitlist entry {waitlist_id}.")
+            hint(f"Current status: {entry['status']}")
+            raise typer.Exit(1)
+    except requests.exceptions.HTTPError as e:
+        if "not found" in str(e).lower():
+            error("Waitlist entry not found.")
+        else:
+            error(f"Failed to get waitlist entry: {e}")
+        raise typer.Exit(1) from e
+
+    if not force:
+        resource_name = entry.get("resource", {}).get(
+            "name", f"Resource #{entry['resource_id']}"
+        )
+        start = format_datetime(
+            datetime.fromisoformat(entry["desired_start"].replace("Z", ""))
+        )
+        end = format_datetime(
+            datetime.fromisoformat(entry["desired_end"].replace("Z", ""))
+        )
+
+        section("Accept waitlist offer")
+        info(f"Resource: {resource_name}")
+        info(f"Time: {start} to {end}")
+
+        if not confirm_action("Accept this offer and create reservation?"):
+            warning("Operation cancelled.")
+            return
+
+    try:
+        reservation = client.accept_waitlist_offer(waitlist_id)
+
+        success("Reservation created from waitlist offer.")
+        info(f"Reservation ID: {reservation['id']}")
+        info(f"Resource: {reservation['resource']['name']}")
+
+        start = format_datetime(
+            datetime.fromisoformat(reservation["start_time"].replace("Z", ""))
+        )
+        end = format_datetime(
+            datetime.fromisoformat(reservation["end_time"].replace("Z", ""))
+        )
+        info(f"Time: {start} to {end}")
+
+    except requests.exceptions.HTTPError as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            error("Waitlist entry not found.")
+        elif "expired" in error_msg:
+            warning("This offer has expired.")
+        elif "no active offer" in error_msg:
+            error("No active offer for this waitlist entry.")
+        elif "conflict" in error_msg:
+            error("Time slot is no longer available.")
+        else:
+            error(f"Failed to accept offer: {e}")
         raise typer.Exit(1) from e
 
 
@@ -1128,13 +1769,13 @@ def show_reservation_history(
 def quick_reserve(
     resource_id: int = typer.Argument(..., help="Resource ID"),
     start: str = typer.Argument(..., help="Start time (YYYY-MM-DD HH:MM)"),
-    duration: str = typer.Argument(..., help="Duration (e.g., 2h, 30m, 1h30m)"),  # noqa : E501
+    duration: str = typer.Argument(..., help="Duration (e.g., 2h, 30m, 1h30m)"),
 ):
-    """Quick reserve command (shortcut for reservations create with duration)."""  # noqa : E501
+    """Quick reserve command (shortcut for reservations create with duration)."""
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     try:
@@ -1143,23 +1784,23 @@ def quick_reserve(
         end_time = start_time + duration_delta
 
     except ValueError as e:
-        print(f"❌ {e}")
+        error(str(e))
         raise typer.Exit(1) from e
 
     try:
-        reservation = client.create_reservation(resource_id, start_time, end_time)  # noqa : E501
+        reservation = client.create_reservation(resource_id, start_time, end_time)
 
-        print("🎉 [bold green]Quick reservation created![/bold green]")
-        print(f"📋 ID: {reservation['id']}")
-        print(f"🏢 Resource: {reservation['resource']['name']}")
-        print(f"📅 Time: {format_datetime(start_time)} to {format_datetime(end_time)}")  # noqa : E501
-        print(f"⏱️  Duration: {duration}")
+        success("Quick reservation created.")
+        info(f"ID: {reservation['id']}")
+        info(f"Resource: {reservation['resource']['name']}")
+        info(f"Time: {format_datetime(start_time)} to {format_datetime(end_time)}")
+        info(f"Duration: {duration}")
 
     except requests.exceptions.HTTPError as e:
         if "conflicts" in str(e).lower():
-            print("❌ [red]Time slot conflicts with existing reservation[/red]")
+            error("Time slot conflicts with existing reservation.")
         else:
-            print(f"❌ Failed to create reservation: {e}")
+            error(f"Failed to create reservation: {e}")
         raise typer.Exit(1) from e
 
 
@@ -1169,11 +1810,12 @@ def show_upcoming_reservations():
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError as e:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from e
 
     try:
-        reservations = client.get_my_reservations()
+        result = client.get_my_reservations(sort_by="start_time", sort_order="asc")
+        reservations = result.get("data", [])
         now = datetime.now(UTC)
 
         # Filter to upcoming active reservations
@@ -1184,20 +1826,17 @@ def show_upcoming_reservations():
         ]
 
         if not upcoming:
-            print("📅 No upcoming reservations")
-            print(
-                "💡 Create one with: [cyan]cli reserve[/cyan] or [cyan]cli find[/cyan]"  # noqa : E501
-            )
+            info("No upcoming reservations.")
+            hint("Create one with: cli reserve or cli reservations create")
             return
 
         # Sort by start time
         upcoming.sort(key=lambda r: r["start_time"])
 
-        print(f"\n📅 [bold]Upcoming Reservations ({len(upcoming)})[/bold]")
-        print("═" * 60)
+        section(f"Upcoming Reservations ({len(upcoming)})")
 
-        for reservation in upcoming:
-            start_dt = datetime.fromisoformat(reservation["start_time"]).replace(  # noqa : E501
+        for reservation in upcoming[:10]:  # Show first 10
+            start_dt = datetime.fromisoformat(reservation["start_time"]).replace(
                 tzinfo=UTC
             )
             end_dt = datetime.fromisoformat(reservation["end_time"]).replace(tzinfo=UTC)
@@ -1215,15 +1854,16 @@ def show_upcoming_reservations():
 
             duration = format_duration(start_dt, end_dt)
 
-            print(
-                f"[cyan]{reservation['id']:3}[/cyan] │ [bold]{reservation['resource']['name']}[/bold]"  # noqa : E501
+            info(
+                f"{reservation['id']:3} │ {reservation['resource']['name']} | {format_datetime(start_dt)} ({time_str}) | Duration: {duration}"
             )
-            print(f"     │ {format_datetime(start_dt)} ({time_str})")
-            print(f"     │ Duration: {duration}")
-            print()
+
+        if len(upcoming) > 10:
+            hint(f"... and {len(upcoming) - 10} more")
+            hint("Use `cli reservations list --upcoming` for full list")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to fetch reservations: {e}")
+        error(f"Failed to fetch reservations: {e}")
         raise typer.Exit(1) from e
 
 

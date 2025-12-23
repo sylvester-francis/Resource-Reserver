@@ -20,6 +20,20 @@ class TestAuthCLI:
         assert "Successfully registered" in result.stdout
         mock_api_success.register.assert_called_once_with("testuser", "password123")
 
+    def test_register_password_policy_error(self, runner, mock_inputs):
+        """Test registration with password policy violation"""
+        mock_inputs["prompt"].return_value = "testuser"
+        mock_inputs["getpass"].side_effect = ["weak", "weak"]
+
+        with patch("cli.main.client") as mock_client:
+            mock_client.register.side_effect = requests.exceptions.HTTPError(
+                "Password must be at least 8 characters; Must contain uppercase"
+            )
+            result = runner.invoke(app, ["auth", "register"])
+
+        assert result.exit_code == 1
+        assert "Password does not meet requirements" in result.stdout
+
     def test_register_password_mismatch(self, runner, mock_inputs):
         """Test registration with mismatched passwords"""
         # Setup mock inputs for password mismatch
@@ -93,3 +107,61 @@ class TestAuthCLI:
         assert result.exit_code == 0
         assert "You are not logged in" in result.stdout
         assert "cli auth login" in result.stdout
+
+    def test_login_with_lockout(self, runner, mock_inputs):
+        """Test login when account is locked out"""
+        mock_inputs["prompt"].return_value = "testuser"
+        mock_inputs["getpass"].return_value = "wrongpass"
+
+        with patch("cli.main.client") as mock_client:
+            mock_client.login.side_effect = requests.exceptions.HTTPError(
+                "Account locked. Try again in 300 seconds"
+            )
+            result = runner.invoke(app, ["auth", "login"])
+
+        assert result.exit_code == 1
+        assert "Account temporarily locked" in result.stdout
+        assert "minute" in result.stdout or "second" in result.stdout
+
+    def test_login_saves_refresh_token(self, runner, mock_config, mock_inputs):
+        """Test that login saves refresh token when provided"""
+        mock_inputs["prompt"].return_value = "testuser"
+        mock_inputs["getpass"].return_value = "password123"
+
+        with patch("cli.main.client") as mock_client:
+            mock_client.login.return_value = {
+                "access_token": "access_token_123",
+                "refresh_token": "refresh_token_456",
+            }
+            with patch("cli.main.config", mock_config):
+                result = runner.invoke(app, ["auth", "login"])
+
+        assert result.exit_code == 0
+        assert "Welcome back" in result.stdout
+
+    def test_refresh_command_success(self, runner, mock_config):
+        """Test manual token refresh command"""
+        # Set up config with refresh token
+        mock_config.save_token("old_token", refresh_token="refresh_123")
+
+        with patch("cli.main.client") as mock_client:
+            mock_client.refresh_access_token.return_value = {
+                "access_token": "new_token",
+                "refresh_token": "new_refresh",
+            }
+            with patch("cli.main.config", mock_config):
+                result = runner.invoke(app, ["auth", "refresh"])
+
+        assert result.exit_code == 0
+        assert "Token refreshed successfully" in result.stdout
+
+    def test_refresh_command_no_token(self, runner, mock_config):
+        """Test refresh command when no refresh token exists"""
+        # Clear any tokens
+        mock_config.clear_token()
+
+        with patch("cli.main.config", mock_config):
+            result = runner.invoke(app, ["auth", "refresh"])
+
+        assert result.exit_code == 1
+        assert "No refresh token available" in result.stdout

@@ -36,6 +36,7 @@ virtualenv/
 pyvenv.cfg
 pip-log.txt
 pip-delete-this-directory.txt
+IMPROVEMENT_PLAN.md
 
 # Flask
 instance/

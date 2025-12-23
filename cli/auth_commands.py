@@ -4,16 +4,11 @@ from getpass import getpass
 
 import requests
 import typer
-from rich import print
-from rich.console import Console
-from rich.table import Table
 
 from cli.client import APIClient
 from cli.config import config
+from cli.ui import error, hint, info, render_table, section, success, warning
 from cli.utils import confirm_action
-
-# Initialize
-console = Console()
 
 # MFA commands
 mfa_app = typer.Typer(help="Multi-Factor Authentication (MFA) commands")
@@ -38,58 +33,48 @@ def mfa_setup():
     try:
         config.get_auth_headers()  # Check authentication
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     try:
         result = client.mfa_setup()
 
-        print("\n🔐 [bold]MFA Setup[/bold]")
-        print("=" * 60)
-        print(
-            "\n📱 [bold green]Scan this QR code with your authenticator app:[/bold green]"
+        section("MFA setup")
+        info(
+            "Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)"
         )
-        print("   (Google Authenticator, Authy, 1Password, etc.)")
-
-        # Display QR code (as base64 data URI)
-        print(f"\n[dim]QR Code: {result['qr_code'][:50]}...[/dim]")
-        print("\n💡 Or manually enter this secret key:")
-        print(f"   [bold cyan]{result['secret']}[/bold cyan]")
+        hint(f"QR Code (base64): {result['qr_code'][:50]}...")
+        hint("Or manually enter this secret key:")
+        info(f"{result['secret']}")
 
         # Try to copy secret to clipboard
         try:
             import pyperclip
 
             pyperclip.copy(result["secret"])
-            print("   ✅ Secret copied to clipboard!")
+            success("Secret copied to clipboard.")
         except (ImportError, Exception):
-            print("   💡 Copy the secret manually")
+            hint("Copy the secret manually if clipboard is unavailable.")
 
         # Display backup codes
-        print(
-            "\n🔑 [bold yellow]BACKUP CODES (Save these in a safe place!):[/bold yellow]"
-        )
-        print("=" * 60)
+        section("Backup codes")
         for i, code in enumerate(result["backup_codes"], 1):
-            print(f"   {i:2}. {code}")
+            info(f"{i:2}. {code}")
 
-        print("\n⚠️  [bold red]IMPORTANT:[/bold red]")
-        print("   • Save these backup codes NOW - they won't be shown again!")
-        print("   • Store them in a password manager or safe place")
-        print("   • You'll need them if you lose your phone")
+        warning(
+            "Save these backup codes now; they won't be shown again. Store them securely."
+        )
 
-        print("\n📝 [bold]Next step:[/bold]")
-        print("   Run: [cyan]cli auth mfa enable[/cyan]")
-        print("   Enter the 6-digit code from your authenticator app")
+        hint(
+            "Next: run `cli auth mfa enable` and enter the 6-digit code from your authenticator app."
+        )
 
     except requests.exceptions.HTTPError as e:
         if "already enabled" in str(e):
-            print("❌ MFA is already enabled for your account")
-            print(
-                "💡 Use [cyan]cli auth mfa disable[/cyan] first if you want to reset it"
-            )
+            warning("MFA is already enabled for your account.")
+            hint("Use `cli auth mfa disable` first if you want to reset it.")
         else:
-            print(f"❌ MFA setup failed: {e}")
+            error(f"MFA setup failed: {e}")
         raise typer.Exit(1) from None
 
 
@@ -101,31 +86,30 @@ def mfa_enable():
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
-    print("\n🔐 [bold]Enable MFA[/bold]")
-    print("Open your authenticator app and enter the 6-digit code:\n")
+    section("Enable MFA")
+    hint("Open your authenticator app and enter the 6-digit code.")
 
     code = typer.prompt("6-digit code")
 
     if len(code) != 6 or not code.isdigit():
-        print("❌ Invalid code format. Must be 6 digits.")
+        error("Invalid code format. Must be 6 digits.")
         raise typer.Exit(1) from None
 
     try:
         client.mfa_verify(code)
-        print("\n✅ [bold green]MFA enabled successfully![/bold green]")
-        print("🔒 Your account is now protected with two-factor authentication")
-        print("\n💡 Next time you login, you'll need:")
-        print("   1. Your password")
-        print("   2. A code from your authenticator app")
+        success("MFA enabled successfully.")
+        hint(
+            "Next login requires your password and a code from your authenticator app."
+        )
 
     except requests.exceptions.HTTPError as e:
         if "Invalid" in str(e):
-            print("❌ Invalid code. Please try again.")
+            error("Invalid code. Please try again.")
         else:
-            print(f"❌ Failed to enable MFA: {e}")
+            error(f"Failed to enable MFA: {e}")
         raise typer.Exit(1) from None
 
 
@@ -137,28 +121,28 @@ def mfa_disable():
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
-    print("\n🔓 [bold]Disable MFA[/bold]")
-    print("⚠️  This will remove two-factor authentication protection\n")
+    section("Disable MFA")
+    warning("This will remove two-factor authentication protection.")
 
     if not confirm_action("Are you sure you want to disable MFA?"):
-        print("Cancelled")
+        warning("Cancelled.")
         return
 
     password = getpass("Enter your password to confirm: ")
 
     try:
         client.mfa_disable(password)
-        print("\n✅ [bold]MFA disabled[/bold]")
-        print("🔓 Two-factor authentication has been removed from your account")
+        success("MFA disabled.")
+        hint("Two-factor authentication has been removed from your account.")
 
     except requests.exceptions.HTTPError as e:
         if "Invalid password" in str(e):
-            print("❌ Invalid password")
+            error("Invalid password.")
         else:
-            print(f"❌ Failed to disable MFA: {e}")
+            error(f"Failed to disable MFA: {e}")
         raise typer.Exit(1) from None
 
 
@@ -170,35 +154,33 @@ def mfa_backup_codes():
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
-    print("\n🔑 [bold]Regenerate Backup Codes[/bold]")
-    print("⚠️  This will invalidate your existing backup codes\n")
+    section("Regenerate backup codes")
+    warning("This will invalidate your existing backup codes.")
 
     if not confirm_action("Generate new backup codes?"):
-        print("Cancelled")
+        warning("Cancelled.")
         return
 
     try:
         result = client.mfa_regenerate_backup_codes()
 
-        print("\n✅ [bold green]New backup codes generated![/bold green]")
-        print("=" * 60)
+        success("New backup codes generated.")
         for i, code in enumerate(result["backup_codes"], 1):
-            print(f"   {i:2}. {code}")
-        print("=" * 60)
+            info(f"{i:2}. {code}")
 
-        print("\n⚠️  [bold red]IMPORTANT:[/bold red]")
-        print("   • Save these codes in a safe place")
-        print("   • Your old backup codes are now invalid")
+        warning(
+            "Save these codes in a safe place. Your old backup codes are now invalid."
+        )
 
     except requests.exceptions.HTTPError as e:
         if "not enabled" in str(e):
-            print("❌ MFA is not enabled on your account")
-            print("💡 Run [cyan]cli auth mfa setup[/cyan] first")
+            warning("MFA is not enabled on your account.")
+            hint("Run `cli auth mfa setup` first.")
         else:
-            print(f"❌ Failed to regenerate codes: {e}")
+            error(f"Failed to regenerate codes: {e}")
         raise typer.Exit(1) from None
 
 
@@ -215,27 +197,24 @@ def list_roles():
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     try:
         roles = client.list_roles()
 
-        print("\n👥 [bold]Available Roles[/bold]")
-        print("=" * 60)
+        if not roles:
+            info("No roles found.")
+            return
 
-        table = Table(show_header=True, header_style="bold blue")
-        table.add_column("ID", style="cyan", width=6)
-        table.add_column("Name", style="green")
-        table.add_column("Description")
-
-        for role in roles:
-            table.add_row(str(role["id"]), role["name"], role.get("description", ""))
-
-        console.print(table)
+        section("Available roles")
+        rows = [
+            (role["id"], role["name"], role.get("description", "")) for role in roles
+        ]
+        render_table(["ID", "Name", "Description"], rows, title="Roles")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to list roles: {e}")
+        error(f"Failed to list roles: {e}")
         raise typer.Exit(1) from None
 
 
@@ -252,22 +231,22 @@ def create_role(
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     try:
         role = client.create_role(name, description)
-        print(f"✅ [bold green]Role '{role['name']}' created[/bold green]")
+        success(f"Role '{role['name']}' created.")
         if role.get("description"):
-            print(f"   Description: {role['description']}")
+            info(f"Description: {role['description']}")
 
     except requests.exceptions.HTTPError as e:
         if "already exists" in str(e).lower():
-            print(f"❌ Role '{name}' already exists")
+            warning(f"Role '{name}' already exists.")
         elif "403" in str(e) or "Forbidden" in str(e):
-            print("❌ Permission denied - admin role required")
+            error("Permission denied - admin role required.")
         else:
-            print(f"❌ Failed to create role: {e}")
+            error(f"Failed to create role: {e}")
         raise typer.Exit(1) from None
 
 
@@ -279,27 +258,25 @@ def my_roles():
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     try:
         roles = client.get_my_roles()
 
         if not roles:
-            print("\n📋 You have no roles assigned")
-            print("💡 Contact an administrator to assign roles")
+            info("You have no roles assigned.")
+            hint("Contact an administrator to assign roles.")
             return
 
-        print("\n👤 [bold]Your Roles[/bold]")
-        print("=" * 60)
-
+        section("Your roles")
         for role in roles:
-            print(f"   • [green]{role['name']}[/green]")
+            info(role["name"])
             if role.get("description"):
-                print(f"     [dim]{role['description']}[/dim]")
+                hint(f"  {role['description']}")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to get roles: {e}")
+        error(f"Failed to get roles: {e}")
         raise typer.Exit(1) from None
 
 
@@ -314,22 +291,20 @@ def assign_role(
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     try:
         client.assign_role(user_id, role_name)
-        print(
-            f"✅ [bold green]Role '{role_name}' assigned to user {user_id}[/bold green]"
-        )
+        success(f"Role '{role_name}' assigned to user {user_id}.")
 
     except requests.exceptions.HTTPError as e:
         if "403" in str(e) or "Forbidden" in str(e):
-            print("❌ Permission denied - admin role required")
+            error("Permission denied - admin role required.")
         elif "404" in str(e) or "not found" in str(e):
-            print(f"❌ Role '{role_name}' not found")
+            error(f"Role '{role_name}' not found.")
         else:
-            print(f"❌ Failed to assign role: {e}")
+            error(f"Failed to assign role: {e}")
         raise typer.Exit(1) from None
 
 
@@ -344,22 +319,22 @@ def remove_role(
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     if not confirm_action(f"Remove role '{role_name}' from user {user_id}"):
-        print("Cancelled")
+        warning("Cancelled.")
         return
 
     try:
         client.remove_role(user_id, role_name)
-        print(f"✅ [bold]Role '{role_name}' removed from user {user_id}[/bold]")
+        success(f"Role '{role_name}' removed from user {user_id}.")
 
     except requests.exceptions.HTTPError as e:
         if "403" in str(e):
-            print("❌ Permission denied - admin role required")
+            error("Permission denied - admin role required.")
         else:
-            print(f"❌ Failed to remove role: {e}")
+            error(f"Failed to remove role: {e}")
         raise typer.Exit(1) from None
 
 
@@ -379,7 +354,7 @@ def create_oauth_client(
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     try:
@@ -387,33 +362,27 @@ def create_oauth_client(
             client_name=name, redirect_uris=[redirect_uri]
         )
 
-        print("\n✅ [bold green]OAuth2 Client Created![/bold green]")
-        print("=" * 70)
-        print(f"\n📱 Client Name: [bold]{result['client_name']}[/bold]")
-        print("\n🆔 Client ID:")
-        print(f"   [cyan]{result['client_id']}[/cyan]")
-        print("\n🔑 Client Secret:")
-        print(f"   [yellow]{result['client_secret']}[/yellow]")
-        print("\n🔗 Redirect URIs:")
+        section("OAuth2 client created")
+        success(f"Client Name: {result['client_name']}")
+        info(f"Client ID: {result['client_id']}")
+        info(f"Client Secret: {result['client_secret']}")
+        info("Redirect URIs:")
         for uri in result["redirect_uris"]:
-            print(f"   • {uri}")
+            hint(f"- {uri}")
 
-        print("\n" + "=" * 70)
-        print("⚠️  [bold red]SAVE THE CLIENT SECRET NOW![/bold red]")
-        print("   It will NOT be shown again!")
-        print("=" * 70)
+        warning("Save the client secret now; it will not be shown again.")
 
         # Try to copy client secret to clipboard
         try:
             import pyperclip
 
             pyperclip.copy(result["client_secret"])
-            print("\n✅ Client secret copied to clipboard!")
+            success("Client secret copied to clipboard.")
         except (ImportError, Exception):
-            print("\n💡 Copy the client secret manually")
+            hint("Copy the client secret manually if clipboard is unavailable.")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to create OAuth2 client: {e}")
+        error(f"Failed to create OAuth2 client: {e}")
         raise typer.Exit(1) from None
 
 
@@ -425,31 +394,30 @@ def list_oauth_clients():
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
     try:
         clients = client.list_oauth_clients()
 
         if not clients:
-            print("\n📋 No OAuth2 clients found")
-            print("💡 Create one with: [cyan]cli oauth create[/cyan]")
+            info("No OAuth2 clients found.")
+            hint("Create one with: cli oauth create")
             return
 
-        print(f"\n🔐 [bold]Your OAuth2 Clients ({len(clients)})[/bold]")
-        print("=" * 80)
+        section(f"Your OAuth2 clients ({len(clients)})")
 
         for oauth_client in clients:
-            print(f"\n📱 [bold]{oauth_client['client_name']}[/bold]")
-            print(f"   ID: [cyan]{oauth_client['client_id']}[/cyan]")
-            print(f"   Grant Types: {oauth_client['grant_types']}")
-            print(f"   Scopes: {oauth_client['scope']}")
-            print("   Redirect URIs:")
+            info(f"{oauth_client['client_name']}")
+            hint(f"ID: {oauth_client['client_id']}")
+            hint(f"Grant Types: {oauth_client['grant_types']}")
+            hint(f"Scopes: {oauth_client['scope']}")
+            hint("Redirect URIs:")
             for uri in oauth_client["redirect_uris"]:
-                print(f"      • {uri}")
+                hint(f"  - {uri}")
 
     except requests.exceptions.HTTPError as e:
-        print(f"❌ Failed to list OAuth2 clients: {e}")
+        error(f"Failed to list OAuth2 clients: {e}")
         raise typer.Exit(1) from None
 
 
@@ -463,29 +431,26 @@ def delete_oauth_client(
     try:
         config.get_auth_headers()
     except ValueError:
-        print("❌ Please login first: [cyan]cli auth login[/cyan]")
+        error("Please login first: cli auth login")
         raise typer.Exit(1) from None
 
-    print("\n⚠️  [bold]Delete OAuth2 Client[/bold]")
-    print(f"Client ID: {client_id}")
-    print("\nThis will:")
-    print("   • Revoke all access tokens")
-    print("   • Prevent new authorizations")
-    print("   • This action cannot be undone")
+    section("Delete OAuth2 client")
+    info(f"Client ID: {client_id}")
+    warning(
+        "This will revoke all access tokens and prevent new authorizations. This action cannot be undone."
+    )
 
     if not confirm_action("\nDelete this OAuth2 client?"):
-        print("Cancelled")
+        warning("Cancelled.")
         return
 
     try:
         client.delete_oauth_client(client_id)
-        print("\n✅ [bold green]OAuth2 client deleted successfully[/bold green]")
+        success("OAuth2 client deleted successfully.")
 
     except requests.exceptions.HTTPError as e:
         if "404" in str(e) or "not found" in str(e):
-            print(
-                "❌ OAuth2 client not found or you don't have permission to delete it"
-            )
+            error("OAuth2 client not found or you lack permission to delete it.")
         else:
-            print(f"❌ Failed to delete OAuth2 client: {e}")
+            error(f"Failed to delete OAuth2 client: {e}")
         raise typer.Exit(1) from None

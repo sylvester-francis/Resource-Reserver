@@ -47,40 +47,58 @@ def mock_api_success():
 
         # Auth responses
         mock_client.register.return_value = {"username": "testuser", "id": 1}
-        mock_client.login.return_value = "fake_jwt_token"
+        mock_client.login.return_value = {
+            "access_token": "fake_jwt_token",
+            "refresh_token": "fake_refresh_token",
+        }
         mock_client.health_check.return_value = {"status": "healthy"}
+        mock_client.get_current_user.return_value = {"username": "testuser", "id": 1}
 
-        # Resource responses
-        mock_client.list_resources.return_value = [
-            {
-                "id": 1,
-                "name": "Conference Room A",
-                "tags": ["meeting"],
-                "available": True,
-            },
-            {"id": 2, "name": "Lab Equipment", "tags": ["lab"], "available": True},
-        ]
+        # Resource responses (paginated format)
+        mock_client.list_resources.return_value = {
+            "data": [
+                {
+                    "id": 1,
+                    "name": "Conference Room A",
+                    "tags": ["meeting"],
+                    "available": True,
+                },
+                {"id": 2, "name": "Lab Equipment", "tags": ["lab"], "available": True},
+            ],
+            "next_cursor": None,
+            "has_more": False,
+            "total_count": 2,
+        }
         mock_client.create_resource.return_value = {"id": 3, "name": "New Resource"}
-        mock_client.search_resources.return_value = [
-            {"id": 1, "name": "Conference Room A"}
-        ]
+        mock_client.search_resources.return_value = {
+            "data": [
+                {"id": 1, "name": "Conference Room A", "tags": [], "available": True}
+            ],
+            "next_cursor": None,
+            "has_more": False,
+        }
         mock_client.upload_resources_csv.return_value = {
             "created_count": 2,
             "errors": [],
         }
 
-        # Reservation responses
-        mock_client.get_my_reservations.return_value = [
-            {
-                "id": 1,
-                "resource_id": 1,
-                "resource": {"id": 1, "name": "Conference Room A"},
-                "start_time": future_time.isoformat(),
-                "end_time": (future_time + timedelta(hours=2)).isoformat(),
-                "status": "active",
-                "created_at": datetime.now(UTC).isoformat(),
-            }
-        ]
+        # Reservation responses (paginated format)
+        mock_client.get_my_reservations.return_value = {
+            "data": [
+                {
+                    "id": 1,
+                    "resource_id": 1,
+                    "resource": {"id": 1, "name": "Conference Room A"},
+                    "start_time": future_time.isoformat(),
+                    "end_time": (future_time + timedelta(hours=2)).isoformat(),
+                    "status": "active",
+                    "created_at": datetime.now(UTC).isoformat(),
+                }
+            ],
+            "next_cursor": None,
+            "has_more": False,
+            "total_count": 1,
+        }
         mock_client.create_reservation.return_value = {
             "id": 2,
             "resource": {"id": 1, "name": "Conference Room A"},

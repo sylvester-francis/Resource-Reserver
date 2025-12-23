@@ -4,6 +4,7 @@
 
 import base64
 import json
+import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -16,6 +17,8 @@ from app import models, schemas
 from app.auth import hash_password
 from app.utils.recurrence import generate_occurrences
 from app.websocket import manager as ws_manager
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_timezone_aware(dt):
@@ -793,20 +796,27 @@ class ReservationService:
 
                 # Broadcast to user about new reservation
 
-                anyio.from_thread.run(
-                    ws_manager.broadcast_to_user,
-                    user_id,
-                    {
-                        "type": "reservation_created",
-                        "reservation_id": reservation.id,
-                        "resource_id": reservation.resource_id,
-                        "start_time": reservation.start_time.isoformat(),
-                        "end_time": reservation.end_time.isoformat(),
-                    },
-                )
+                try:
+                    anyio.from_thread.run(
+                        ws_manager.broadcast_to_user,
+                        user_id,
+                        {
+                            "type": "reservation_created",
+                            "reservation_id": reservation.id,
+                            "resource_id": reservation.resource_id,
+                            "start_time": reservation.start_time.isoformat(),
+                            "end_time": reservation.end_time.isoformat(),
+                        },
+                    )
+                except Exception as exc:  # pragma: no cover - best-effort notification
+                    logger.warning(
+                        "Failed to broadcast reservation creation for user %s: %s",
+                        user_id,
+                        exc,
+                    )
 
                 # Update resource status immediately if the reservation is active
-                self._update_resource_status(resource)
+                ResourceService(self.db)._update_resource_status(resource)
 
                 return reservation
 
@@ -821,7 +831,10 @@ class ReservationService:
                 import time
 
                 time.sleep(0.1 * (attempt + 1))
-            except Exception:
+            except Exception as exc:
+                logger.exception(
+                    "Reservation creation attempt %s failed: %s", attempt + 1, exc
+                )
                 self.db.rollback()
                 if attempt == max_retries - 1:
                     raise
@@ -959,25 +972,32 @@ class ReservationService:
             link=f"/reservations/{reservation.id}",
         )
 
-        anyio.from_thread.run(
-            ws_manager.broadcast_to_user,
-            user_id,
-            {
-                "type": "reservation_cancelled",
-                "reservation_id": reservation.id,
-                "resource_id": reservation.resource_id,
-                "status": reservation.status,
-                "cancelled_at": (
-                    reservation.cancelled_at.isoformat()
-                    if reservation.cancelled_at
-                    else None
-                ),
-            },
-        )
+        try:
+            anyio.from_thread.run(
+                ws_manager.broadcast_to_user,
+                user_id,
+                {
+                    "type": "reservation_cancelled",
+                    "reservation_id": reservation.id,
+                    "resource_id": reservation.resource_id,
+                    "status": reservation.status,
+                    "cancelled_at": (
+                        reservation.cancelled_at.isoformat()
+                        if reservation.cancelled_at
+                        else None
+                    ),
+                },
+            )
+        except Exception as exc:  # pragma: no cover - best-effort notification
+            logger.warning(
+                "Failed to broadcast reservation cancellation for user %s: %s",
+                user_id,
+                exc,
+            )
 
         # Update resource status after cancellation
         if resource:
-            self._update_resource_status(resource)
+            ResourceService(self.db)._update_resource_status(resource)
 
         # Check if anyone is waiting for this slot and offer it to them
         # Import here to avoid circular imports

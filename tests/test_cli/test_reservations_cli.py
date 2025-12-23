@@ -33,17 +33,22 @@ def mock_api_success():
         # Mock reservation data
         future_time = datetime.now(UTC) + timedelta(days=1)
 
-        mock_client.get_my_reservations.return_value = [
-            {
-                "id": 1,
-                "resource_id": 1,
-                "resource": {"id": 1, "name": "Conference Room A"},
-                "start_time": future_time.isoformat(),
-                "end_time": (future_time + timedelta(hours=2)).isoformat(),
-                "status": "active",
-                "created_at": datetime.now(UTC).isoformat(),
-            }
-        ]
+        mock_client.get_my_reservations.return_value = {
+            "data": [
+                {
+                    "id": 1,
+                    "resource_id": 1,
+                    "resource": {"id": 1, "name": "Conference Room A"},
+                    "start_time": future_time.isoformat(),
+                    "end_time": (future_time + timedelta(hours=2)).isoformat(),
+                    "status": "active",
+                    "created_at": datetime.now(UTC).isoformat(),
+                }
+            ],
+            "next_cursor": None,
+            "has_more": False,
+            "total_count": 1,
+        }
 
         mock_client.create_reservation.return_value = {
             "id": 2,
@@ -52,6 +57,23 @@ def mock_api_success():
             "end_time": (future_time + timedelta(hours=1)).isoformat(),
             "status": "active",
         }
+
+        mock_client.create_recurring_reservation.return_value = [
+            {
+                "id": 2,
+                "resource": {"id": 1, "name": "Conference Room A"},
+                "start_time": future_time.isoformat(),
+                "end_time": (future_time + timedelta(hours=1)).isoformat(),
+                "status": "active",
+            },
+            {
+                "id": 3,
+                "resource": {"id": 1, "name": "Conference Room A"},
+                "start_time": (future_time + timedelta(days=7)).isoformat(),
+                "end_time": (future_time + timedelta(days=7, hours=1)).isoformat(),
+                "status": "active",
+            },
+        ]
 
         mock_client.cancel_reservation.return_value = {
             "message": "Reservation cancelled successfully",
@@ -330,3 +352,167 @@ class TestReservationsCLI:
         assert result.exit_code == 0
         assert "Upcoming Reservations" in result.stdout
         mock_api_success.get_my_reservations.assert_called_once()
+
+    def test_list_reservations_with_pagination(
+        self, runner, mock_api_success, mock_auth_config
+    ):
+        """Test listing reservations with pagination options"""
+        with patch("cli.main.config", mock_auth_config):
+            result = runner.invoke(
+                app,
+                [
+                    "reservations",
+                    "list",
+                    "--limit",
+                    "10",
+                    "--sort",
+                    "created_at",
+                    "--order",
+                    "asc",
+                ],
+            )
+
+        assert result.exit_code == 0
+        mock_api_success.get_my_reservations.assert_called_once()
+        call_kwargs = mock_api_success.get_my_reservations.call_args
+        assert call_kwargs[1].get("limit") == 10
+        assert call_kwargs[1].get("sort_by") == "created_at"
+        assert call_kwargs[1].get("sort_order") == "asc"
+
+    def test_list_reservations_with_cursor(
+        self, runner, mock_api_success, mock_auth_config
+    ):
+        """Test listing reservations with pagination cursor"""
+        mock_api_success.get_my_reservations.return_value = {
+            "data": [],
+            "next_cursor": None,
+            "has_more": False,
+        }
+        with patch("cli.main.config", mock_auth_config):
+            result = runner.invoke(
+                app, ["reservations", "list", "--cursor", "cursor_abc"]
+            )
+
+        assert result.exit_code == 0
+        call_kwargs = mock_api_success.get_my_reservations.call_args
+        assert call_kwargs[1].get("cursor") == "cursor_abc"
+
+    def test_create_recurring_reservation_weekly(
+        self, runner, mock_api_success, mock_auth_config
+    ):
+        """Test creating a weekly recurring reservation"""
+        with patch("cli.main.config", mock_auth_config):
+            result = runner.invoke(
+                app,
+                [
+                    "reservations",
+                    "create",
+                    "1",
+                    "2025-06-08 14:00",
+                    "2h",
+                    "--recurrence",
+                    "weekly",
+                    "--days",
+                    "1,3,5",
+                    "--recurrence-count",
+                    "5",
+                ],
+            )
+
+        assert result.exit_code == 0
+        assert "recurring reservations" in result.stdout
+        mock_api_success.create_recurring_reservation.assert_called_once()
+        call_kwargs = mock_api_success.create_recurring_reservation.call_args
+        assert call_kwargs[1].get("frequency") == "weekly"
+        assert call_kwargs[1].get("days_of_week") == [1, 3, 5]
+
+    def test_create_recurring_reservation_daily(
+        self, runner, mock_api_success, mock_auth_config
+    ):
+        """Test creating a daily recurring reservation"""
+        with patch("cli.main.config", mock_auth_config):
+            result = runner.invoke(
+                app,
+                [
+                    "reservations",
+                    "create",
+                    "1",
+                    "2025-06-08 14:00",
+                    "1h",
+                    "--recurrence",
+                    "daily",
+                    "--recurrence-count",
+                    "3",
+                ],
+            )
+
+        assert result.exit_code == 0
+        assert "recurring reservations" in result.stdout
+        mock_api_success.create_recurring_reservation.assert_called_once()
+
+    def test_create_recurring_reservation_with_end_date(
+        self, runner, mock_api_success, mock_auth_config
+    ):
+        """Test creating a recurring reservation with end date"""
+        with patch("cli.main.config", mock_auth_config):
+            result = runner.invoke(
+                app,
+                [
+                    "reservations",
+                    "create",
+                    "1",
+                    "2025-06-08 14:00",
+                    "2h",
+                    "--recurrence",
+                    "weekly",
+                    "--recurrence-end",
+                    "2025-07-08",
+                ],
+            )
+
+        assert result.exit_code == 0
+        mock_api_success.create_recurring_reservation.assert_called_once()
+        call_kwargs = mock_api_success.create_recurring_reservation.call_args
+        assert call_kwargs[1].get("end_type") == "on_date"
+
+    def test_create_recurring_reservation_invalid_frequency(
+        self, runner, mock_auth_config
+    ):
+        """Test creating recurring reservation with invalid frequency"""
+        with patch("cli.main.config", mock_auth_config):
+            result = runner.invoke(
+                app,
+                [
+                    "reservations",
+                    "create",
+                    "1",
+                    "2025-06-08 14:00",
+                    "1h",
+                    "--recurrence",
+                    "biweekly",
+                ],
+            )
+
+        assert result.exit_code == 1
+        assert "Recurrence must be: daily, weekly, or monthly" in result.stdout
+
+    def test_create_recurring_reservation_invalid_days(self, runner, mock_auth_config):
+        """Test creating weekly recurring reservation with invalid days"""
+        with patch("cli.main.config", mock_auth_config):
+            result = runner.invoke(
+                app,
+                [
+                    "reservations",
+                    "create",
+                    "1",
+                    "2025-06-08 14:00",
+                    "1h",
+                    "--recurrence",
+                    "weekly",
+                    "--days",
+                    "7,8",
+                ],
+            )
+
+        assert result.exit_code == 1
+        assert "Days must be" in result.stdout
