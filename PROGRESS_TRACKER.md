@@ -54,7 +54,7 @@ ______________________________________________________________________
 - [x] Update ResourceList component
 - [x] Update ReservationList component
 - [x] Add tests
-- [ ] Create PR
+- [x] Create PR (#15)
 - [ ] Merge PR
 
 ### PR #5: Notifications
