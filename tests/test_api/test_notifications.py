@@ -14,7 +14,7 @@ def seed_notifications(test_db, user_id: int, count: int = 3):
             service.create_notification(
                 user_id=user_id,
                 type=NotificationType.RESERVATION_CONFIRMED,
-                title=f"Test Notification {idx+1}",
+                title=f"Test Notification {idx + 1}",
                 message="This is a test notification",
             )
     finally:
