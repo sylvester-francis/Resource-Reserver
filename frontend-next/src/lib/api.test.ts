@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import axios from 'axios';
 
 // Mock axios
 vi.mock('axios', () => {
@@ -16,12 +15,15 @@ vi.mock('axios', () => {
     return { default: mockAxios, AxiosError: class AxiosError extends Error { } };
 });
 
+const apiModulePromise = import('@/lib/api');
+
 describe('API Client', () => {
     it('should create axios instance with correct base URL', async () => {
-        // Import fresh after mocks are set
-        const { API_BASE_URL } = await import('@/lib/api');
+        const axiosModule = await import('axios');
+        const axiosMock = axiosModule.default as { create: ReturnType<typeof vi.fn> };
+        const { API_BASE_URL } = await apiModulePromise;
 
-        expect(axios.create).toHaveBeenCalledWith({
+        expect(axiosMock.create).toHaveBeenCalledWith({
             baseURL: expect.any(String),
             headers: {
                 'Content-Type': 'application/json',
@@ -32,20 +34,20 @@ describe('API Client', () => {
     });
 
     it('should have default base URL with API version when env var is not set', async () => {
-        const { API_BASE_URL } = await import('@/lib/api');
+        const { API_BASE_URL } = await apiModulePromise;
         expect(API_BASE_URL).toBe('http://localhost:8000/api/v1');
     });
 });
 
 describe('API Configuration', () => {
     it('should export API_BASE_URL', async () => {
-        const { API_BASE_URL } = await import('@/lib/api');
+        const { API_BASE_URL } = await apiModulePromise;
         expect(API_BASE_URL).toBeDefined();
         expect(typeof API_BASE_URL).toBe('string');
     });
 
     it('should export default api instance', async () => {
-        const { default: api } = await import('@/lib/api');
+        const { default: api } = await apiModulePromise;
         expect(api).toBeDefined();
     });
 });
