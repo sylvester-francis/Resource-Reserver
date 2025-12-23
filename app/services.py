@@ -291,116 +291,6 @@ class ResourceService:
 
         return page_items, next_cursor, has_more, total_count
 
-
-class NotificationService:
-    """Service for user notifications."""
-
-    def __init__(self, db: Session):
-        self.db = db
-
-    def create_notification(
-        self,
-        user_id: int,
-        type: schemas.NotificationType,
-        title: str,
-        message: str,
-        link: str | None = None,
-    ) -> models.Notification:
-        type_value = type.value if hasattr(type, "value") else str(type)
-        notification = models.Notification(
-            user_id=user_id,
-            type=type_value,
-            title=title,
-            message=message,
-            link=link,
-        )
-        self.db.add(notification)
-        self.db.commit()
-        self.db.refresh(notification)
-        return notification
-
-    def list_notifications(
-        self,
-        user_id: int,
-        pagination: schemas.PaginationParams,
-        include_total: bool = False,
-    ) -> tuple[list[models.Notification], str | None, bool, int | None]:
-        notifications = (
-            self.db.query(models.Notification)
-            .filter(models.Notification.user_id == user_id)
-            .all()
-        )
-
-        total_count = len(notifications) if include_total else None
-        sort_by = pagination.sort_by or "created_at"
-        sort_order = (pagination.sort_order or "desc").lower()
-
-        sort_options = {
-            "id": lambda n: n.id,
-            "created_at": lambda n: ensure_timezone_aware(n.created_at),
-            "type": lambda n: n.type,
-            "read": lambda n: n.read,
-        }
-
-        if sort_order not in {"asc", "desc"}:
-            raise ValueError("Invalid sort_order. Must be 'asc' or 'desc'.")
-        if sort_by not in sort_options:
-            raise ValueError(
-                "Invalid sort_by. Must be one of: id, created_at, type, read."
-            )
-
-        def parse_datetime(value: Any) -> datetime:
-            if isinstance(value, datetime):
-                return value
-            try:
-                return ensure_timezone_aware(datetime.fromisoformat(str(value)))
-            except ValueError as exc:
-                raise ValueError("Invalid cursor value") from exc
-
-        value_parser = parse_datetime if sort_by == "created_at" else None
-
-        page_items, next_cursor, has_more = _paginate_items(
-            notifications,
-            sort_key=sort_options[sort_by],
-            sort_order=sort_order,
-            limit=pagination.limit,
-            cursor=pagination.cursor,
-            value_parser=value_parser,
-        )
-
-        return page_items, next_cursor, has_more, total_count
-
-    def mark_as_read(self, notification_id: int, user_id: int) -> models.Notification:
-        notification = (
-            self.db.query(models.Notification)
-            .filter(
-                models.Notification.id == notification_id,
-                models.Notification.user_id == user_id,
-            )
-            .first()
-        )
-        if not notification:
-            raise ValueError("Notification not found")
-
-        if not notification.read:
-            notification.read = True
-            self.db.commit()
-            self.db.refresh(notification)
-
-        return notification
-
-    def mark_all_as_read(self, user_id: int) -> int:
-        updated_count = (
-            self.db.query(models.Notification)
-            .filter(
-                models.Notification.user_id == user_id,
-                models.Notification.read.is_(False),
-            )
-            .update({models.Notification.read: True}, synchronize_session=False)
-        )
-        self.db.commit()
-        return updated_count
-
     def _is_resource_currently_available(self, resource_id: int) -> bool:
         """Check if a resource is currently available (not in an active reservation)."""
         resource = (
@@ -411,9 +301,6 @@ class NotificationService:
 
         if not resource:
             return False
-
-        # DO NOT update resource status here to avoid unwanted status resets
-        # Just check current status
 
         # Resource is available if:
         # 1. It's not disabled (base available = True)
@@ -649,6 +536,116 @@ class NotificationService:
             },
         }
         return schedule
+
+
+class NotificationService:
+    """Service for user notifications."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_notification(
+        self,
+        user_id: int,
+        type: schemas.NotificationType,
+        title: str,
+        message: str,
+        link: str | None = None,
+    ) -> models.Notification:
+        type_value = type.value if hasattr(type, "value") else str(type)
+        notification = models.Notification(
+            user_id=user_id,
+            type=type_value,
+            title=title,
+            message=message,
+            link=link,
+        )
+        self.db.add(notification)
+        self.db.commit()
+        self.db.refresh(notification)
+        return notification
+
+    def list_notifications(
+        self,
+        user_id: int,
+        pagination: schemas.PaginationParams,
+        include_total: bool = False,
+    ) -> tuple[list[models.Notification], str | None, bool, int | None]:
+        notifications = (
+            self.db.query(models.Notification)
+            .filter(models.Notification.user_id == user_id)
+            .all()
+        )
+
+        total_count = len(notifications) if include_total else None
+        sort_by = pagination.sort_by or "created_at"
+        sort_order = (pagination.sort_order or "desc").lower()
+
+        sort_options = {
+            "id": lambda n: n.id,
+            "created_at": lambda n: ensure_timezone_aware(n.created_at),
+            "type": lambda n: n.type,
+            "read": lambda n: n.read,
+        }
+
+        if sort_order not in {"asc", "desc"}:
+            raise ValueError("Invalid sort_order. Must be 'asc' or 'desc'.")
+        if sort_by not in sort_options:
+            raise ValueError(
+                "Invalid sort_by. Must be one of: id, created_at, type, read."
+            )
+
+        def parse_datetime(value: Any) -> datetime:
+            if isinstance(value, datetime):
+                return value
+            try:
+                return ensure_timezone_aware(datetime.fromisoformat(str(value)))
+            except ValueError as exc:
+                raise ValueError("Invalid cursor value") from exc
+
+        value_parser = parse_datetime if sort_by == "created_at" else None
+
+        page_items, next_cursor, has_more = _paginate_items(
+            notifications,
+            sort_key=sort_options[sort_by],
+            sort_order=sort_order,
+            limit=pagination.limit,
+            cursor=pagination.cursor,
+            value_parser=value_parser,
+        )
+
+        return page_items, next_cursor, has_more, total_count
+
+    def mark_as_read(self, notification_id: int, user_id: int) -> models.Notification:
+        notification = (
+            self.db.query(models.Notification)
+            .filter(
+                models.Notification.id == notification_id,
+                models.Notification.user_id == user_id,
+            )
+            .first()
+        )
+        if not notification:
+            raise ValueError("Notification not found")
+
+        if not notification.read:
+            notification.read = True
+            self.db.commit()
+            self.db.refresh(notification)
+
+        return notification
+
+    def mark_all_as_read(self, user_id: int) -> int:
+        updated_count = (
+            self.db.query(models.Notification)
+            .filter(
+                models.Notification.user_id == user_id,
+                models.Notification.read.is_(False),
+            )
+            .update({models.Notification.read: True}, synchronize_session=False)
+        )
+        self.db.commit()
+        return updated_count
 
 
 class ReservationService:
