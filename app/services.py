@@ -305,23 +305,25 @@ class ResourceService:
         if not resource:
             return False
 
-        # Resource is available if:
-        # 1. It's not disabled (base available = True)
-        # 2. It's not unavailable for maintenance
-        # 3. It's not currently in use
+        # Reuse status update logic so status and availability stay in sync
+        self._update_resource_status(resource)
         return resource.available and resource.status == "available"
 
     def _update_resource_status(self, resource: models.Resource):
         """Update resource status based on current reservations and auto-reset logic."""
         now = utcnow()
+        changed = False
 
         # Check if resource should be auto-reset from unavailable
         if resource.should_auto_reset():
             resource.set_available()
-            return
+            changed = True
 
         # If resource is manually disabled, don't change status
         if not resource.available:
+            if changed:
+                self.db.commit()
+                self.db.refresh(resource)
             return
 
         # Check if resource has any active reservations right now
@@ -341,11 +343,17 @@ class ResourceService:
             # Only change to in_use if not in maintenance mode
             if resource.status != "unavailable" and resource.status != "in_use":
                 resource.set_in_use()
+                changed = True
         else:
             # No active reservation, set to available only if currently in_use
             # DO NOT change unavailable (maintenance) status
             if resource.status == "in_use":
                 resource.set_available()
+                changed = True
+
+        if changed:
+            self.db.commit()
+            self.db.refresh(resource)
 
     def _has_conflict(
         self, resource_id: int, start_time: datetime, end_time: datetime
@@ -797,6 +805,9 @@ class ReservationService:
                     },
                 )
 
+                # Update resource status immediately if the reservation is active
+                self._update_resource_status(resource)
+
                 return reservation
 
             except IntegrityError as e:
@@ -963,6 +974,10 @@ class ReservationService:
                 ),
             },
         )
+
+        # Update resource status after cancellation
+        if resource:
+            self._update_resource_status(resource)
 
         # Check if anyone is waiting for this slot and offer it to them
         # Import here to avoid circular imports

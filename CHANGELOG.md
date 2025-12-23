@@ -4,6 +4,27 @@ All notable changes to Resource-Reserver will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-12-23
+
+### Added
+
+- WebSocket real-time updates for resource and reservation events, plus dashboard live indicator/toasts
+- Notification foundation: models, endpoints, badge, and notification center UI
+- Cursor-based pagination and enhanced filtering/sorting across resources and reservations (load more/infinite support)
+- Stronger password policy with UI strength meter and account security improvements (lockout, MFA handling)
+
+### Changed
+
+- Resource availability/status now syncs immediately when reservations start/end or are cancelled
+- Health dialog now targets the correct root health endpoint and surfaces accurate status
+- Developer workflow: `mise run up` uses Docker Compose first and can launch Tilt for monitoring
+
+### Fixed
+
+- WebSocket endpoint authentication/cleanup logging to satisfy Bandit and avoid silent failures
+- Reservation status display uses resource names where available instead of only IDs
+- Availability calculations respect maintenance/unavailable flags before marking resources in use
+
 ## [2.0.1] - 2025-12-13
 
 ### Fixed
