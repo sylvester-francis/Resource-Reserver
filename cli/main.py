@@ -43,6 +43,53 @@ app.add_typer(oauth_app, name="oauth")
 app.add_typer(setup_app, name="setup")
 
 
+@app.command("commands")
+def list_commands():
+    """List available CLI commands and key options."""
+    section("Resource Reserver Commands")
+
+    # Top-level groups
+    groups = [
+        ("auth", "Authentication (register, login, logout, status, refresh)"),
+        (
+            "resources",
+            "Resource management (list, search, availability, status, enable/disable, maintenance, upload)",
+        ),
+        ("reservations", "Reservation management (create, list, cancel, history)"),
+        ("waitlist", "Waitlist management (join, list, status, accept, leave)"),
+        ("system", "System utilities (status, summary, cleanup, config)"),
+        ("mfa", "MFA setup and backup code management"),
+        ("roles", "Role administration"),
+        ("oauth", "OAuth client management"),
+        ("setup", "Local CLI setup utilities"),
+        ("reserve", "Shortcut for reservations create with duration"),
+        ("upcoming", "Shortcut to list upcoming reservations"),
+    ]
+
+    render_table(["Command", "Description"], groups, title="Top-level")
+
+    hint("Common list commands and their options:")
+
+    list_options = [
+        (
+            "resources list",
+            "--details/-d, --limit/-l, --cursor/-c, --all, --sort/-s, --order/-o",
+        ),
+        (
+            "reservations list",
+            "--upcoming/-u, --include-cancelled/-c, --detailed/-d, "
+            "--limit/-l, --cursor, --all, --sort/-s, --order/-o",
+        ),
+        (
+            "waitlist list",
+            "--include-completed/-c, --limit/-l, --cursor, --sort/-s, --order/-o",
+        ),
+    ]
+
+    render_table(["Command", "Options"], list_options, title="List Commands")
+    hint("Run `cli <command> --help` for full details.")
+
+
 @auth_app.command("register")
 def register():
     """Register a new user account."""
@@ -61,6 +108,10 @@ def register():
         user = client.register(username, password)
         success(f"Successfully registered user {user['username']}")
         hint("Next: run `cli auth login` to sign in.")
+    except requests.exceptions.ConnectionError as exc:
+        error("Unable to reach the API. Is the server running?")
+        hint(f"Tried: {config.api_url}")
+        raise typer.Exit(1) from exc
     except requests.exceptions.HTTPError as e:
         error_msg = str(e)
         if "already" in error_msg.lower():
