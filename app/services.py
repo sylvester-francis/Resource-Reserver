@@ -956,9 +956,11 @@ class ReservationService:
                 "reservation_id": reservation.id,
                 "resource_id": reservation.resource_id,
                 "status": reservation.status,
-                "cancelled_at": reservation.cancelled_at.isoformat()
-                if reservation.cancelled_at
-                else None,
+                "cancelled_at": (
+                    reservation.cancelled_at.isoformat()
+                    if reservation.cancelled_at
+                    else None
+                ),
             },
         )
 

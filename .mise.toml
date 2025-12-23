@@ -59,16 +59,31 @@ description = "Start all services with Docker Compose"
 run = """
 #!/usr/bin/env bash
 set -e
-echo "Starting Resource-Reserver..."
-docker compose up -d --build
+echo "Starting Resource-Reserver (Tilt + Docker)..."
+# Ensure dependencies are installed
+if ! command -v tilt >/dev/null 2>&1; then
+  echo "Tilt not found. Installing via mise..."
+  mise install tilt
+fi
+
+tilt up --legacy --stream=false > /tmp/tilt.log 2>&1 &
+TILT_PID=$!
+
 echo ""
-echo "Services started successfully!"
+echo "Services starting..."
 echo "  Backend API:  http://localhost:8000"
 echo "  Frontend:     http://localhost:3000"
+echo "  Tilt UI:      http://localhost:10350"
 echo "  API Docs:     http://localhost:8000/docs"
 echo ""
-echo "Run 'mise run down' to stop services"
+echo "Run 'mise run down' to stop services (will also stop Tilt)"
 echo "Run 'mise run logs' to view logs"
+
+# Wait briefly to allow Tilt to start containers, then exit
+sleep 3
+if ! ps -p $TILT_PID >/dev/null 2>&1; then
+  echo "Tilt exited unexpectedly. Check tilt logs."
+fi
 """
 
 [tasks.down]

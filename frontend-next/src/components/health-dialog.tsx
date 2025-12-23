@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Activity, Server, Calendar } from 'lucide-react';
 
-import api from '@/lib/api';
+import api, { API_HOST } from '@/lib/api';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -42,7 +42,8 @@ export function HealthDialog({ open, onOpenChange, stats }: HealthDialogProps) {
     const fetchHealth = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/health');
+            // Health endpoint lives at root (/health), not under /api/v1
+            const response = await api.get('/health', { baseURL: API_HOST });
             setHealth({
                 ...response.data,
                 timestamp: new Date().toISOString(),
