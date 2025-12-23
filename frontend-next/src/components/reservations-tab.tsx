@@ -1,7 +1,14 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { Calendar, Clock, History, X } from 'lucide-react';
+import {
+    Calendar,
+    Clock,
+    History,
+    X,
+    ArrowDownWideNarrow,
+    ArrowUpWideNarrow,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import api from '@/lib/api';
@@ -182,11 +189,22 @@ export function ReservationsTab({
                             </SelectContent>
                         </Select>
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
+                            className="gap-2 rounded-full border border-primary/30 bg-primary/5 text-sm font-semibold"
                             onClick={() => setSortOrder(order => (order === 'asc' ? 'desc' : 'asc'))}
                         >
-                            {sortOrder === 'asc' ? 'Asc' : 'Desc'}
+                            {sortOrder === 'asc' ? (
+                                <>
+                                    <ArrowUpWideNarrow className="h-4 w-4" />
+                                    Ascending
+                                </>
+                            ) : (
+                                <>
+                                    <ArrowDownWideNarrow className="h-4 w-4" />
+                                    Descending
+                                </>
+                            )}
                         </Button>
                     </div>
 

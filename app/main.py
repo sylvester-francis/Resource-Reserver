@@ -6,6 +6,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from io import StringIO
+from zoneinfo import ZoneInfo
 
 from fastapi import (
     APIRouter,
@@ -86,6 +87,31 @@ def ensure_timezone_aware(dt):
 def utcnow():
     """Get current UTC datetime that's timezone-aware."""
     return datetime.now(UTC)
+
+
+def get_request_timezone(request: Request) -> ZoneInfo:
+    """Get the requested timezone from header X-Timezone or fallback to UTC."""
+    tz_header = request.headers.get("X-Timezone")
+    if tz_header:
+        try:
+            return ZoneInfo(tz_header)
+        except Exception:
+            # Invalid timezone; fall back to UTC
+            return ZoneInfo("UTC")
+    return ZoneInfo("UTC")
+
+
+def convert_reservation_timezone(reservation, tz: ZoneInfo):
+    """Convert datetime fields on a reservation to the provided timezone."""
+    if hasattr(reservation, "start_time") and reservation.start_time:
+        reservation.start_time = reservation.start_time.astimezone(tz)
+    if hasattr(reservation, "end_time") and reservation.end_time:
+        reservation.end_time = reservation.end_time.astimezone(tz)
+    if hasattr(reservation, "created_at") and reservation.created_at:
+        reservation.created_at = reservation.created_at.astimezone(tz)
+    if hasattr(reservation, "cancelled_at") and reservation.cancelled_at:
+        reservation.cancelled_at = reservation.cancelled_at.astimezone(tz)
+    return reservation
 
 
 async def cleanup_expired_reservations():
@@ -818,9 +844,13 @@ def create_reservation(
 ):
     """Create a new reservation."""
     reservation_service = ReservationService(db)
+    tz = get_request_timezone(request)
 
     try:
-        return reservation_service.create_reservation(reservation_data, current_user.id)
+        reservation = reservation_service.create_reservation(
+            reservation_data, current_user.id
+        )
+        return convert_reservation_timezone(reservation, tz)
     except ValueError as e:
         if "conflicts" in str(e).lower():
             raise HTTPException(
@@ -847,6 +877,7 @@ def create_recurring_reservations(
 ):
     """Create a series of recurring reservations."""
     reservation_service = ReservationService(db)
+    tz = get_request_timezone(request)
     try:
         reservations = reservation_service.create_recurring_reservations(
             reservation_data, current_user.id
@@ -856,7 +887,7 @@ def create_recurring_reservations(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
         ) from exc
 
-    return reservations
+    return [convert_reservation_timezone(res, tz) for res in reservations]
 
 
 @app.get(
@@ -882,6 +913,7 @@ def get_my_reservations(
 ):
     """Get current user's reservations."""
     reservation_service = ReservationService(db)
+    tz = get_request_timezone(request)
     pagination = schemas.PaginationParams(
         cursor=cursor, limit=limit, sort_by=sort_by, sort_order=sort_order
     )
@@ -899,8 +931,10 @@ def get_my_reservations(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
 
+    reservations_local = [convert_reservation_timezone(res, tz) for res in reservations]
+
     return schemas.PaginatedResponse(
-        data=reservations,
+        data=reservations_local,
         next_cursor=next_cursor,
         prev_cursor=None,
         has_more=has_more,
