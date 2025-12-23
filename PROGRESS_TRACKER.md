@@ -4,13 +4,13 @@
 
 ### PR #1: API Versioning & Rate Limiting
 
-- [ ] Create branch `feat/api-v1-rate-limiting`
-- [ ] Add slowapi to pyproject.toml
-- [ ] Create app/config.py with settings
-- [ ] Update app/main.py with v1 router + rate limiter
-- [ ] Update frontend API base path
-- [ ] Update tests for /api/v1 prefix
-- [ ] Run tests: `pytest tests/test_api/`
+- [x] Create branch `feat/api-v1-rate-limiting`
+- [x] Add slowapi to pyproject.toml
+- [x] Create app/config.py with settings
+- [x] Update app/main.py with v1 router + rate limiter
+- [x] Update frontend API base path
+- [x] Update tests for /api/v1 prefix
+- [x] Run tests: `pytest tests/test_api/`
 - [ ] Create PR
 - [ ] Merge PR
 
