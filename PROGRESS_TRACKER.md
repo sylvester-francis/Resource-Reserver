@@ -37,7 +37,7 @@
 - [x] Update login page with lockout message
 - [x] Add tests
 - [x] Run tests: `pytest tests/test_api/test_auth.py -v` `pytest tests/test_services/test_user_service.py -v`
-- [ ] Create PR
+- [x] Create PR (#14)
 - [ ] Merge PR
 
 ______________________________________________________________________
