@@ -55,19 +55,33 @@ echo "✅ Setup complete!"
 """
 
 [tasks.up]
-description = "Start all services with Docker Compose"
+description = "Start all services via Tilt (shows live status/logs)"
 run = """
 #!/usr/bin/env bash
 set -e
-echo "Starting Resource-Reserver..."
+echo "Starting Resource-Reserver with Docker Compose..."
 docker compose up -d --build
+
 echo ""
-echo "Services started successfully!"
+echo "Services started:"
 echo "  Backend API:  http://localhost:8000"
 echo "  Frontend:     http://localhost:3000"
 echo "  API Docs:     http://localhost:8000/docs"
+
+# Optionally launch Tilt after services are up for UI/logs
+if command -v tilt >/dev/null 2>&1; then
+  echo ""
+  echo "Starting Tilt for monitoring (logs: /tmp/tilt.log)..."
+  tilt up --stream=false --legacy > /tmp/tilt.log 2>&1 &
+  TILT_PID=$!
+  echo "  Tilt UI:      http://localhost:10350  (PID $TILT_PID)"
+else
+  echo ""
+  echo "Tilt not installed; skipping Tilt UI. Run 'mise install tilt' if you want it."
+fi
+
 echo ""
-echo "Run 'mise run down' to stop services"
+echo "Run 'mise run down' to stop services (will also stop Tilt if running)"
 echo "Run 'mise run logs' to view logs"
 """
 
