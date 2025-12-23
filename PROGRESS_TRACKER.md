@@ -24,7 +24,7 @@
 - [x] Add axios interceptor for auto-refresh
 - [x] Add tests
 - [x] Run tests: `pytest tests/test_api/test_auth.py`
-- [ ] Create PR
+- [x] Create PR (#13)
 - [ ] Merge PR
 
 ### PR #3: Account Security
