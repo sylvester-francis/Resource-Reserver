@@ -173,7 +173,9 @@ describe('useAuth Hook', () => {
                 data: { message: 'Successfully logged out', revoked_tokens: 1 },
             });
 
-            const originalHref = window.location.href;
+            const assignSpy = vi
+                .spyOn(window.location, 'assign')
+                .mockImplementation(() => {});
 
             const { result } = renderHook(() => useAuth());
 
@@ -187,9 +189,8 @@ describe('useAuth Hook', () => {
             });
 
             expect(result.current.user).toBe(null);
-            expect(window.location.href).toBe('/login');
-
-            window.location.href = originalHref;
+            expect(assignSpy).toHaveBeenCalledWith('/login');
+            assignSpy.mockRestore();
         });
     });
 });
