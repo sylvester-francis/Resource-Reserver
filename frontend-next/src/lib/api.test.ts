@@ -1,29 +1,29 @@
 import { describe, it, expect, vi } from 'vitest';
 
+const mockAxios = {
+    create: vi.fn(() => mockAxios),
+    get: vi.fn(),
+    post: vi.fn(),
+    interceptors: {
+        request: { use: vi.fn() },
+        response: { use: vi.fn() },
+    },
+    defaults: { headers: { common: {} } },
+};
+
 // Mock axios
-vi.mock('axios', () => {
-    const mockAxios = {
-        create: vi.fn(() => mockAxios),
-        get: vi.fn(),
-        post: vi.fn(),
-        interceptors: {
-            request: { use: vi.fn() },
-            response: { use: vi.fn() },
-        },
-        defaults: { headers: { common: {} } },
-    };
-    return { default: mockAxios, AxiosError: class AxiosError extends Error { } };
-});
+vi.mock('axios', () => ({
+    default: mockAxios,
+    AxiosError: class AxiosError extends Error {},
+}));
 
 const apiModulePromise = import('@/lib/api');
 
 describe('API Client', () => {
     it('should create axios instance with correct base URL', async () => {
-        const axiosModule = await import('axios');
-        const axiosMock = axiosModule.default as { create: ReturnType<typeof vi.fn> };
         const { API_BASE_URL } = await apiModulePromise;
 
-        expect(axiosMock.create).toHaveBeenCalledWith({
+        expect(mockAxios.create).toHaveBeenCalledWith({
             baseURL: expect.any(String),
             headers: {
                 'Content-Type': 'application/json',

@@ -173,12 +173,7 @@ describe('useAuth Hook', () => {
                 data: { message: 'Successfully logged out', revoked_tokens: 1 },
             });
 
-            // Mock window.location
-            const originalLocation = window.location;
-            Object.defineProperty(window, 'location', {
-                value: { href: '' },
-                writable: true,
-            });
+            const originalHref = window.location.href;
 
             const { result } = renderHook(() => useAuth());
 
@@ -194,11 +189,7 @@ describe('useAuth Hook', () => {
             expect(result.current.user).toBe(null);
             expect(window.location.href).toBe('/login');
 
-            // Restore window.location
-            Object.defineProperty(window, 'location', {
-                value: originalLocation,
-                writable: true,
-            });
+            window.location.href = originalHref;
         });
     });
 });
