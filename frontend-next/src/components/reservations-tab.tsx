@@ -1,17 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Calendar, Clock, History, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import api from '@/lib/api';
 import { formatDateTime } from '@/lib/date';
+import { usePagination } from '@/hooks/use-pagination';
 import type { Reservation } from '@/types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { HistoryDialog } from '@/components/history-dialog';
+import { Pagination } from '@/components/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,19 +25,26 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface ReservationsTabProps {
-    reservations: Reservation[];
     onRefresh: () => void;
     showAll?: boolean;
+    upcomingOnly?: boolean;
     emptyMessage?: string;
     emptyDescription?: string;
 }
 
 export function ReservationsTab({
-    reservations,
     onRefresh,
     showAll = false,
+    upcomingOnly = false,
     emptyMessage = 'No Reservations Found',
     emptyDescription = "You haven't made any reservations yet. Start by browsing available resources.",
 }: ReservationsTabProps) {
@@ -42,6 +52,8 @@ export function ReservationsTab({
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [sortBy, setSortBy] = useState('start_time');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     const handleViewHistory = (reservation: Reservation) => {
         setSelectedReservation(reservation);
@@ -62,6 +74,7 @@ export function ReservationsTab({
                 reason: 'Cancelled by user',
             });
             toast.success('Reservation cancelled successfully');
+            await refresh();
             onRefresh();
         } catch {
             toast.error('Failed to cancel reservation');
@@ -88,6 +101,65 @@ export function ReservationsTab({
         }
     };
 
+    const pageSize = 10;
+    const paginationParams = useMemo(
+        () => ({
+            include_cancelled: showAll || undefined,
+            sort_by: sortBy,
+            sort_order: sortOrder,
+        }),
+        [showAll, sortBy, sortOrder]
+    );
+
+    const fetchReservations = useCallback(
+        async ({
+            cursor,
+            limit,
+            include_cancelled,
+            sort_by,
+            sort_order,
+        }: {
+            cursor?: string | null;
+            limit: number;
+            include_cancelled?: boolean;
+            sort_by?: string;
+            sort_order?: string;
+        }) => {
+            const response = await api.get('/reservations/my', {
+                params: {
+                    cursor,
+                    limit,
+                    include_cancelled,
+                    sort_by,
+                    sort_order,
+                },
+            });
+            return response.data;
+        },
+        []
+    );
+
+    const {
+        items: reservations,
+        hasMore,
+        loading,
+        totalCount,
+        loadMore,
+        refresh,
+    } = usePagination<Reservation, typeof paginationParams>(fetchReservations, {
+        params: paginationParams,
+        limit: pageSize,
+    });
+
+    const displayedReservations = useMemo(() => {
+        if (!upcomingOnly) return reservations;
+        const now = new Date();
+        return reservations.filter(
+            reservation =>
+                reservation.status === 'active' && new Date(reservation.start_time) > now
+        );
+    }, [reservations, upcomingOnly]);
+
     return (
         <>
             <Card>
@@ -95,15 +167,47 @@ export function ReservationsTab({
                     <CardTitle>{showAll ? 'My Reservations' : 'Upcoming Reservations'}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {reservations.length === 0 ? (
+                    <div className="mb-4 flex gap-2">
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="start_time">Start time</SelectItem>
+                                <SelectItem value="end_time">End time</SelectItem>
+                                <SelectItem value="created_at">Created at</SelectItem>
+                                <SelectItem value="id">ID</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSortOrder(order => (order === 'asc' ? 'desc' : 'asc'))}
+                        >
+                            {sortOrder === 'asc' ? 'Asc' : 'Desc'}
+                        </Button>
+                    </div>
+
+                    {loading && reservations.length === 0 ? (
+                        <div className="space-y-3">
+                            {[...Array(3)].map((_, index) => (
+                                <Skeleton key={index} className="h-20 w-full" />
+                            ))}
+                        </div>
+                    ) : displayedReservations.length === 0 &&
+                      (!upcomingOnly || !hasMore) ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <Calendar className="mb-4 h-12 w-12 text-muted-foreground/50" />
                             <h3 className="text-lg font-semibold">{emptyMessage}</h3>
                             <p className="text-muted-foreground max-w-sm">{emptyDescription}</p>
                         </div>
+                    ) : displayedReservations.length === 0 && upcomingOnly ? (
+                        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                            Load more to check additional reservations.
+                        </div>
                     ) : (
                         <div className="space-y-3">
-                            {reservations.map(reservation => (
+                            {displayedReservations.map(reservation => (
                                 <div
                                     key={reservation.id}
                                     className="flex items-center justify-between rounded-lg border p-4"
@@ -144,6 +248,17 @@ export function ReservationsTab({
                             ))}
                         </div>
                     )}
+
+                    <Pagination
+                        hasMore={hasMore}
+                        loading={loading}
+                        onLoadMore={loadMore}
+                        summary={
+                            totalCount !== null
+                                ? `Showing ${reservations.length} of ${totalCount} reservations`
+                                : `Showing ${reservations.length} reservations`
+                        }
+                    />
                 </CardContent>
             </Card>
 

@@ -1,8 +1,9 @@
 """Pydantic schemas for request/response validation."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from app.utils.password import PasswordPolicy
 
@@ -20,6 +21,24 @@ def ensure_timezone_aware(dt):
 def utcnow():
     """Get current UTC datetime that's timezone-aware."""
     return datetime.now(UTC)
+
+
+T = TypeVar("T")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    data: list[T]
+    next_cursor: str | None = None
+    prev_cursor: str | None = None
+    has_more: bool
+    total_count: int | None = None
+
+
+class PaginationParams(BaseModel):
+    cursor: str | None = None
+    limit: int = Field(default=20, le=100, ge=1)
+    sort_by: str | None = "created_at"
+    sort_order: str | None = "desc"
 
 
 class UserCreate(BaseModel):

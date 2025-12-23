@@ -1,73 +1,101 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Search, Plus, Upload, Filter, Clock, CheckCircle, XCircle, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
 import api from '@/lib/api';
+import { usePagination } from '@/hooks/use-pagination';
 import type { Resource } from '@/types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/pagination';
 import { CreateResourceDialog } from '@/components/create-resource-dialog';
 import { UploadCsvDialog } from '@/components/upload-csv-dialog';
 import { ReservationDialog } from '@/components/reservation-dialog';
 import { AvailabilityDialog } from '@/components/availability-dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface ResourcesTabProps {
-    resources: Resource[];
     onRefresh: () => void;
 }
 
 type FilterType = 'all' | 'available' | 'in_use' | 'unavailable';
 
-export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
+export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentFilter, setCurrentFilter] = useState<FilterType>('all');
-    const [currentPage, setCurrentPage] = useState(1);
+    const [sortBy, setSortBy] = useState('name');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
     const [availabilityDialogOpen, setAvailabilityDialogOpen] = useState(false);
     const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
 
-    const itemsPerPage = 10;
-
-    const filteredResources = useMemo(() => {
-        let filtered = resources;
-
-        // Apply search filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(r => {
-                const tags = Array.isArray(r.tags) ? r.tags : [];
-                return (
-                    r.name.toLowerCase().includes(query) ||
-                    tags.some(t => t.toLowerCase().includes(query))
-                );
-            });
-        }
-
-        // Apply status filter
-        if (currentFilter !== 'all') {
-            filtered = filtered.filter(r => {
-                if (currentFilter === 'available') return r.available;
-                if (currentFilter === 'in_use') return r.available && r.status === 'in_use';
-                if (currentFilter === 'unavailable') return !r.available;
-                return true;
-            });
-        }
-
-        return filtered;
-    }, [resources, searchQuery, currentFilter]);
-
-    const totalPages = Math.ceil(filteredResources.length / itemsPerPage);
-    const paginatedResources = filteredResources.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
+    const pageSize = 10;
+    const paginationParams = useMemo(
+        () => ({
+            q: searchQuery || undefined,
+            status: currentFilter,
+            sort_by: sortBy,
+            sort_order: sortOrder,
+        }),
+        [searchQuery, currentFilter, sortBy, sortOrder]
     );
+
+    const fetchResources = useCallback(
+        async ({
+            cursor,
+            limit,
+            q,
+            status,
+            sort_by,
+            sort_order,
+        }: {
+            cursor?: string | null;
+            limit: number;
+            q?: string;
+            status?: string;
+            sort_by?: string;
+            sort_order?: string;
+        }) => {
+            const response = await api.get('/resources/search', {
+                params: {
+                    cursor,
+                    limit,
+                    q,
+                    status,
+                    sort_by,
+                    sort_order,
+                },
+            });
+            return response.data;
+        },
+        []
+    );
+
+    const {
+        items: resources,
+        hasMore,
+        loading,
+        totalCount,
+        loadMore,
+        refresh,
+    } = usePagination<Resource, typeof paginationParams>(fetchResources, {
+        params: paginationParams,
+        limit: pageSize,
+    });
 
     const handleReserve = (resource: Resource) => {
         setSelectedResource(resource);
@@ -85,6 +113,7 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                 available: !resource.available,
             });
             toast.success(`Resource ${resource.available ? 'disabled' : 'enabled'} successfully`);
+            await refresh();
             onRefresh();
         } catch {
             toast.error('Failed to update resource status');
@@ -135,11 +164,27 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                                 value={searchQuery}
                                 onChange={e => {
                                     setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
                                 }}
                                 className="pl-9"
                             />
                         </div>
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="w-[140px]">
+                                <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="name">Name</SelectItem>
+                                <SelectItem value="status">Status</SelectItem>
+                                <SelectItem value="id">ID</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSortOrder(order => (order === 'asc' ? 'desc' : 'asc'))}
+                        >
+                            {sortOrder === 'asc' ? 'Asc' : 'Desc'}
+                        </Button>
                     </div>
 
                     {/* Filters */}
@@ -151,7 +196,6 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                                 size="sm"
                                 onClick={() => {
                                     setCurrentFilter(filter);
-                                    setCurrentPage(1);
                                 }}
                                 className="gap-1"
                             >
@@ -166,7 +210,13 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
 
                     {/* Resource List */}
                     <div className="space-y-2">
-                        {paginatedResources.length === 0 ? (
+                        {loading && resources.length === 0 ? (
+                            <div className="space-y-3">
+                                {[...Array(3)].map((_, index) => (
+                                    <Skeleton key={index} className="h-16 w-full" />
+                                ))}
+                            </div>
+                        ) : resources.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 text-center">
                                 <Search className="mb-4 h-12 w-12 text-muted-foreground/50" />
                                 <h3 className="text-lg font-semibold">No Resources Found</h3>
@@ -185,7 +235,7 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                                 </Button>
                             </div>
                         ) : (
-                            paginatedResources.map(resource => {
+                            resources.map(resource => {
                                 const tags = Array.isArray(resource.tags) ? resource.tags : [];
                                 return (
                                 <div
@@ -246,34 +296,16 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
                         )}
                     </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="mt-4 flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                                Showing {(currentPage - 1) * itemsPerPage + 1}-
-                                {Math.min(currentPage * itemsPerPage, filteredResources.length)} of{' '}
-                                {filteredResources.length} resources
-                            </span>
-                            <div className="flex gap-1">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(p => p - 1)}
-                                >
-                                    Previous
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage(p => p + 1)}
-                                >
-                                    Next
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                    <Pagination
+                        hasMore={hasMore}
+                        loading={loading}
+                        onLoadMore={loadMore}
+                        summary={
+                            totalCount !== null
+                                ? `Showing ${resources.length} of ${totalCount} resources`
+                                : `Showing ${resources.length} resources`
+                        }
+                    />
                 </CardContent>
             </Card>
 
@@ -281,18 +313,27 @@ export function ResourcesTab({ resources, onRefresh }: ResourcesTabProps) {
             <CreateResourceDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSuccess={onRefresh}
+                onSuccess={() => {
+                    void refresh();
+                    onRefresh();
+                }}
             />
             <UploadCsvDialog
                 open={uploadDialogOpen}
                 onOpenChange={setUploadDialogOpen}
-                onSuccess={onRefresh}
+                onSuccess={() => {
+                    void refresh();
+                    onRefresh();
+                }}
             />
             <ReservationDialog
                 open={reservationDialogOpen}
                 onOpenChange={setReservationDialogOpen}
                 resource={selectedResource}
-                onSuccess={onRefresh}
+                onSuccess={() => {
+                    void refresh();
+                    onRefresh();
+                }}
             />
             <AvailabilityDialog
                 open={availabilityDialogOpen}

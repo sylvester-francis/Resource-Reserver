@@ -46,14 +46,14 @@ ______________________________________________________________________
 
 ### PR #4: Pagination & Filtering
 
-- [ ] Create branch `feat/pagination-filtering`
-- [ ] Add PaginatedResponse schema
-- [ ] Update ResourceService with pagination
-- [ ] Update ReservationService with pagination
-- [ ] Create usePagination hook
-- [ ] Update ResourceList component
-- [ ] Update ReservationList component
-- [ ] Add tests
+- [x] Create branch `feat/pagination-filtering`
+- [x] Add PaginatedResponse schema
+- [x] Update ResourceService with pagination
+- [x] Update ReservationService with pagination
+- [x] Create usePagination hook
+- [x] Update ResourceList component
+- [x] Update ReservationList component
+- [x] Add tests
 - [ ] Create PR
 - [ ] Merge PR
 
