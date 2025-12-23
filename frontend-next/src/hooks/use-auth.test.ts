@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useAuth } from '@/hooks/use-auth';
+import * as auth from '@/hooks/use-auth';
 import { ensureDom } from '../test/ensure-dom';
 
 // Mock the API module
@@ -34,7 +34,7 @@ describe('useAuth Hook', () => {
         it('should start with loading true and no user', async () => {
             apiMock.get.mockRejectedValueOnce(new Error('Not authenticated'));
 
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             expect(result.current.loading).toBe(true);
             expect(result.current.user).toBe(null);
@@ -49,7 +49,7 @@ describe('useAuth Hook', () => {
                 data: { id: 1, username: 'testuser' },
             });
 
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             await waitFor(() => {
                 expect(result.current.loading).toBe(false);
@@ -64,7 +64,7 @@ describe('useAuth Hook', () => {
             const mockUser = { id: 1, username: 'testuser', is_admin: false };
             apiMock.get.mockResolvedValueOnce({ data: mockUser });
 
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             await waitFor(() => {
                 expect(result.current.loading).toBe(false);
@@ -77,7 +77,7 @@ describe('useAuth Hook', () => {
         it('should clear user when checkAuth fails', async () => {
             apiMock.get.mockRejectedValueOnce(new Error('Unauthorized'));
 
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             await waitFor(() => {
                 expect(result.current.loading).toBe(false);
@@ -98,7 +98,7 @@ describe('useAuth Hook', () => {
                 data: { id: 1, username: 'testuser' },
             });
 
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             await waitFor(() => {
                 expect(result.current.loading).toBe(false);
@@ -124,7 +124,7 @@ describe('useAuth Hook', () => {
                 data: { id: 1, username: 'testuser' },
             });
 
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             await waitFor(() => {
                 expect(result.current.loading).toBe(false);
@@ -146,7 +146,7 @@ describe('useAuth Hook', () => {
                 data: { id: 1, username: 'newuser' },
             });
 
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             await waitFor(() => {
                 expect(result.current.loading).toBe(false);
@@ -172,12 +172,9 @@ describe('useAuth Hook', () => {
             apiMock.post.mockResolvedValueOnce({
                 data: { message: 'Successfully logged out', revoked_tokens: 1 },
             });
+            window.history.replaceState({}, '', '/');
 
-            const assignSpy = vi
-                .spyOn(window.location, 'assign')
-                .mockImplementation(() => {});
-
-            const { result } = renderHook(() => useAuth());
+            const { result } = renderHook(() => auth.useAuth());
 
             await waitFor(() => {
                 expect(result.current.isAuthenticated).toBe(true);
@@ -189,8 +186,7 @@ describe('useAuth Hook', () => {
             });
 
             expect(result.current.user).toBe(null);
-            expect(assignSpy).toHaveBeenCalledWith('/login');
-            assignSpy.mockRestore();
+            expect(window.location.pathname).toBe('/login');
         });
     });
 });

@@ -50,7 +50,7 @@ export default function HomeClient() {
                 router.replace('/login');
             }
         }
-    }, [isAuthenticated, loading, router, setupComplete]);
+    }, [isAuthenticated, loading, router, setupComplete, userCount]);
 
     return (
         <div className="flex min-h-screen items-center justify-center">

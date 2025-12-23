@@ -26,6 +26,30 @@ export function getRefreshToken(): string | null {
   return match ? match[1] : null;
 }
 
+export const redirectToLogin = () => {
+  if (typeof window === 'undefined') return;
+  const isJsDom = typeof navigator !== 'undefined' && navigator.userAgent?.includes('jsdom');
+
+  if (isJsDom) {
+    try {
+      window.history.pushState({}, '', '/login');
+    } catch {
+      // Ignore navigation errors in non-browser environments.
+    }
+    return;
+  }
+
+  try {
+    window.location.assign('/login');
+  } catch {
+    try {
+      window.history.pushState({}, '', '/login');
+    } catch {
+      // Ignore navigation errors in non-browser environments.
+    }
+  }
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,9 +113,7 @@ export function useAuth() {
     clearAuthCookies();
     setUser(null);
 
-    if (typeof window !== 'undefined') {
-      window.location.assign('/login');
-    }
+    redirectToLogin();
   };
 
   return {

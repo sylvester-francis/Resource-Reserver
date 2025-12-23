@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import api from '@/lib/api';
 import { formatDateTime } from '@/lib/date';
-import type { Reservation } from '@/types';
+import type { PaginatedResponse, Reservation } from '@/types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,15 +57,17 @@ export default function DashboardClient() {
             let hasMore = true;
 
             while (hasMore) {
-                const response = await api.get('/reservations/my', {
-                    params: {
-                        limit: 100,
-                        cursor,
-                        sort_by: 'start_time',
-                        sort_order: 'asc',
-                    },
-                });
-                const payload = response.data;
+                const { data: payload }: { data: PaginatedResponse<Reservation> } = await api.get(
+                    '/reservations/my',
+                    {
+                        params: {
+                            limit: 100,
+                            cursor,
+                            sort_by: 'start_time',
+                            sort_order: 'asc',
+                        },
+                    }
+                );
                 const data = Array.isArray(payload?.data) ? payload.data : [];
                 allReservations.push(...data);
                 cursor = payload?.next_cursor ?? null;
