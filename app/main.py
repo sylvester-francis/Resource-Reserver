@@ -26,7 +26,15 @@ from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app import models, rbac, schemas, setup
-from app.auth import authenticate_user, create_access_token, get_current_user
+from app.auth import (
+    authenticate_user,
+    create_access_token,
+    create_refresh_token,
+    get_current_user,
+    revoke_user_tokens,
+    rotate_refresh_token,
+    verify_refresh_token,
+)
 from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.database import SessionLocal, engine, get_db
@@ -318,7 +326,7 @@ def login_user(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    """Authenticate user and return access token."""
+    """Authenticate user and return access and refresh tokens."""
     normalized_username = form_data.username.lower()
 
     user = authenticate_user(db, normalized_username, form_data.password)
@@ -330,7 +338,13 @@ def login_user(
         )
 
     access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = create_refresh_token(db, user.id)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
 
 
 @app.get("/api/v1/users/me", tags=["Authentication"])
@@ -344,6 +358,55 @@ def get_current_user_info(
         "id": current_user.id,
         "username": current_user.username,
         "mfa_enabled": current_user.mfa_enabled,
+    }
+
+
+@app.post("/api/v1/token/refresh", tags=["Authentication"])
+@limiter.limit(settings.rate_limit_auth)
+def refresh_access_token(
+    request: Request,
+    refresh_token: str = Query(..., description="The refresh token"),
+    db: Session = Depends(get_db),
+):
+    """Refresh an access token using a valid refresh token.
+
+    This endpoint implements token rotation for security:
+    - The old refresh token is revoked
+    - A new refresh token is issued in the same family
+    - If a revoked token is reused, the entire family is revoked (security measure)
+    """
+    # Verify the refresh token
+    token_record, user = verify_refresh_token(db, refresh_token)
+
+    # Rotate the refresh token (revoke old, create new)
+    new_refresh_token = rotate_refresh_token(db, token_record)
+
+    # Create new access token
+    new_access_token = create_access_token(data={"sub": user.username})
+
+    return {
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer",
+    }
+
+
+@app.post("/api/v1/logout", tags=["Authentication"])
+@limiter.limit(settings.rate_limit_authenticated)
+def logout_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Logout user by revoking all their refresh tokens.
+
+    This invalidates all sessions for the user across all devices.
+    """
+    revoked_count = revoke_user_tokens(db, current_user.id)
+
+    return {
+        "message": "Successfully logged out",
+        "revoked_tokens": revoked_count,
     }
 
 

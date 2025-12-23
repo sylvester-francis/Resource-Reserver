@@ -56,7 +56,7 @@ class TestAuth:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_login_success(self, client, test_user):
-        """Test successful login"""
+        """Test successful login returns both access and refresh tokens"""
         response = client.post(
             f"{API_V1}/token", data={"username": "testuser", "password": "testpass123"}
         )
@@ -64,6 +64,7 @@ class TestAuth:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "access_token" in data
+        assert "refresh_token" in data
         assert data["token_type"] == "bearer"
 
     def test_login_invalid_credentials(self, client, test_user):
@@ -92,3 +93,99 @@ class TestAuth:
         headers = {"Authorization": "Bearer invalid_token"}
         response = client.get(f"{API_V1}/reservations/my", headers=headers)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestRefreshTokens:
+    """Test refresh token functionality"""
+
+    def test_refresh_token_success(self, client, test_user):
+        """Test refreshing an access token with a valid refresh token"""
+        # First login to get tokens
+        login_response = client.post(
+            f"{API_V1}/token", data={"username": "testuser", "password": "testpass123"}
+        )
+        assert login_response.status_code == status.HTTP_200_OK
+        refresh_token = login_response.json()["refresh_token"]
+
+        # Use refresh token to get new tokens
+        refresh_response = client.post(
+            f"{API_V1}/token/refresh", params={"refresh_token": refresh_token}
+        )
+        assert refresh_response.status_code == status.HTTP_200_OK
+
+        data = refresh_response.json()
+        assert "access_token" in data
+        assert "refresh_token" in data
+        assert data["token_type"] == "bearer"
+        # New refresh token should be different (token rotation)
+        assert data["refresh_token"] != refresh_token
+
+    def test_refresh_token_invalid(self, client):
+        """Test refresh with invalid token fails"""
+        response = client.post(
+            f"{API_V1}/token/refresh", params={"refresh_token": "invalid_token"}
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "invalid" in response.json()["detail"].lower()
+
+    def test_refresh_token_reuse_fails(self, client, test_user):
+        """Test that reusing an old refresh token fails (token rotation)"""
+        # Login to get initial tokens
+        login_response = client.post(
+            f"{API_V1}/token", data={"username": "testuser", "password": "testpass123"}
+        )
+        old_refresh_token = login_response.json()["refresh_token"]
+
+        # Use the refresh token once (this rotates it)
+        first_refresh = client.post(
+            f"{API_V1}/token/refresh", params={"refresh_token": old_refresh_token}
+        )
+        assert first_refresh.status_code == status.HTTP_200_OK
+
+        # Try to use the old refresh token again - should fail
+        second_refresh = client.post(
+            f"{API_V1}/token/refresh", params={"refresh_token": old_refresh_token}
+        )
+        assert second_refresh.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "revoked" in second_refresh.json()["detail"].lower()
+
+    def test_new_access_token_works(self, client, test_user):
+        """Test that the new access token from refresh works for API calls"""
+        # Login
+        login_response = client.post(
+            f"{API_V1}/token", data={"username": "testuser", "password": "testpass123"}
+        )
+        refresh_token = login_response.json()["refresh_token"]
+
+        # Refresh to get new access token
+        refresh_response = client.post(
+            f"{API_V1}/token/refresh", params={"refresh_token": refresh_token}
+        )
+        new_access_token = refresh_response.json()["access_token"]
+
+        # Use new access token to access protected endpoint
+        headers = {"Authorization": f"Bearer {new_access_token}"}
+        user_response = client.get(f"{API_V1}/users/me", headers=headers)
+        assert user_response.status_code == status.HTTP_200_OK
+        assert user_response.json()["username"] == "testuser"
+
+    def test_logout_revokes_tokens(self, client, test_user):
+        """Test that logout revokes all refresh tokens"""
+        # Login to get tokens
+        login_response = client.post(
+            f"{API_V1}/token", data={"username": "testuser", "password": "testpass123"}
+        )
+        access_token = login_response.json()["access_token"]
+        refresh_token = login_response.json()["refresh_token"]
+
+        # Logout
+        headers = {"Authorization": f"Bearer {access_token}"}
+        logout_response = client.post(f"{API_V1}/logout", headers=headers)
+        assert logout_response.status_code == status.HTTP_200_OK
+        assert "revoked_tokens" in logout_response.json()
+
+        # Try to use the refresh token - should fail
+        refresh_response = client.post(
+            f"{API_V1}/token/refresh", params={"refresh_token": refresh_token}
+        )
+        assert refresh_response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -4,6 +4,28 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import type { User } from '@/types';
 
+// Token storage helpers
+const TOKEN_COOKIE_MAX_AGE = 30 * 60; // 30 minutes for access token
+const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days for refresh token
+
+function setAuthCookies(accessToken: string, refreshToken: string) {
+  if (typeof window === 'undefined') return;
+  document.cookie = `auth_token=${accessToken}; path=/; max-age=${TOKEN_COOKIE_MAX_AGE}; SameSite=Lax`;
+  document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${REFRESH_TOKEN_MAX_AGE}; SameSite=Lax`;
+}
+
+function clearAuthCookies() {
+  if (typeof window === 'undefined') return;
+  document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const match = document.cookie.match(/refresh_token=([^;]+)/);
+  return match ? match[1] : null;
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,9 +63,9 @@ export function useAuth() {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    // Store token in cookie
-    if (typeof window !== 'undefined') {
-      document.cookie = `auth_token=${response.data.access_token}; path=/; max-age=${24 * 60 * 60}; SameSite=Lax`;
+    // Store both tokens in cookies
+    if (typeof window !== 'undefined' && response.data.access_token && response.data.refresh_token) {
+      setAuthCookies(response.data.access_token, response.data.refresh_token);
     }
 
     await checkAuth();
@@ -55,11 +77,19 @@ export function useAuth() {
     return response.data;
   };
 
-  const logout = () => {
-    // Clear auth cookie
+  const logout = async () => {
+    // Call logout endpoint to revoke refresh tokens
+    try {
+      await api.post('/logout');
+    } catch {
+      // Continue with local logout even if API call fails
+    }
+
+    // Clear auth cookies
+    clearAuthCookies();
+    setUser(null);
+
     if (typeof window !== 'undefined') {
-      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      setUser(null);
       window.location.href = '/login';
     }
   };
