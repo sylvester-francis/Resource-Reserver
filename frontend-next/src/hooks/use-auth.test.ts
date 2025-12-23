@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAuth } from '@/hooks/use-auth';
+import { ensureDom } from '../test/ensure-dom';
 
 // Mock the API module
 vi.mock('@/lib/api', () => ({
@@ -14,6 +15,10 @@ vi.mock('@/lib/api', () => ({
 import api from '@/lib/api';
 
 describe('useAuth Hook', () => {
+    beforeAll(() => {
+        ensureDom();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         // Clear cookies

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import axios from 'axios';
 
 // Mock axios
@@ -17,12 +17,6 @@ vi.mock('axios', () => {
 });
 
 describe('API Client', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        // Reset module registry to get fresh import
-        vi.resetModules();
-    });
-
     it('should create axios instance with correct base URL', async () => {
         // Import fresh after mocks are set
         const { API_BASE_URL } = await import('@/lib/api');
