@@ -91,15 +91,15 @@ ______________________________________________________________________
 
 ### PR #7: WebSocket Real-Time
 
-- [ ] Create branch `feat/websocket-realtime`
-- [ ] Create app/websocket.py
-- [ ] Add WebSocket route to main.py
-- [ ] Create WebSocketContext
-- [ ] Create useWebSocket hook
-- [ ] Add WS provider to layout
-- [ ] Update dashboard with live updates
-- [ ] Create LiveIndicator component
-- [ ] Add tests
+- [x] Create branch `feat/websocket-realtime`
+- [x] Create app/websocket.py
+- [x] Add WebSocket route to main.py
+- [x] Create WebSocketContext
+- [x] Create useWebSocket hook
+- [x] Add WS provider to layout
+- [x] Update dashboard with live updates
+- [x] Create LiveIndicator component
+- [x] Add tests
 - [ ] Create PR
 - [ ] Merge PR
 

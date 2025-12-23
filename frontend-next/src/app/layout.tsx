@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -46,7 +47,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <WebSocketProvider>{children}</WebSocketProvider>
         </ThemeProvider>
       </body>
     </html>

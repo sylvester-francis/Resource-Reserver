@@ -8,12 +8,14 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import anyio
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
 from app.auth import hash_password
 from app.utils.recurrence import generate_occurrences
+from app.websocket import manager as ws_manager
 
 
 def ensure_timezone_aware(dt):
@@ -382,6 +384,17 @@ class ResourceService:
         resource.available = available
         self.db.commit()
         self.db.refresh(resource)
+
+        anyio.from_thread.run(
+            ws_manager.broadcast_all,
+            {
+                "type": "resource_status_changed",
+                "resource_id": resource.id,
+                "status": resource.status,
+                "available": resource.available,
+                "auto_reset_hours": resource.auto_reset_hours,
+            },
+        )
         return resource
 
     def set_resource_unavailable(
@@ -400,6 +413,17 @@ class ResourceService:
         resource.set_unavailable(auto_reset_hours)
         self.db.commit()
         self.db.refresh(resource)
+
+        anyio.from_thread.run(
+            ws_manager.broadcast_all,
+            {
+                "type": "resource_status_changed",
+                "resource_id": resource.id,
+                "status": resource.status,
+                "available": resource.available,
+                "auto_reset_hours": resource.auto_reset_hours,
+            },
+        )
         return resource
 
     def reset_resource_to_available(self, resource_id: int) -> models.Resource:
@@ -416,6 +440,16 @@ class ResourceService:
         resource.set_available()
         self.db.commit()
         self.db.refresh(resource)
+
+        anyio.from_thread.run(
+            ws_manager.broadcast_all,
+            {
+                "type": "resource_status_changed",
+                "resource_id": resource.id,
+                "status": resource.status,
+                "available": resource.available,
+            },
+        )
         return resource
 
     def get_resource_status(self, resource_id: int) -> dict:
@@ -749,6 +783,20 @@ class ReservationService:
                     link=f"/reservations/{reservation.id}",
                 )
 
+                # Broadcast to user about new reservation
+
+                anyio.from_thread.run(
+                    ws_manager.broadcast_to_user,
+                    user_id,
+                    {
+                        "type": "reservation_created",
+                        "reservation_id": reservation.id,
+                        "resource_id": reservation.resource_id,
+                        "start_time": reservation.start_time.isoformat(),
+                        "end_time": reservation.end_time.isoformat(),
+                    },
+                )
+
                 return reservation
 
             except IntegrityError as e:
@@ -898,6 +946,20 @@ class ReservationService:
             title="Reservation cancelled",
             message=f"Reservation for {resource.name if resource else 'resource'} was cancelled.",
             link=f"/reservations/{reservation.id}",
+        )
+
+        anyio.from_thread.run(
+            ws_manager.broadcast_to_user,
+            user_id,
+            {
+                "type": "reservation_cancelled",
+                "reservation_id": reservation.id,
+                "resource_id": reservation.resource_id,
+                "status": reservation.status,
+                "cancelled_at": reservation.cancelled_at.isoformat()
+                if reservation.cancelled_at
+                else None,
+            },
         )
 
         return reservation

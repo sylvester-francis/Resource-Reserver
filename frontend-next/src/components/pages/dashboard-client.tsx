@@ -6,6 +6,7 @@ import { Calendar, LogOut, Activity, Settings, CheckCircle2, Clock, Shield } fro
 import { toast } from 'sonner';
 
 import { useAuth } from '@/hooks/use-auth';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import api from '@/lib/api';
 import { formatDateTime } from '@/lib/date';
 import type { PaginatedResponse, Reservation } from '@/types';
@@ -28,6 +29,7 @@ import { ReservationsTab } from '@/components/reservations-tab';
 import { HealthDialog } from '@/components/health-dialog';
 import { MfaDialog } from '@/components/mfa-dialog';
 import { NotificationBadge } from '@/components/NotificationBadge';
+import { LiveIndicator } from '@/components/LiveIndicator';
 
 interface Stats {
     totalResources: number;
@@ -39,6 +41,7 @@ interface Stats {
 export default function DashboardClient() {
     const router = useRouter();
     const { user, loading: authLoading, logout, isAuthenticated } = useAuth();
+    const { status: wsStatus, subscribe } = useWebSocket();
 
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [stats, setStats] = useState<Stats>({
@@ -115,6 +118,38 @@ export default function DashboardClient() {
         }
     }, [authLoading, isAuthenticated, router, fetchData]);
 
+    useEffect(() => {
+        const unsubscribeCreated = subscribe('reservation_created', (message) => {
+            if (message.resource_id) {
+                toast.success(`Reservation confirmed for resource #${message.resource_id}`);
+            }
+            fetchData();
+        });
+
+        const unsubscribeCancelled = subscribe('reservation_cancelled', (message) => {
+            if (message.resource_id) {
+                toast.warning(`Reservation on resource #${message.resource_id} was cancelled`);
+            }
+            fetchData();
+        });
+
+        const unsubscribeResource = subscribe('resource_status_changed', (message) => {
+            if (message.resource_id && message.status) {
+                toast.info(
+                    `Resource #${message.resource_id} is now ${String(message.status)}`,
+                    { duration: 2500 }
+                );
+            }
+            fetchData();
+        });
+
+        return () => {
+            unsubscribeCreated();
+            unsubscribeCancelled();
+            unsubscribeResource();
+        };
+    }, [subscribe, fetchData]);
+
     const handleLogout = () => {
         logout();
         toast.success('Signed out successfully');
@@ -174,6 +209,9 @@ export default function DashboardClient() {
                         >
                             <Activity className="h-4 w-4" />
                         </Button>
+                        <div className="hidden sm:block">
+                            <LiveIndicator status={wsStatus} />
+                        </div>
                         <NotificationBadge enabled={!authLoading && isAuthenticated} />
                         <ThemeToggle />
 
