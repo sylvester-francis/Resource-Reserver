@@ -1,4 +1,4 @@
-# app/main.py - Updated with timezone-aware datetime handling
+# app/main.py - API v1 with rate limiting
 
 import asyncio
 import csv
@@ -7,14 +7,28 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from io import StringIO
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    FastAPI,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app import models, rbac, schemas, setup
 from app.auth import authenticate_user, create_access_token, get_current_user
 from app.auth_routes import mfa_router, oauth_router, roles_router
+from app.config import get_settings
 from app.database import SessionLocal, engine, get_db
 from app.services import ReservationService, ResourceService, UserService
 from app.setup_routes import setup_router
@@ -23,8 +37,32 @@ from app.setup_routes import setup_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Get settings
+settings = get_settings()
+
 # Global variable to control the cleanup task
 cleanup_task = None
+
+
+# Rate limiter key function that considers authentication
+def get_rate_limit_key(request: Request) -> str:
+    """Get rate limit key based on user or IP."""
+    # Try to get user from token if present
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        # Use token hash as key for authenticated users
+        token = auth_header.split(" ")[1]
+        return f"user:{hash(token)}"
+    # Fall back to IP for anonymous users
+    return get_remote_address(request)
+
+
+# Initialize rate limiter
+limiter = Limiter(
+    key_func=get_rate_limit_key,
+    enabled=settings.rate_limit_enabled,
+    default_limits=[settings.rate_limit_anonymous],
+)
 
 
 def ensure_timezone_aware(dt):
@@ -32,7 +70,6 @@ def ensure_timezone_aware(dt):
     if dt is None:
         return None
     if dt.tzinfo is None:
-        # If naive, assume it's UTC
         return dt.replace(tzinfo=UTC)
     return dt
 
@@ -43,7 +80,7 @@ def utcnow():
 
 
 async def cleanup_expired_reservations():
-    """Background task to clean up expired reservations and auto-reset unavailable resources."""  # noqa
+    """Background task to clean up expired reservations and auto-reset unavailable resources."""
     from app.database import SessionLocal
 
     logger.info("Starting cleanup task for expired reservations and resource status")
@@ -70,17 +107,13 @@ async def cleanup_expired_reservations():
                 )
 
                 for reservation in expired_reservations:
-                    # Log the cleanup action
                     history = models.ReservationHistory(
                         reservation_id=reservation.id,
                         action="expired",
                         user_id=reservation.user_id,
-                        details=f"Reservation automatically expired at "
-                        f"{now.isoformat()}",
+                        details=f"Reservation automatically expired at {now.isoformat()}",
                     )
                     db.add(history)
-
-                    # Update status to expired
                     reservation.status = "expired"
 
                     logger.info(
@@ -94,7 +127,6 @@ async def cleanup_expired_reservations():
                 logger.debug("No expired reservations found")
 
             # Auto-reset unavailable resources that have exceeded their timeout
-
             unavailable_resources = (
                 db.query(models.Resource)
                 .filter(
@@ -131,7 +163,6 @@ async def cleanup_expired_reservations():
             except Exception:  # nosec B110 - intentionally ignoring close errors
                 pass
 
-        # Run every 5 minutes (300 seconds)
         await asyncio.sleep(300)
 
 
@@ -140,17 +171,14 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for FastAPI application."""
     global cleanup_task
 
-    # Startup
     logger.info("Starting FastAPI application...")
 
-    # Create database tables
     try:
         models.Base.metadata.create_all(bind=engine)
         logger.info("Database tables verified/created")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
 
-    # Ensure default RBAC roles exist
     try:
         db = SessionLocal()
         rbac.create_default_roles(db)
@@ -160,16 +188,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error creating default roles: {e}")
 
-    # Start the background cleanup task
     cleanup_task = asyncio.create_task(cleanup_expired_reservations())
     logger.info("Background cleanup task started")
 
-    yield  # Application is running
+    yield
 
-    # Shutdown
     logger.info("Shutting down FastAPI application...")
 
-    # Cancel the background task
     if cleanup_task:
         cleanup_task.cancel()
         try:
@@ -190,34 +215,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Add rate limiter to app state and exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:8080",
-        "http://localhost:8000",
-    ],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include new auth routers
-app.include_router(mfa_router)
-app.include_router(roles_router)
-app.include_router(oauth_router)
-app.include_router(setup_router)
 
-# API-only backend - frontend served by Express.js
-
-
-# Enhanced health check endpoint
+# Health check at root level (no versioning needed)
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
     """Enhanced health check endpoint for monitoring."""
-
-    # Check background task status
     task_status = "unknown"
     if cleanup_task:
         if cleanup_task.done():
@@ -232,14 +247,12 @@ def health_check(db: Session = Depends(get_db)):
     else:
         task_status = "not_started"
 
-    # Test database connectivity
     try:
         from sqlalchemy import text
 
         db.execute(text("SELECT 1"))
         db_status = "healthy"
 
-        # Test basic service functionality
         from app.services import ResourceService
 
         service = ResourceService(db)
@@ -248,7 +261,7 @@ def health_check(db: Session = Depends(get_db)):
 
     except Exception as e:
         db_status = "unhealthy"
-        api_status = f"error: {str(e)[:100]}"  # Limit error message length  # noqa
+        api_status = f"error: {str(e)[:100]}"
         resources_count = 0
 
     overall_status = (
@@ -258,24 +271,36 @@ def health_check(db: Session = Depends(get_db)):
     return {
         "status": overall_status,
         "timestamp": utcnow(),
+        "version": settings.app_version,
         "database": db_status,
         "api": api_status,
         "resources_count": resources_count,
         "background_tasks": {"cleanup_task": task_status},
+        "rate_limiting": {"enabled": settings.rate_limit_enabled},
     }
+
+
+# =============================================================================
+# API v1 Endpoints
+# =============================================================================
 
 
 # Authentication endpoints
 @app.post(
-    "/register",
+    "/api/v1/register",
     response_model=schemas.UserResponse,
     status_code=status.HTTP_201_CREATED,
+    tags=["Authentication"],
 )
-def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
+@limiter.limit(settings.rate_limit_auth)
+def register_user(
+    request: Request,
+    user_data: schemas.UserCreate,
+    db: Session = Depends(get_db),
+):
     """Register a new user."""
     user_service = UserService(db)
 
-    # Check if user already exists
     existing_user = user_service.get_user_by_username(user_data.username)
     if existing_user:
         raise HTTPException(
@@ -286,13 +311,14 @@ def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     return user_service.create_user(user_data)
 
 
-@app.post("/token")
+@app.post("/api/v1/token", tags=["Authentication"])
+@limiter.limit(settings.rate_limit_auth)
 def login_user(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
     """Authenticate user and return access token."""
-    # Normalize username from form data
     normalized_username = form_data.username.lower()
 
     user = authenticate_user(db, normalized_username, form_data.password)
@@ -307,8 +333,10 @@ def login_user(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/users/me")
+@app.get("/api/v1/users/me", tags=["Authentication"])
+@limiter.limit(settings.rate_limit_authenticated)
 def get_current_user_info(
+    request: Request,
     current_user: models.User = Depends(get_current_user),
 ):
     """Get current authenticated user's information."""
@@ -321,11 +349,14 @@ def get_current_user_info(
 
 # Resource endpoints
 @app.post(
-    "/resources",
+    "/api/v1/resources",
     response_model=schemas.ResourceResponse,
     status_code=status.HTTP_201_CREATED,
+    tags=["Resources"],
 )
+@limiter.limit(settings.rate_limit_authenticated)
 def create_resource(
+    request: Request,
     resource_data: schemas.ResourceCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -335,15 +366,26 @@ def create_resource(
     return resource_service.create_resource(resource_data)
 
 
-@app.get("/resources", response_model=list[schemas.ResourceResponse])
-def list_resources(db: Session = Depends(get_db)):
+@app.get(
+    "/api/v1/resources",
+    response_model=list[schemas.ResourceResponse],
+    tags=["Resources"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def list_resources(request: Request, db: Session = Depends(get_db)):
     """List all resources."""
     resource_service = ResourceService(db)
     return resource_service.get_all_resources()
 
 
-@app.get("/resources/search", response_model=list[schemas.ResourceResponse])
+@app.get(
+    "/api/v1/resources/search",
+    response_model=list[schemas.ResourceResponse],
+    tags=["Resources"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
 def search_resources(
+    request: Request,
     q: str | None = Query(None, description="Search query for resource names"),
     status_filter: str | None = Query(
         None,
@@ -362,14 +404,11 @@ def search_resources(
     db: Session = Depends(get_db),
 ):
     """Search resources with optional time-based availability filtering."""
-
-    # Ensure timezone awareness for datetime parameters
     if available_from:
         available_from = ensure_timezone_aware(available_from)
     if available_until:
         available_until = ensure_timezone_aware(available_until)
 
-    # Validate time range if provided
     if available_from and available_until:
         if available_until <= available_from:
             raise HTTPException(
@@ -383,10 +422,8 @@ def search_resources(
                 detail="Start time must be in the future",
             )
 
-    # Handle status filtering with backwards compatibility
     final_status_filter = None
     if status_filter is not None:
-        # Validate status parameter
         valid_statuses = ["available", "in_use", "unavailable", "all"]
         if status_filter not in valid_statuses:
             raise HTTPException(
@@ -395,10 +432,8 @@ def search_resources(
             )
         final_status_filter = status_filter
     elif available_only is not None:
-        # Legacy parameter support
         final_status_filter = "available" if available_only else "all"
     else:
-        # Default behavior - show available resources
         final_status_filter = "available"
 
     resource_service = ResourceService(db)
@@ -407,8 +442,10 @@ def search_resources(
     )
 
 
-@app.post("/resources/upload")
+@app.post("/api/v1/resources/upload", tags=["Resources"])
+@limiter.limit(settings.rate_limit_heavy)
 def upload_resources_csv(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -454,7 +491,7 @@ def upload_resources_csv(
 
         return {
             "created_count": created_count,
-            "errors": errors[:10],  # Limit to first 10 errors
+            "errors": errors[:10],
         }
 
     except Exception as e:
@@ -464,8 +501,10 @@ def upload_resources_csv(
         ) from e
 
 
-@app.get("/resources/{resource_id}/schedule")
+@app.get("/api/v1/resources/{resource_id}/schedule", tags=["Resources"])
+@limiter.limit(settings.rate_limit_authenticated)
 def get_resource_schedule(
+    request: Request,
     resource_id: int,
     days_ahead: int = Query(7, description="Number of days to check ahead"),
     db: Session = Depends(get_db),
@@ -480,8 +519,10 @@ def get_resource_schedule(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
-@app.get("/resources/{resource_id}/availability")
+@app.get("/api/v1/resources/{resource_id}/availability", tags=["Resources"])
+@limiter.limit(settings.rate_limit_authenticated)
 def get_resource_availability(
+    request: Request,
     resource_id: int,
     days_ahead: int = Query(7, description="Number of days to check ahead"),
     db: Session = Depends(get_db),
@@ -496,14 +537,16 @@ def get_resource_availability(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
-@app.put("/resources/{resource_id}/status/unavailable")
+@app.put("/api/v1/resources/{resource_id}/status/unavailable", tags=["Resources"])
+@limiter.limit(settings.rate_limit_authenticated)
 def set_resource_unavailable(
+    request: Request,
     resource_id: int,
     auto_reset_hours: int = 8,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Set resource as unavailable for maintenance/repair with auto-reset."""  # noqa
+    """Set resource as unavailable for maintenance/repair with auto-reset."""
     resource_service = ResourceService(db)
 
     try:
@@ -529,8 +572,10 @@ def set_resource_unavailable(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
-@app.put("/resources/{resource_id}/status/available")
+@app.put("/api/v1/resources/{resource_id}/status/available", tags=["Resources"])
+@limiter.limit(settings.rate_limit_authenticated)
 def reset_resource_to_available(
+    request: Request,
     resource_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -552,8 +597,10 @@ def reset_resource_to_available(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
-@app.get("/resources/{resource_id}/status")
+@app.get("/api/v1/resources/{resource_id}/status", tags=["Resources"])
+@limiter.limit(settings.rate_limit_authenticated)
 def get_resource_status(
+    request: Request,
     resource_id: int,
     db: Session = Depends(get_db),
 ):
@@ -567,8 +614,10 @@ def get_resource_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
-@app.put("/resources/{resource_id}/availability")
+@app.put("/api/v1/resources/{resource_id}/availability", tags=["Resources"])
+@limiter.limit(settings.rate_limit_authenticated)
 def update_resource_availability(
+    request: Request,
     resource_id: int,
     availability_update: schemas.ResourceAvailabilityUpdate,
     db: Session = Depends(get_db),
@@ -590,8 +639,9 @@ def update_resource_availability(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
-@app.get("/resources/availability/summary")
-def get_availability_summary(db: Session = Depends(get_db)):
+@app.get("/api/v1/resources/availability/summary", tags=["Resources"])
+@limiter.limit(settings.rate_limit_authenticated)
+def get_availability_summary(request: Request, db: Session = Depends(get_db)):
     """Get summary of resource availability status."""
     resource_service = ResourceService(db)
 
@@ -601,7 +651,6 @@ def get_availability_summary(db: Session = Depends(get_db)):
     available_now = sum(1 for r in resources if r.available)
     unavailable_now = total_resources - available_now
 
-    # Get resources currently in use
     now = utcnow()
     in_use = (
         db.query(models.Reservation)
@@ -624,11 +673,14 @@ def get_availability_summary(db: Session = Depends(get_db)):
 
 # Reservation endpoints
 @app.post(
-    "/reservations",
+    "/api/v1/reservations",
     response_model=schemas.ReservationResponse,
     status_code=status.HTTP_201_CREATED,
+    tags=["Reservations"],
 )
+@limiter.limit(settings.rate_limit_authenticated)
 def create_reservation(
+    request: Request,
     reservation_data: schemas.ReservationCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -649,8 +701,14 @@ def create_reservation(
             ) from e
 
 
-@app.get("/reservations/my", response_model=list[schemas.ReservationResponse])
+@app.get(
+    "/api/v1/reservations/my",
+    response_model=list[schemas.ReservationResponse],
+    tags=["Reservations"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
 def get_my_reservations(
+    request: Request,
     include_cancelled: bool = Query(
         False, description="Include cancelled reservations"
     ),
@@ -662,8 +720,10 @@ def get_my_reservations(
     return reservation_service.get_user_reservations(current_user.id, include_cancelled)
 
 
-@app.post("/reservations/{reservation_id}/cancel")
+@app.post("/api/v1/reservations/{reservation_id}/cancel", tags=["Reservations"])
+@limiter.limit(settings.rate_limit_authenticated)
 def cancel_reservation(
+    request: Request,
     reservation_id: int,
     cancellation: schemas.ReservationCancel,
     db: Session = Depends(get_db),
@@ -696,14 +756,15 @@ def cancel_reservation(
             ) from e
 
 
-@app.get("/reservations/{reservation_id}/history")
+@app.get("/api/v1/reservations/{reservation_id}/history", tags=["Reservations"])
+@limiter.limit(settings.rate_limit_authenticated)
 def get_reservation_history(
+    request: Request,
     reservation_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     """Get history for a specific reservation."""
-    # Check if reservation exists and user has access
     reservation = (
         db.query(models.Reservation)
         .filter(models.Reservation.id == reservation_id)
@@ -726,8 +787,10 @@ def get_reservation_history(
 
 
 # Admin endpoints
-@app.post("/admin/cleanup-expired")
+@app.post("/api/v1/admin/cleanup-expired", tags=["Admin"])
+@limiter.limit(settings.rate_limit_authenticated)
 def manual_cleanup_expired_reservations(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -735,7 +798,6 @@ def manual_cleanup_expired_reservations(
     try:
         now = utcnow()
 
-        # Find expired reservations
         expired_reservations = (
             db.query(models.Reservation)
             .filter(
@@ -747,7 +809,6 @@ def manual_cleanup_expired_reservations(
 
         cleanup_count = 0
         for reservation in expired_reservations:
-            # Log the cleanup action
             history = models.ReservationHistory(
                 reservation_id=reservation.id,
                 action="expired",
@@ -756,8 +817,6 @@ def manual_cleanup_expired_reservations(
                 f"at {now.isoformat()}",
             )
             db.add(history)
-
-            # Update status to expired
             reservation.status = "expired"
             cleanup_count += 1
 
@@ -777,30 +836,145 @@ def manual_cleanup_expired_reservations(
         ) from e
 
 
-# Backward compatibility endpoints
+# =============================================================================
+# Include auth sub-routers under /api/v1
+# =============================================================================
+
+# Create a v1 router for auth sub-routes
+v1_auth_router = APIRouter(prefix="/api/v1")
+v1_auth_router.include_router(mfa_router)
+v1_auth_router.include_router(roles_router)
+v1_auth_router.include_router(oauth_router)
+v1_auth_router.include_router(setup_router)
+
+app.include_router(v1_auth_router)
+
+
+# =============================================================================
+# Legacy endpoints (deprecated, will be removed in v2)
+# These redirect/proxy to v1 endpoints for backward compatibility
+# =============================================================================
+
+
 @app.post(
-    "/reserve",
-    response_model=schemas.ReservationResponse,
+    "/register",
+    response_model=schemas.UserResponse,
+    status_code=status.HTTP_201_CREATED,
     include_in_schema=False,
+    deprecated=True,
 )
-def reserve_resource(
+def register_user_legacy(
+    request: Request,
+    user_data: schemas.UserCreate,
+    db: Session = Depends(get_db),
+):
+    """Legacy endpoint - use /api/v1/register instead."""
+    return register_user(request, user_data, db)
+
+
+@app.post("/token", include_in_schema=False, deprecated=True)
+def login_user_legacy(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    """Legacy endpoint - use /api/v1/token instead."""
+    return login_user(request, form_data, db)
+
+
+@app.get("/users/me", include_in_schema=False, deprecated=True)
+def get_current_user_info_legacy(
+    request: Request,
+    current_user: models.User = Depends(get_current_user),
+):
+    """Legacy endpoint - use /api/v1/users/me instead."""
+    return get_current_user_info(request, current_user)
+
+
+@app.post(
+    "/resources",
+    response_model=schemas.ResourceResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+    deprecated=True,
+)
+def create_resource_legacy(
+    request: Request,
+    resource_data: schemas.ResourceCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Legacy endpoint - use /api/v1/resources instead."""
+    return create_resource(request, resource_data, db, current_user)
+
+
+@app.get(
+    "/resources",
+    response_model=list[schemas.ResourceResponse],
+    include_in_schema=False,
+    deprecated=True,
+)
+def list_resources_legacy(request: Request, db: Session = Depends(get_db)):
+    """Legacy endpoint - use /api/v1/resources instead."""
+    return list_resources(request, db)
+
+
+@app.get(
+    "/resources/search",
+    response_model=list[schemas.ResourceResponse],
+    include_in_schema=False,
+    deprecated=True,
+)
+def search_resources_legacy(
+    request: Request,
+    q: str | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+    available_only: bool = Query(None),
+    available_from: datetime | None = Query(None),
+    available_until: datetime | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Legacy endpoint - use /api/v1/resources/search instead."""
+    return search_resources(
+        request, q, status_filter, available_only, available_from, available_until, db
+    )
+
+
+@app.post(
+    "/reservations",
+    response_model=schemas.ReservationResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+    deprecated=True,
+)
+def create_reservation_legacy(
+    request: Request,
     reservation_data: schemas.ReservationCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Legacy endpoint for creating reservations."""
-    return create_reservation(reservation_data, db, current_user)
+    """Legacy endpoint - use /api/v1/reservations instead."""
+    return create_reservation(request, reservation_data, db, current_user)
 
 
 @app.get(
-    "/my_reservations",
+    "/reservations/my",
     response_model=list[schemas.ReservationResponse],
     include_in_schema=False,
+    deprecated=True,
 )
 def get_my_reservations_legacy(
+    request: Request,
     include_cancelled: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Legacy endpoint for getting user reservations."""
-    return get_my_reservations(include_cancelled, db, current_user)
+    """Legacy endpoint - use /api/v1/reservations/my instead."""
+    return get_my_reservations(request, include_cancelled, db, current_user)
+
+
+# Include legacy auth routers at root level for backward compatibility
+app.include_router(mfa_router)
+app.include_router(roles_router)
+app.include_router(oauth_router)
+app.include_router(setup_router)

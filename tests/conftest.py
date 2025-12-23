@@ -10,7 +10,10 @@ from sqlalchemy.orm import sessionmaker
 from app import models
 from app.auth import hash_password
 from app.database import get_db
-from app.main import app
+from app.main import app, limiter
+
+# Disable rate limiting for tests
+limiter.enabled = False
 
 
 # Test database setup
@@ -69,8 +72,9 @@ def test_user(test_db):
 @pytest.fixture
 def auth_headers(client, test_user):
     """Get authentication headers for test user"""
+    # Use v1 API endpoint
     response = client.post(
-        "/token", data={"username": "testuser", "password": "testpass123"}
+        "/api/v1/token", data={"username": "testuser", "password": "testpass123"}
     )
     assert response.status_code == 200
     token = response.json()["access_token"]

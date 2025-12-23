@@ -1,5 +1,8 @@
 from fastapi import status
 
+# API v1 prefix
+API_V1 = "/api/v1"
+
 
 class TestResources:
     """Test resource management endpoints"""
@@ -12,7 +15,9 @@ class TestResources:
             "available": True,
         }
 
-        response = client.post("/resources", json=resource_data, headers=auth_headers)
+        response = client.post(
+            f"{API_V1}/resources", json=resource_data, headers=auth_headers
+        )
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
@@ -29,14 +34,14 @@ class TestResources:
             "available": True,
         }
 
-        response = client.post("/resources", json=resource_data)
+        response = client.post(f"{API_V1}/resources", json=resource_data)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_create_resource_invalid_data(self, client, auth_headers):
         """Test resource creation with invalid data"""
         # Empty name
         response = client.post(
-            "/resources",
+            f"{API_V1}/resources",
             json={"name": "", "tags": ["test"], "available": True},
             headers=auth_headers,
         )
@@ -44,13 +49,13 @@ class TestResources:
 
         # Missing required fields
         response = client.post(
-            "/resources", json={"tags": ["test"]}, headers=auth_headers
+            f"{API_V1}/resources", json={"tags": ["test"]}, headers=auth_headers
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_list_resources(self, client, test_resource):
         """Test listing all resources"""
-        response = client.get("/resources")
+        response = client.get(f"{API_V1}/resources")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -63,7 +68,7 @@ class TestResources:
 
     def test_search_resources_by_query(self, client, test_resource):
         """Test searching resources by query"""
-        response = client.get("/resources/search?q=conference")
+        response = client.get(f"{API_V1}/resources/search?q=conference")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -79,7 +84,7 @@ class TestResources:
 
     def test_search_resources_by_availability(self, client, test_resource):
         """Test searching resources by availability"""
-        response = client.get("/resources/search?available_only=true")
+        response = client.get(f"{API_V1}/resources/search?available_only=true")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -103,7 +108,7 @@ class TestResources:
             "available_until": end_time.isoformat(),
         }
 
-        response = client.get("/resources/search", params=params)
+        response = client.get(f"{API_V1}/resources/search", params=params)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -122,7 +127,7 @@ class TestResources:
             "available_until": end_time.isoformat(),
         }
 
-        response = client.get("/resources/search", params=params)
+        response = client.get(f"{API_V1}/resources/search", params=params)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_upload_resources_csv_success(self, client, auth_headers):
@@ -135,7 +140,9 @@ class TestResources:
 
         files = {"file": ("test_resources.csv", csv_content, "text/csv")}
 
-        response = client.post("/resources/upload", files=files, headers=auth_headers)
+        response = client.post(
+            f"{API_V1}/resources/upload", files=files, headers=auth_headers
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -147,7 +154,9 @@ class TestResources:
         """Test CSV upload with invalid file"""
         files = {"file": ("test.txt", "not a csv", "text/plain")}
 
-        response = client.post("/resources/upload", files=files, headers=auth_headers)
+        response = client.post(
+            f"{API_V1}/resources/upload", files=files, headers=auth_headers
+        )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_upload_resources_csv_without_auth(self, client):
@@ -155,5 +164,5 @@ class TestResources:
         csv_content = "name,tags,available\nTest Room,meeting,true"
         files = {"file": ("test.csv", csv_content, "text/csv")}
 
-        response = client.post("/resources/upload", files=files)
+        response = client.post(f"{API_V1}/resources/upload", files=files)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
