@@ -38,6 +38,9 @@ export interface Reservation {
   created_at: string;
   cancelled_at?: string;
   cancellation_reason?: string;
+  recurrence_rule_id?: number | null;
+  parent_reservation_id?: number | null;
+  is_recurring_instance?: boolean;
 }
 
 export interface MFASetupResponse {
@@ -67,6 +70,19 @@ export interface Notification {
   link?: string | null;
   read: boolean;
   created_at: string;
+}
+
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
+export type RecurrenceEndType = 'never' | 'on_date' | 'after_count';
+
+export interface RecurrenceRule {
+  id?: number;
+  frequency: RecurrenceFrequency;
+  interval?: number;
+  days_of_week?: number[] | null;
+  end_type?: RecurrenceEndType;
+  end_date?: string | null;
+  occurrence_count?: number | null;
 }
 
 export interface OAuth2Client {

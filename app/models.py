@@ -126,10 +126,19 @@ class Reservation(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
     cancelled_at = Column(DateTime(timezone=True))
     cancellation_reason = Column(Text)
+    recurrence_rule_id = Column(
+        Integer, ForeignKey("recurrence_rules.id"), nullable=True
+    )
+    parent_reservation_id = Column(
+        Integer, ForeignKey("reservations.id"), nullable=True
+    )
+    is_recurring_instance = Column(Boolean, default=False)
 
     # Relationships
     user = relationship("User", back_populates="reservations")
     resource = relationship("Resource", back_populates="reservations")
+    recurrence_rule = relationship("RecurrenceRule", back_populates="reservations")
+    parent_reservation = relationship("Reservation", remote_side=[id])
 
     @property
     def duration_hours(self) -> float:
@@ -151,6 +160,20 @@ class ReservationHistory(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     timestamp = Column(DateTime(timezone=True), default=utcnow)
     details = Column(Text)
+
+
+class RecurrenceRule(Base):
+    __tablename__ = "recurrence_rules"
+
+    id = Column(Integer, primary_key=True)
+    frequency = Column(String, nullable=False)  # daily, weekly, monthly
+    interval = Column(Integer, default=1)
+    days_of_week = Column(JSON, nullable=True)  # [0-6] for weekly
+    end_type = Column(String, nullable=False)  # never, on_date, after_count
+    end_date = Column(DateTime(timezone=True), nullable=True)
+    occurrence_count = Column(Integer, nullable=True)
+
+    reservations = relationship("Reservation", back_populates="recurrence_rule")
 
 
 class Notification(Base):

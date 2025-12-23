@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
 from app.auth import hash_password
+from app.utils.recurrence import generate_occurrences
 
 
 def ensure_timezone_aware(dt):
@@ -769,6 +770,82 @@ class ReservationService:
                 import time
 
                 time.sleep(0.1 * (attempt + 1))
+
+    def create_recurring_reservations(
+        self, data: schemas.RecurringReservationCreate, user_id: int
+    ) -> list[models.Reservation]:
+        """Create a series of recurring reservations."""
+        # Validate resource exists
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == data.resource_id)
+            .first()
+        )
+        if not resource:
+            raise ValueError("Resource not found")
+        if not resource.available:
+            raise ValueError("Resource is not available for reservations")
+
+        start_time = ensure_timezone_aware(data.start_time)
+        end_time = ensure_timezone_aware(data.end_time)
+
+        if end_time <= start_time:
+            raise ValueError("End time must be after start time")
+
+        occurrences = generate_occurrences(start_time, end_time, data.recurrence)
+
+        # Check conflicts for all occurrences first
+        for occ_start, occ_end in occurrences:
+            conflicts = self._get_conflicts(data.resource_id, occ_start, occ_end)
+            if conflicts:
+                raise ValueError(
+                    f"Conflicts detected for recurring reservation starting at {occ_start.isoformat()}"
+                )
+
+        # Create recurrence rule
+        rule = models.RecurrenceRule(
+            frequency=data.recurrence.frequency.value,
+            interval=data.recurrence.interval,
+            days_of_week=data.recurrence.days_of_week,
+            end_type=data.recurrence.end_type.value,
+            end_date=data.recurrence.end_date,
+            occurrence_count=data.recurrence.occurrence_count,
+        )
+        self.db.add(rule)
+        self.db.flush()
+
+        reservations: list[models.Reservation] = []
+        parent_id: int | None = None
+
+        for idx, (occ_start, occ_end) in enumerate(occurrences):
+            reservation = models.Reservation(
+                user_id=user_id,
+                resource_id=data.resource_id,
+                start_time=occ_start,
+                end_time=occ_end,
+                status="active",
+                recurrence_rule_id=rule.id,
+                parent_reservation_id=parent_id,
+                is_recurring_instance=idx > 0,
+            )
+            self.db.add(reservation)
+            self.db.flush()
+            if parent_id is None:
+                parent_id = reservation.id
+            self._log_action(
+                reservation.id,
+                "created",
+                user_id,
+                f"Created recurring reservation #{idx + 1}",
+            )
+            reservations.append(reservation)
+
+        self.db.commit()
+
+        for res in reservations:
+            self.db.refresh(res)
+
+        return reservations
 
     def cancel_reservation(
         self,
