@@ -29,14 +29,14 @@
 
 ### PR #3: Account Security
 
-- [ ] Create branch `feat/account-security`
-- [ ] Add LoginAttempt model
-- [ ] Create app/utils/password.py
-- [ ] Add lockout check to login flow
-- [ ] Add PasswordStrengthMeter component
-- [ ] Update login page with lockout message
-- [ ] Add tests
-- [ ] Run tests
+- [x] Create branch `feat/account-security`
+- [x] Add LoginAttempt model
+- [x] Create app/utils/password.py
+- [x] Add lockout check to login flow
+- [x] Add PasswordStrengthMeter component
+- [x] Update login page with lockout message
+- [x] Add tests
+- [x] Run tests: `pytest tests/test_api/test_auth.py -v` `pytest tests/test_services/test_user_service.py -v`
 - [ ] Create PR
 - [ ] Merge PR
 

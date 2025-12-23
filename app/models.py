@@ -281,3 +281,21 @@ class RefreshToken(Base):
 
     # Relationships
     user = relationship("User", backref="refresh_tokens")
+
+
+# ============================================================================
+# Login Attempt Model (for account lockout)
+# ============================================================================
+
+
+class LoginAttempt(Base):
+    __tablename__ = "login_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), nullable=False, index=True)
+    ip_address = Column(String(45), nullable=True)  # IPv6 max length
+    success = Column(Boolean, nullable=False)
+    attempt_time = Column(DateTime(timezone=True), default=utcnow)
+    failure_reason = Column(
+        String(100), nullable=True
+    )  # e.g., "invalid_password", "account_locked"

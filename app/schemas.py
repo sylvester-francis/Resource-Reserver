@@ -2,7 +2,9 @@
 
 from datetime import UTC, datetime, timedelta
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
+
+from app.utils.password import PasswordPolicy
 
 
 def ensure_timezone_aware(dt):
@@ -37,9 +39,13 @@ class UserCreate(BaseModel):
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, v: str) -> str:
-        if len(v) < 6:
-            raise ValueError("Password must be at least 6 characters")
+    def validate_password(cls, v: str, info: ValidationInfo) -> str:
+        username = ""
+        if info.data:
+            username = info.data.get("username") or ""
+        is_valid, errors = PasswordPolicy.validate(v, username=username)
+        if not is_valid:
+            raise ValueError("; ".join(errors))
         return v
 
 
@@ -70,11 +76,17 @@ class SetupInitializeRequest(BaseModel):
 
     @field_validator("password")
     @classmethod
-    def validate_setup_password(cls, v: str | None) -> str | None:
+    def validate_setup_password(cls, v: str | None, info: ValidationInfo) -> str | None:
         if v is None:
             return v
-        if len(v) < 6:
-            raise ValueError("Password must be at least 6 characters")
+        username = ""
+        if info.data:
+            username = (
+                info.data.get("username") or info.data.get("existing_username") or ""
+            )
+        is_valid, errors = PasswordPolicy.validate(v, username=username)
+        if not is_valid:
+            raise ValueError("; ".join(errors))
         return v
 
 

@@ -27,7 +27,7 @@ from sqlalchemy.orm import Session
 
 from app import models, rbac, schemas, setup
 from app.auth import (
-    authenticate_user,
+    authenticate_user_with_lockout,
     create_access_token,
     create_refresh_token,
     get_current_user,
@@ -326,14 +326,22 @@ def login_user(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    """Authenticate user and return access and refresh tokens."""
-    normalized_username = form_data.username.lower()
+    """Authenticate user and return access and refresh tokens.
 
-    user = authenticate_user(db, normalized_username, form_data.password)
+    Includes account lockout protection after too many failed attempts.
+    """
+    # Get client IP for logging
+    client_ip = request.client.host if request.client else None
+
+    # Authenticate with lockout protection
+    user, error_message = authenticate_user_with_lockout(
+        db, form_data.username, form_data.password, client_ip
+    )
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail=error_message or "Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

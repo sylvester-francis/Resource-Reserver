@@ -20,6 +20,7 @@ ______________________________________________________________________
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
+- [Contributors](#contributors)
 - [License](#license)
 
 ______________________________________________________________________
@@ -485,6 +486,12 @@ ______________________________________________________________________
 - Add tests for new functionality
 - Update documentation as needed
 - Keep commits focused and atomic
+
+______________________________________________________________________
+
+## Contributors
+
+- Sylvester Francis
 
 ______________________________________________________________________
 

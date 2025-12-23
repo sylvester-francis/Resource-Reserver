@@ -1,5 +1,7 @@
 from fastapi import status
 
+from app.utils.password import PasswordPolicy
+
 # API v1 prefix
 API_V1 = "/api/v1"
 
@@ -11,7 +13,7 @@ class TestAuth:
         """Test successful user registration"""
         response = client.post(
             f"{API_V1}/register",
-            json={"username": "newuser", "password": "securepass123"},
+            json={"username": "newuser", "password": "SecurePass123!"},
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -26,7 +28,7 @@ class TestAuth:
             f"{API_V1}/register",
             json={
                 "username": "testuser",  # Already exists
-                "password": "anotherpass",
+                "password": "AnotherPass123!",
             },
         )
 
@@ -40,7 +42,7 @@ class TestAuth:
             f"{API_V1}/register",
             json={
                 "username": "ab",  # Too short
-                "password": "validpass123",
+                "password": "ValidPass123!",
             },
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -50,10 +52,23 @@ class TestAuth:
             f"{API_V1}/register",
             json={
                 "username": "validuser",
-                "password": "123",  # Too short
+                "password": "Aa1!",  # Too short
             },
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_register_password_policy(self, client):
+        """Test registration fails for weak passwords"""
+        response = client.post(
+            f"{API_V1}/register",
+            json={
+                "username": "policyuser",
+                "password": "weakpass",
+            },
+        )
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        detail = response.json()["detail"]
+        assert any("Password must" in error["msg"] for error in detail)
 
     def test_login_success(self, client, test_user):
         """Test successful login returns both access and refresh tokens"""
@@ -82,6 +97,39 @@ class TestAuth:
             data={"username": "nonexistent", "password": "testpass123"},
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_login_warns_before_lockout(self, client, test_user):
+        """Warn user as they approach lockout threshold"""
+        response = None
+        for _ in range(PasswordPolicy.MAX_LOGIN_ATTEMPTS - 2):
+            response = client.post(
+                f"{API_V1}/token",
+                data={"username": "testuser", "password": "wrongpassword"},
+            )
+        assert response is not None
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "remaining" in response.json()["detail"].lower()
+
+    def test_login_lockout_after_failed_attempts(self, client, test_user):
+        """Lock account after too many failed login attempts"""
+        response = None
+        for _ in range(PasswordPolicy.MAX_LOGIN_ATTEMPTS):
+            response = client.post(
+                f"{API_V1}/token",
+                data={"username": "testuser", "password": "wrongpassword"},
+            )
+
+        assert response is not None
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "locked" in response.json()["detail"].lower()
+
+        # Subsequent attempts should report the account is locked
+        locked_response = client.post(
+            f"{API_V1}/token",
+            data={"username": "testuser", "password": "wrongpassword"},
+        )
+        assert locked_response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "account is locked" in locked_response.json()["detail"].lower()
 
     def test_protected_endpoint_without_auth(self, client):
         """Test accessing protected endpoint without authentication"""

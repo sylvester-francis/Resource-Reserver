@@ -50,7 +50,11 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 
 def authenticate_user(db: Session, username: str, password: str) -> models.User | None:
-    """Authenticate a user with username and password."""
+    """Authenticate a user with username and password.
+
+    Note: This function does NOT check for account lockout.
+    Use authenticate_user_with_lockout() for login endpoints.
+    """
     # Normalize the username to lowercase for case-insensitive comparison
     normalized_username = username.lower()
     user = get_user_by_username(db, normalized_username)
@@ -59,6 +63,186 @@ def authenticate_user(db: Session, username: str, password: str) -> models.User 
         return None
 
     return user
+
+
+# ============================================================================
+# Account Lockout Functions
+# ============================================================================
+
+
+def get_failed_login_attempts(
+    db: Session, username: str, window_minutes: int = 15
+) -> int:
+    """Get the number of failed login attempts in the last N minutes.
+
+    Args:
+        db: Database session
+        username: Username to check
+        window_minutes: Time window to check (default 15 minutes)
+
+    Returns:
+        Number of failed attempts in the window
+    """
+    from app.utils.password import PasswordPolicy
+
+    window_minutes = PasswordPolicy.LOCKOUT_DURATION_MINUTES
+    cutoff_time = datetime.now(UTC) - timedelta(minutes=window_minutes)
+
+    return (
+        db.query(models.LoginAttempt)
+        .filter(
+            models.LoginAttempt.username == username.lower(),
+            models.LoginAttempt.success == False,  # noqa: E712
+            models.LoginAttempt.attempt_time >= cutoff_time,
+        )
+        .count()
+    )
+
+
+def is_account_locked(db: Session, username: str) -> tuple[bool, int | None]:
+    """Check if an account is locked due to too many failed attempts.
+
+    Args:
+        db: Database session
+        username: Username to check
+
+    Returns:
+        Tuple of (is_locked, minutes_remaining)
+    """
+    from app.utils.password import PasswordPolicy
+
+    failed_attempts = get_failed_login_attempts(db, username)
+
+    if failed_attempts >= PasswordPolicy.MAX_LOGIN_ATTEMPTS:
+        # Find the most recent failed attempt to calculate remaining lockout time
+        latest_attempt = (
+            db.query(models.LoginAttempt)
+            .filter(
+                models.LoginAttempt.username == username.lower(),
+                models.LoginAttempt.success == False,  # noqa: E712
+            )
+            .order_by(models.LoginAttempt.attempt_time.desc())
+            .first()
+        )
+
+        if latest_attempt:
+            # Handle timezone-naive datetimes
+            attempt_time = latest_attempt.attempt_time
+            if attempt_time.tzinfo is None:
+                attempt_time = attempt_time.replace(tzinfo=UTC)
+
+            lockout_end = attempt_time + timedelta(
+                minutes=PasswordPolicy.LOCKOUT_DURATION_MINUTES
+            )
+            now = datetime.now(UTC)
+
+            if now < lockout_end:
+                remaining = int((lockout_end - now).total_seconds() / 60) + 1
+                return True, remaining
+
+    return False, None
+
+
+def record_login_attempt(
+    db: Session,
+    username: str,
+    success: bool,
+    ip_address: str | None = None,
+    failure_reason: str | None = None,
+) -> models.LoginAttempt:
+    """Record a login attempt.
+
+    Args:
+        db: Database session
+        username: Username that attempted login
+        success: Whether the login was successful
+        ip_address: Optional IP address of the attempt
+        failure_reason: Optional reason for failure
+
+    Returns:
+        The created LoginAttempt record
+    """
+    attempt = models.LoginAttempt(
+        username=username.lower(),
+        ip_address=ip_address,
+        success=success,
+        failure_reason=failure_reason,
+    )
+    db.add(attempt)
+    db.commit()
+    return attempt
+
+
+def clear_failed_attempts(db: Session, username: str) -> int:
+    """Clear failed login attempts for a user (call after successful login).
+
+    Args:
+        db: Database session
+        username: Username to clear attempts for
+
+    Returns:
+        Number of attempts cleared
+    """
+    # We don't actually delete, but this could be used for cleanup
+    # For now, successful logins just reset the window naturally
+    return 0
+
+
+def authenticate_user_with_lockout(
+    db: Session, username: str, password: str, ip_address: str | None = None
+) -> tuple[models.User | None, str | None]:
+    """Authenticate a user with account lockout protection.
+
+    Args:
+        db: Database session
+        username: Username to authenticate
+        password: Password to verify
+        ip_address: Optional IP address for logging
+
+    Returns:
+        Tuple of (user or None, error_message or None)
+    """
+    normalized_username = username.lower()
+
+    # Check if account is locked
+    locked, minutes_remaining = is_account_locked(db, normalized_username)
+    if locked:
+        record_login_attempt(
+            db, normalized_username, False, ip_address, "account_locked"
+        )
+        return None, f"Account is locked. Try again in {minutes_remaining} minutes."
+
+    # Attempt authentication
+    user = authenticate_user(db, normalized_username, password)
+
+    if user:
+        # Successful login
+        record_login_attempt(db, normalized_username, True, ip_address)
+        return user, None
+    else:
+        # Failed login
+        record_login_attempt(
+            db, normalized_username, False, ip_address, "invalid_credentials"
+        )
+
+        # Check if this attempt triggered a lockout
+        from app.utils.password import PasswordPolicy
+
+        failed_attempts = get_failed_login_attempts(db, normalized_username)
+        remaining_attempts = PasswordPolicy.MAX_LOGIN_ATTEMPTS - failed_attempts
+
+        if remaining_attempts <= 0:
+            return None, (
+                f"Account is now locked due to too many failed attempts. "
+                f"Try again in {PasswordPolicy.LOCKOUT_DURATION_MINUTES} minutes."
+            )
+        elif remaining_attempts <= 2:
+            return None, (
+                f"Invalid username or password. "
+                f"{remaining_attempts} attempt(s) remaining before lockout."
+            )
+        else:
+            return None, "Invalid username or password."
 
 
 def get_user_by_username(db: Session, username: str) -> models.User | None:
