@@ -55,35 +55,34 @@ echo "✅ Setup complete!"
 """
 
 [tasks.up]
-description = "Start all services with Docker Compose"
+description = "Start all services via Tilt (shows live status/logs)"
 run = """
 #!/usr/bin/env bash
 set -e
-echo "Starting Resource-Reserver (Tilt + Docker)..."
-# Ensure dependencies are installed
-if ! command -v tilt >/dev/null 2>&1; then
-  echo "Tilt not found. Installing via mise..."
-  mise install tilt
-fi
-
-tilt up --legacy --stream=false > /tmp/tilt.log 2>&1 &
-TILT_PID=$!
+echo "Starting Resource-Reserver with Docker Compose..."
+docker compose up -d --build
 
 echo ""
-echo "Services starting..."
+echo "Services started:"
 echo "  Backend API:  http://localhost:8000"
 echo "  Frontend:     http://localhost:3000"
-echo "  Tilt UI:      http://localhost:10350"
 echo "  API Docs:     http://localhost:8000/docs"
-echo ""
-echo "Run 'mise run down' to stop services (will also stop Tilt)"
-echo "Run 'mise run logs' to view logs"
 
-# Wait briefly to allow Tilt to start containers, then exit
-sleep 3
-if ! ps -p $TILT_PID >/dev/null 2>&1; then
-  echo "Tilt exited unexpectedly. Check tilt logs."
+# Optionally launch Tilt after services are up for UI/logs
+if command -v tilt >/dev/null 2>&1; then
+  echo ""
+  echo "Starting Tilt for monitoring (logs: /tmp/tilt.log)..."
+  tilt up --stream=false --legacy > /tmp/tilt.log 2>&1 &
+  TILT_PID=$!
+  echo "  Tilt UI:      http://localhost:10350  (PID $TILT_PID)"
+else
+  echo ""
+  echo "Tilt not installed; skipping Tilt UI. Run 'mise install tilt' if you want it."
 fi
+
+echo ""
+echo "Run 'mise run down' to stop services (will also stop Tilt if running)"
+echo "Run 'mise run logs' to view logs"
 """
 
 [tasks.down]

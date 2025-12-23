@@ -306,7 +306,9 @@ export default function DashboardClient() {
                             {upcomingReservations[0] ? (
                                 <div className="space-y-2">
                                     <p className="font-display text-2xl">
-                                        Resource #{upcomingReservations[0].resource_id}
+                                        {upcomingReservations[0].resource?.name
+                                            ? upcomingReservations[0].resource.name
+                                            : `Resource #${upcomingReservations[0].resource_id}`}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
                                         {formatDateTime(upcomingReservations[0].start_time)} —{' '}
