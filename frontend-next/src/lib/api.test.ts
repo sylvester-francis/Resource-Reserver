@@ -33,12 +33,13 @@ describe('API Client', () => {
                 'Content-Type': 'application/json',
             },
         });
-        expect(API_BASE_URL).toBe('http://localhost:8000');
+        // API_BASE_URL now includes /api/v1 prefix for versioning
+        expect(API_BASE_URL).toBe('http://localhost:8000/api/v1');
     });
 
-    it('should have default base URL when env var is not set', async () => {
+    it('should have default base URL with API version when env var is not set', async () => {
         const { API_BASE_URL } = await import('@/lib/api');
-        expect(API_BASE_URL).toBe('http://localhost:8000');
+        expect(API_BASE_URL).toBe('http://localhost:8000/api/v1');
     });
 });
 

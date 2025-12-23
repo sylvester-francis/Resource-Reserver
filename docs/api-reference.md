@@ -1,17 +1,44 @@
 # API Reference
 
-## 🔌 Complete API Documentation
+## Complete API Documentation
 
-Base URL: `http://localhost:8000` (or your deployed backend URL)
+Base URL: `http://localhost:8000/api/v1` (or your deployed backend URL + `/api/v1`)
 
 All authenticated endpoints require an `Authorization: Bearer <token>` header.
+
+## API Versioning
+
+The API uses URL-based versioning. All endpoints are prefixed with `/api/v1/`.
+
+Legacy endpoints (without the prefix) are deprecated and will be removed in a future version.
+
+## Rate Limiting
+
+Rate limiting is applied to protect the API from abuse. Limits are based on user type:
+
+| User Type     | Limit               |
+| ------------- | ------------------- |
+| Anonymous     | 20 requests/minute  |
+| Authenticated | 100 requests/minute |
+| Admin         | 500 requests/minute |
+
+**Special endpoint limits:**
+
+- Authentication endpoints (login/register): 5 requests/minute
+- Heavy operations (CSV upload): 10 requests/minute
+
+Rate limit headers are included in responses:
+
+- `X-RateLimit-Limit`: Maximum requests allowed
+- `X-RateLimit-Remaining`: Requests remaining in window
+- `X-RateLimit-Reset`: Time when limit resets
 
 ## Authentication
 
 ### Register User
 
 ```http
-POST /register
+POST /api/v1/register
 Content-Type: application/json
 
 {
@@ -33,7 +60,7 @@ Content-Type: application/json
 ### Login
 
 ```http
-POST /token
+POST /api/v1/token
 Content-Type: application/x-www-form-urlencoded
 
 username=john_doe&password=secure_password
@@ -48,12 +75,29 @@ username=john_doe&password=secure_password
 }
 ```
 
+### Get Current User
+
+```http
+GET /api/v1/users/me
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "username": "john_doe",
+  "mfa_enabled": false
+}
+```
+
 ## Resources
 
 ### Create Resource
 
 ```http
-POST /resources
+POST /api/v1/resources
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -79,7 +123,7 @@ Content-Type: application/json
 ### List All Resources
 
 ```http
-GET /resources
+GET /api/v1/resources
 ```
 
 **Response:**
@@ -100,13 +144,14 @@ GET /resources
 ### Search Resources
 
 ```http
-GET /resources/search?q=conference&available_only=true&available_from=2024-01-16T09:00:00Z&available_until=2024-01-16T17:00:00Z
+GET /api/v1/resources/search?q=conference&status=available&available_from=2024-01-16T09:00:00Z&available_until=2024-01-16T17:00:00Z
 ```
 
 **Query Parameters:**
 
 - `q` (string, optional): Search term for resource names
-- `available_only` (boolean, default: true): Filter to only available resources
+- `status` (string, optional): Filter by status: 'available', 'in_use', 'unavailable', or 'all'
+- `available_only` (boolean, deprecated): Use 'status' instead
 - `available_from` (datetime, optional): Check availability from this time
 - `available_until` (datetime, optional): Check availability until this time
 
@@ -127,7 +172,7 @@ GET /resources/search?q=conference&available_only=true&available_from=2024-01-16
 ### Get Resource Availability Schedule
 
 ```http
-GET /resources/1/availability?days_ahead=7
+GET /api/v1/resources/1/availability?days_ahead=7
 ```
 
 **Query Parameters:**
@@ -173,10 +218,75 @@ GET /resources/1/availability?days_ahead=7
 }
 ```
 
+### Get Resource Status
+
+```http
+GET /api/v1/resources/1/status
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "name": "Conference Room A",
+  "status": "available",
+  "available": true,
+  "unavailable_since": null,
+  "auto_reset_hours": null
+}
+```
+
+### Set Resource Unavailable
+
+```http
+PUT /api/v1/resources/1/status/unavailable?auto_reset_hours=8
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+
+- `auto_reset_hours` (integer, default: 8): Hours until automatic reset to available
+
+**Response:**
+
+```json
+{
+  "message": "Resource set to unavailable for maintenance (auto-reset in 8 hours)",
+  "resource": {
+    "id": 1,
+    "name": "Conference Room A",
+    "status": "unavailable",
+    "auto_reset_hours": 8,
+    "unavailable_since": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+### Reset Resource to Available
+
+```http
+PUT /api/v1/resources/1/status/available
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "message": "Resource reset to available",
+  "resource": {
+    "id": 1,
+    "name": "Conference Room A",
+    "status": "available"
+  }
+}
+```
+
 ### Update Resource Availability
 
 ```http
-PUT /resources/1/availability
+PUT /api/v1/resources/1/availability
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -201,7 +311,7 @@ Content-Type: application/json
 ### Upload Resources from CSV
 
 ```http
-POST /resources/upload
+POST /api/v1/resources/upload
 Authorization: Bearer <token>
 Content-Type: multipart/form-data
 
@@ -226,12 +336,30 @@ Equipment Laptop,"laptop,portable",false
 }
 ```
 
+### Get Availability Summary
+
+```http
+GET /api/v1/resources/availability/summary
+```
+
+**Response:**
+
+```json
+{
+  "total_resources": 10,
+  "available_now": 7,
+  "unavailable_now": 3,
+  "currently_in_use": 2,
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
 ## Reservations
 
 ### Create Reservation
 
 ```http
-POST /reservations
+POST /api/v1/reservations
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -263,7 +391,7 @@ Content-Type: application/json
 ### Get My Reservations
 
 ```http
-GET /reservations/my?include_cancelled=false
+GET /api/v1/reservations/my?include_cancelled=false
 Authorization: Bearer <token>
 ```
 
@@ -292,7 +420,7 @@ Authorization: Bearer <token>
 ### Cancel Reservation
 
 ```http
-POST /reservations/1/cancel
+POST /api/v1/reservations/1/cancel
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -314,7 +442,7 @@ Content-Type: application/json
 ### Get Reservation History
 
 ```http
-GET /reservations/1/history
+GET /api/v1/reservations/1/history
 Authorization: Bearer <token>
 ```
 
@@ -341,51 +469,12 @@ Authorization: Bearer <token>
 ]
 ```
 
-## System Management
+## Admin Endpoints
 
-### Health Check
-
-```http
-GET /health
-```
-
-**Response:**
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "database": "healthy",
-  "api": "healthy",
-  "resources_count": 5,
-  "background_tasks": {
-    "cleanup_task": "running"
-  }
-}
-```
-
-### Availability Summary
+### Manual Cleanup
 
 ```http
-GET /resources/availability/summary
-```
-
-**Response:**
-
-```json
-{
-  "total_resources": 10,
-  "available_now": 7,
-  "unavailable_now": 3,
-  "currently_in_use": 2,
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
-### Manual Cleanup (Admin)
-
-```http
-POST /admin/cleanup-expired
+POST /api/v1/admin/cleanup-expired
 Authorization: Bearer <token>
 ```
 
@@ -399,45 +488,57 @@ Authorization: Bearer <token>
 }
 ```
 
+## System Endpoints
+
+### Health Check
+
+```http
+GET /health
+```
+
+Note: Health check is at the root level, not under `/api/v1/`.
+
+**Response:**
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "version": "2.0.1",
+  "database": "healthy",
+  "api": "healthy",
+  "resources_count": 5,
+  "background_tasks": {
+    "cleanup_task": "running"
+  },
+  "rate_limiting": {
+    "enabled": true
+  }
+}
+```
+
 ## Error Responses
 
 All endpoints return errors in this format:
 
 ```json
 {
-  "detail": "Resource not found",
-  "status_code": 404
+  "detail": "Resource not found"
 }
 ```
 
 ### Common Error Codes
 
-- **400 Bad Request**: Invalid input data
-- **401 Unauthorized**: Missing or invalid authentication token
-- **403 Forbidden**: Insufficient permissions
-- **404 Not Found**: Resource not found
-- **409 Conflict**: Reservation time conflict
-- **422 Unprocessable Entity**: Validation error
-- **500 Internal Server Error**: Server error
-
-## Rate Limits
-
-- **Authentication endpoints**: 5 requests per minute per IP
-- **Resource creation**: 10 requests per minute per user
-- **Search endpoints**: 60 requests per minute per user
-- **Other endpoints**: 100 requests per minute per user
-
-## Webhooks (Future Feature)
-
-Configure webhooks to receive real-time notifications:
-
-```json
-{
-  "url": "https://your-app.com/webhooks/resource-reserver",
-  "events": ["reservation.created", "reservation.cancelled", "resource.disabled"],
-  "secret": "webhook-secret-for-verification"
-}
-```
+| Code | Description                                            |
+| ---- | ------------------------------------------------------ |
+| 400  | Bad Request - Invalid input data                       |
+| 401  | Unauthorized - Missing or invalid authentication token |
+| 403  | Forbidden - Insufficient permissions                   |
+| 404  | Not Found - Resource not found                         |
+| 409  | Conflict - Reservation time conflict                   |
+| 422  | Unprocessable Entity - Validation error                |
+| 429  | Too Many Requests - Rate limit exceeded                |
+| 500  | Internal Server Error - Server error                   |
 
 ## SDK Examples
 
@@ -449,7 +550,7 @@ import requests
 
 class ResourceReserver:
     def __init__(self, base_url, token):
-        self.base_url = base_url
+        self.base_url = f"{base_url}/api/v1"
         self.headers = {"Authorization": f"Bearer {token}"}
 
     def create_resource(self, name, tags=None, available=True):
@@ -459,8 +560,8 @@ class ResourceReserver:
         )
         return response.json()
 
-    def search_resources(self, query=None, available_only=True):
-        params = {"available_only": available_only}
+    def search_resources(self, query=None, status="available"):
+        params = {"status": status}
         if query:
             params["q"] = query
         response = requests.get(f"{self.base_url}/resources/search", params=params)
@@ -477,7 +578,7 @@ resource = client.create_resource("Meeting Room", ["meeting", "projector"])
 ```javascript
 class ResourceReserver {
     constructor(baseUrl, token) {
-        this.baseUrl = baseUrl;
+        this.baseUrl = `${baseUrl}/api/v1`;
         this.headers = {'Authorization': `Bearer ${token}`};
     }
 
@@ -497,7 +598,11 @@ class ResourceReserver {
 
 // Usage
 const client = new ResourceReserver('http://localhost:8000', 'your-token');
-const reservation = await client.createReservation(1, '2024-01-16T09:00:00Z', '2024-01-16T10:00:00Z');
+const reservation = await client.createReservation(
+    1,
+    '2024-01-16T09:00:00Z',
+    '2024-01-16T10:00:00Z'
+);
 ```
 
 ### cURL Examples
@@ -505,7 +610,7 @@ const reservation = await client.createReservation(1, '2024-01-16T09:00:00Z', '2
 **Create a resource:**
 
 ```bash
-curl -X POST http://localhost:8000/resources \
+curl -X POST http://localhost:8000/api/v1/resources \
   -H "Authorization: Bearer your-token" \
   -H "Content-Type: application/json" \
   -d '{"name":"Conference Room","tags":["meeting"],"available":true}'
@@ -514,13 +619,13 @@ curl -X POST http://localhost:8000/resources \
 **Search resources:**
 
 ```bash
-curl "http://localhost:8000/resources/search?q=conference&available_only=true"
+curl "http://localhost:8000/api/v1/resources/search?q=conference&status=available"
 ```
 
 **Create reservation:**
 
 ```bash
-curl -X POST http://localhost:8000/reservations \
+curl -X POST http://localhost:8000/api/v1/reservations \
   -H "Authorization: Bearer your-token" \
   -H "Content-Type: application/json" \
   -d '{"resource_id":1,"start_time":"2024-01-16T09:00:00Z","end_time":"2024-01-16T10:00:00Z"}'

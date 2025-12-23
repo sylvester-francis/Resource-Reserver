@@ -2,6 +2,9 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import status
 
+# API v1 prefix
+API_V1 = "/api/v1"
+
 
 class TestReservations:
     """Test reservation management endpoints"""
@@ -20,7 +23,7 @@ class TestReservations:
         }
 
         response = client.post(
-            "/reservations", json=reservation_data, headers=auth_headers
+            f"{API_V1}/reservations", json=reservation_data, headers=auth_headers
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -42,7 +45,7 @@ class TestReservations:
         }
 
         response = client.post(
-            "/reservations", json=reservation_data, headers=auth_headers
+            f"{API_V1}/reservations", json=reservation_data, headers=auth_headers
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -60,7 +63,7 @@ class TestReservations:
         }
 
         response = client.post(
-            "/reservations", json=reservation_data, headers=auth_headers
+            f"{API_V1}/reservations", json=reservation_data, headers=auth_headers
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -79,7 +82,7 @@ class TestReservations:
 
         # Create first reservation
         response = client.post(
-            "/reservations", json=reservation_data, headers=auth_headers
+            f"{API_V1}/reservations", json=reservation_data, headers=auth_headers
         )
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -94,7 +97,7 @@ class TestReservations:
         }
 
         response = client.post(
-            "/reservations", json=conflicting_data, headers=auth_headers
+            f"{API_V1}/reservations", json=conflicting_data, headers=auth_headers
         )
         assert response.status_code == status.HTTP_409_CONFLICT
         assert "conflicts" in response.json()["detail"].lower()
@@ -113,10 +116,12 @@ class TestReservations:
             "end_time": end_time.isoformat(),
         }
 
-        client.post("/reservations", json=reservation_data, headers=auth_headers)
+        client.post(
+            f"{API_V1}/reservations", json=reservation_data, headers=auth_headers
+        )
 
         # Get reservations
-        response = client.get("/reservations/my", headers=auth_headers)
+        response = client.get(f"{API_V1}/reservations/my", headers=auth_headers)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -143,14 +148,14 @@ class TestReservations:
         }
 
         response = client.post(
-            "/reservations", json=reservation_data, headers=auth_headers
+            f"{API_V1}/reservations", json=reservation_data, headers=auth_headers
         )
         reservation_id = response.json()["id"]
 
         # Cancel reservation
         cancel_data = {"reason": "Test cancellation"}
         response = client.post(
-            f"/reservations/{reservation_id}/cancel",
+            f"{API_V1}/reservations/{reservation_id}/cancel",
             json=cancel_data,
             headers=auth_headers,
         )
@@ -163,7 +168,9 @@ class TestReservations:
         """Test cancelling non-existent reservation"""
         cancel_data = {"reason": "Test"}
         response = client.post(
-            "/reservations/99999/cancel", json=cancel_data, headers=auth_headers
+            f"{API_V1}/reservations/99999/cancel",
+            json=cancel_data,
+            headers=auth_headers,
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -183,21 +190,21 @@ class TestReservations:
         }
 
         response = client.post(
-            "/reservations", json=reservation_data, headers=auth_headers
+            f"{API_V1}/reservations", json=reservation_data, headers=auth_headers
         )
         reservation_id = response.json()["id"]
 
         # Cancel it
         cancel_data = {"reason": "Test cancellation"}
         client.post(
-            f"/reservations/{reservation_id}/cancel",
+            f"{API_V1}/reservations/{reservation_id}/cancel",
             json=cancel_data,
             headers=auth_headers,
         )
 
         # Get history
         response = client.get(
-            f"/reservations/{reservation_id}/history", headers=auth_headers
+            f"{API_V1}/reservations/{reservation_id}/history", headers=auth_headers
         )
 
         assert response.status_code == status.HTTP_200_OK
