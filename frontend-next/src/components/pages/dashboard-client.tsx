@@ -27,6 +27,7 @@ import { ResourcesTab } from '@/components/resources-tab';
 import { ReservationsTab } from '@/components/reservations-tab';
 import { HealthDialog } from '@/components/health-dialog';
 import { MfaDialog } from '@/components/mfa-dialog';
+import { NotificationBadge } from '@/components/NotificationBadge';
 
 interface Stats {
     totalResources: number;
@@ -173,6 +174,7 @@ export default function DashboardClient() {
                         >
                             <Activity className="h-4 w-4" />
                         </Button>
+                        <NotificationBadge enabled={!authLoading && isAuthenticated} />
                         <ThemeToggle />
 
                         <DropdownMenu modal={false}>

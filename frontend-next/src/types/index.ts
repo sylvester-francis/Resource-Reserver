@@ -52,6 +52,23 @@ export interface HealthStatus {
   details?: Record<string, unknown>;
 }
 
+export type NotificationType =
+  | 'reservation_confirmed'
+  | 'reservation_cancelled'
+  | 'reservation_reminder'
+  | 'resource_available'
+  | 'system_announcement';
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string | null;
+  read: boolean;
+  created_at: string;
+}
+
 export interface OAuth2Client {
   id: number;
   client_id: string;

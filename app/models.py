@@ -46,6 +46,9 @@ class User(Base):
     oauth_clients = relationship(
         "OAuth2Client", back_populates="owner", cascade="all, delete-orphan"
     )
+    notifications = relationship(
+        "Notification", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class SystemSetting(Base):
@@ -148,6 +151,21 @@ class ReservationHistory(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     timestamp = Column(DateTime(timezone=True), default=utcnow)
     details = Column(Text)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    link = Column(String, nullable=True)
+    read = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    user = relationship("User", back_populates="notifications")
 
 
 # ============================================================================

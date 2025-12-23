@@ -158,3 +158,10 @@ api.interceptors.response.use(
 
 export default api;
 export { API_BASE_URL, API_HOST };
+
+export const notificationsApi = {
+  list: (params?: Record<string, unknown>) =>
+    api.get('/notifications', { params }),
+  markRead: (id: number) => api.post(`/notifications/${id}/read`),
+  markAllRead: () => api.post('/notifications/mark-all-read'),
+};
