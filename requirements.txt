@@ -90,8 +90,8 @@ rsa==4.9.1
 ruamel.yaml==0.18.13
 ruamel.yaml.clib==0.2.12
 ruff==0.11.13
-safety==3.5.2
-safety-schemas==0.0.14
+safety==3.7.0
+safety-schemas==0.0.16
 setuptools==80.9.0
 shellingham==1.5.4
 simpleeval==1.0.3
