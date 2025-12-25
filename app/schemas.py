@@ -76,6 +76,27 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserDetailResponse(BaseModel):
+    """Extended user response with email and preferences."""
+
+    id: int
+    username: str
+    email: str | None = None
+    email_verified: bool = False
+    mfa_enabled: bool = False
+    email_notifications: bool = True
+    reminder_hours: int = 24
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserPreferencesUpdate(BaseModel):
+    """Schema for updating user notification preferences."""
+
+    email_notifications: bool | None = None
+    reminder_hours: int | None = Field(None, ge=1, le=168)  # 1 hour to 1 week
+
+
 class SetupInitializeRequest(BaseModel):
     username: str | None = None
     password: str | None = None

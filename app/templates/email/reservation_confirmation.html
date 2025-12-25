@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Reservation Confirmed - Resource Reserver{% endblock %}
+
+{% block content %}
+<p class="greeting">Hello {{ username }},</p>
+
+<div class="success-box">
+    Your reservation has been confirmed!
+</div>
+
+<p class="message">
+    We're pleased to confirm your booking. Here are the details:
+</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Resource:</span>
+        <span class="info-value">{{ resource_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Start Time:</span>
+        <span class="info-value">{{ start_time }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">End Time:</span>
+        <span class="info-value">{{ end_time }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Reservation ID:</span>
+        <span class="info-value">#{{ reservation_id }}</span>
+    </div>
+</div>
+
+<p class="message">
+    You can view or modify your reservation from your dashboard at any time.
+</p>
+
+<p class="message" style="margin-top: 32px; color: #64748b; font-size: 14px;">
+    Need to make changes? Visit your dashboard to cancel or modify this reservation.
+</p>
+{% endblock %}

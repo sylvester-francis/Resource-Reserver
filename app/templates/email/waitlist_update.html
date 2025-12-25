@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Waitlist Update - Resource Reserver{% endblock %}
+
+{% block content %}
+<p class="greeting">Hello {{ username }},</p>
+
+{% if action == "slot_available" %}
+<div class="success-box">
+    Great news! A slot has become available!
+</div>
+{% else %}
+<div class="alert-box">
+    {{ message }}
+</div>
+{% endif %}
+
+<p class="message">
+    Here's the latest update on your waitlist status:
+</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Resource:</span>
+        <span class="info-value">{{ resource_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Your Position:</span>
+        <span class="info-value">#{{ position }}</span>
+    </div>
+</div>
+
+{% if action == "slot_available" %}
+<p class="message">
+    A time slot is now available for this resource. Visit your dashboard to accept the offer before it expires.
+</p>
+{% else %}
+<p class="message">
+    We'll notify you when a slot becomes available or when your position in the waitlist changes.
+</p>
+{% endif %}
+
+<p class="message" style="margin-top: 32px; color: #64748b; font-size: 14px;">
+    No longer interested? You can leave the waitlist from your dashboard.
+</p>
+{% endblock %}

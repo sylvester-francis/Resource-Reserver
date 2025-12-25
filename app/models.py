@@ -38,6 +38,12 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True, index=True)
     email_verified = Column(Boolean, default=False, nullable=False)
 
+    # Email notification preferences
+    email_notifications = Column(Boolean, default=True, nullable=False)
+    reminder_hours = Column(
+        Integer, default=24, nullable=False
+    )  # Hours before reservation
+
     # Relationships
     reservations = relationship("Reservation", back_populates="user")
     roles = relationship(
@@ -139,6 +145,9 @@ class Reservation(Base):
         Integer, ForeignKey("reservations.id"), nullable=True
     )
     is_recurring_instance = Column(Boolean, default=False)
+
+    # Email reminder tracking
+    reminder_sent = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="reservations")

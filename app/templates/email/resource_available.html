@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Resource Available - Resource Reserver{% endblock %}
+
+{% block content %}
+<p class="greeting">Hello {{ username }},</p>
+
+<div class="success-box">
+    Good news! A resource you were interested in is now available.
+</div>
+
+<p class="message">
+    The following resource has become available for booking:
+</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Resource:</span>
+        <span class="info-value">{{ resource_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Available From:</span>
+        <span class="info-value">{{ available_from }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Available Until:</span>
+        <span class="info-value">{{ available_until }}</span>
+    </div>
+</div>
+
+<p class="message">
+    Visit your dashboard to make a reservation before the slot gets taken by someone else.
+</p>
+
+<p class="message" style="margin-top: 32px; color: #64748b; font-size: 14px;">
+    This is an automated notification based on your preferences. You can update your notification settings from your account.
+</p>
+{% endblock %}
