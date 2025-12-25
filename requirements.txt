@@ -62,9 +62,9 @@ pyarrow==20.0.0
 pyasn1==0.6.1
 pycodestyle==2.13.0
 pycparser==2.22
-pydantic==2.9.2
-pydantic-settings==2.6.1
-pydantic_core==2.23.4
+pydantic==2.12.5
+pydantic-settings==2.9.1
+pydantic_core==2.41.5
 pydeck==0.9.1
 pyflakes==3.3.2
 Pygments==2.19.1
@@ -109,7 +109,7 @@ tornado==6.5.1
 tqdm==4.67.1
 typer==0.16.0
 typing-inspection==0.4.1
-typing_extensions==4.14.0
+typing_extensions==4.15.0
 tzdata==2025.2
 urllib3==2.4.0
 uvicorn[standard]==0.34.3
