@@ -13,11 +13,16 @@ services:
       - DATABASE_URL=sqlite:///./data/resource_reserver.db
       - ENVIRONMENT=production
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_ENABLED=true
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs
     networks:
       - resource-reserver-network
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
@@ -49,6 +54,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: resource-reserver-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - resource-reserver-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
 
   # PostgreSQL Database (Optional - for production)
   postgres:
@@ -85,12 +108,16 @@ services:
       - DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
       - ENVIRONMENT=development
       - SECRET_KEY=dev-secret-key
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_ENABLED=true
     volumes:
       - ./app:/app/app
       - ./cli:/app/cli
       - ./data:/app/data
     networks:
       - resource-reserver-network
+    depends_on:
+      - redis
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     profiles:
       - dev
@@ -124,6 +151,8 @@ volumes:
   backend_logs:
     driver: local
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 # Network for service communication

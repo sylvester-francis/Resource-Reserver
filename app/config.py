@@ -46,6 +46,27 @@ class Settings(BaseSettings):
         "http://localhost:8000",
     ]
 
+    # Redis Cache
+    redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    cache_enabled: bool = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+    cache_ttl_resources: int = int(os.getenv("CACHE_TTL_RESOURCES", "30"))  # seconds
+    cache_ttl_stats: int = int(os.getenv("CACHE_TTL_STATS", "60"))  # seconds
+    cache_ttl_user_session: int = int(
+        os.getenv("CACHE_TTL_USER_SESSION", "300")
+    )  # 5 minutes
+
+    # Email Configuration (SMTP)
+    smtp_host: str = os.getenv("SMTP_HOST", "localhost")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user: str = os.getenv("SMTP_USER", "")
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
+    smtp_from: str = os.getenv("SMTP_FROM", "noreply@resource-reserver.local")
+    smtp_from_name: str = os.getenv("SMTP_FROM_NAME", "Resource Reserver")
+    smtp_tls: bool = os.getenv("SMTP_TLS", "true").lower() == "true"
+    smtp_ssl: bool = os.getenv("SMTP_SSL", "false").lower() == "true"
+    email_enabled: bool = os.getenv("EMAIL_ENABLED", "false").lower() == "true"
+    email_templates_dir: str = os.getenv("EMAIL_TEMPLATES_DIR", "app/templates/email")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

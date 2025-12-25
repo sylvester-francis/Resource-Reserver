@@ -18,7 +18,9 @@ cryptography==45.0.3
 dotenv==0.9.9
 dparse==0.6.4
 ecdsa==0.19.1
+email-validator==2.2.0
 fastapi==0.115.12
+fastapi-mail==1.4.2
 filelock==3.16.1
 flake8==7.2.0
 freezegun==1.2.2
@@ -27,6 +29,7 @@ GitPython==3.1.44
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.25.2
+icalendar==5.0.13
 idna==3.10
 iniconfig==2.1.0
 isort==6.0.1
@@ -59,9 +62,9 @@ pyarrow==20.0.0
 pyasn1==0.6.1
 pycodestyle==2.13.0
 pycparser==2.22
-pydantic==2.9.2
-pydantic-settings==2.6.1
-pydantic_core==2.23.4
+pydantic==2.12.5
+pydantic-settings==2.9.1
+pydantic_core==2.41.5
 pydeck==0.9.1
 pyflakes==3.3.2
 Pygments==2.19.1
@@ -77,6 +80,7 @@ python-multipart==0.0.20
 pytz==2025.2
 PyYAML==6.0.2
 qrcode==8.2
+redis==5.2.1
 referencing==0.36.2
 regex==2024.11.6
 requests==2.32.3
@@ -86,8 +90,8 @@ rsa==4.9.1
 ruamel.yaml==0.18.13
 ruamel.yaml.clib==0.2.12
 ruff==0.11.13
-safety==3.5.2
-safety-schemas==0.0.14
+safety==3.7.0
+safety-schemas==0.0.16
 setuptools==80.9.0
 shellingham==1.5.4
 simpleeval==1.0.3
@@ -104,8 +108,8 @@ tomlkit==0.13.3
 tornado==6.5.1
 tqdm==4.67.1
 typer==0.16.0
-typing-inspection==0.4.1
-typing_extensions==4.14.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
 tzdata==2025.2
 urllib3==2.4.0
 uvicorn[standard]==0.34.3

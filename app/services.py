@@ -15,10 +15,20 @@ from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
 from app.auth import hash_password
+from app.core.cache import invalidate_resource_cache
 from app.utils.recurrence import generate_occurrences
 from app.websocket import manager as ws_manager
 
 logger = logging.getLogger(__name__)
+
+
+def _invalidate_cache_sync() -> None:
+    """Synchronous wrapper to invalidate resource cache from sync context."""
+    try:
+        anyio.from_thread.run(invalidate_resource_cache)
+        logger.debug("Resource cache invalidated")
+    except Exception as e:
+        logger.debug(f"Cache invalidation skipped: {e}")
 
 
 def ensure_timezone_aware(dt):
@@ -120,6 +130,7 @@ class ResourceService:
                 self.db.add(resource)
                 self.db.commit()
                 self.db.refresh(resource)
+                _invalidate_cache_sync()  # Invalidate resource cache
                 return resource
             except IntegrityError as e:
                 self.db.rollback()
@@ -395,6 +406,7 @@ class ResourceService:
         resource.available = available
         self.db.commit()
         self.db.refresh(resource)
+        _invalidate_cache_sync()  # Invalidate resource cache
 
         anyio.from_thread.run(
             ws_manager.broadcast_all,
@@ -424,6 +436,7 @@ class ResourceService:
         resource.set_unavailable(auto_reset_hours)
         self.db.commit()
         self.db.refresh(resource)
+        _invalidate_cache_sync()  # Invalidate resource cache
 
         anyio.from_thread.run(
             ws_manager.broadcast_all,
@@ -451,6 +464,7 @@ class ResourceService:
         resource.set_available()
         self.db.commit()
         self.db.refresh(resource)
+        _invalidate_cache_sync()  # Invalidate resource cache
 
         anyio.from_thread.run(
             ws_manager.broadcast_all,
@@ -773,6 +787,7 @@ class ReservationService:
                 self.db.add(reservation)
                 self.db.commit()
                 self.db.refresh(reservation)
+                _invalidate_cache_sync()  # Invalidate resource cache
 
                 # Log the action
                 self._log_action(
@@ -948,6 +963,7 @@ class ReservationService:
 
         self.db.commit()
         self.db.refresh(reservation)
+        _invalidate_cache_sync()  # Invalidate resource cache
 
         # Log the action
         reason_text = f" (Reason: {cancellation.reason})" if cancellation.reason else ""

@@ -6,11 +6,13 @@ from sqlalchemy import (
     JSON,
     Boolean,
     Column,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
     String,
     Text,
+    Time,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -37,6 +39,15 @@ class User(Base):
     # Email fields
     email = Column(String(255), unique=True, nullable=True, index=True)
     email_verified = Column(Boolean, default=False, nullable=False)
+
+    # Email notification preferences
+    email_notifications = Column(Boolean, default=True, nullable=False)
+    reminder_hours = Column(
+        Integer, default=24, nullable=False
+    )  # Hours before reservation
+
+    # Calendar integration
+    calendar_token = Column(String(64), unique=True, nullable=True, index=True)
 
     # Relationships
     reservations = relationship("Reservation", back_populates="user")
@@ -77,6 +88,12 @@ class Resource(Base):
     reservations = relationship("Reservation", back_populates="resource")
     waitlist_entries = relationship(
         "Waitlist", back_populates="resource", cascade="all, delete-orphan"
+    )
+    business_hours = relationship(
+        "BusinessHours", back_populates="resource", cascade="all, delete-orphan"
+    )
+    blackout_dates = relationship(
+        "BlackoutDate", back_populates="resource", cascade="all, delete-orphan"
     )
 
     @property
@@ -139,6 +156,9 @@ class Reservation(Base):
         Integer, ForeignKey("reservations.id"), nullable=True
     )
     is_recurring_instance = Column(Boolean, default=False)
+
+    # Email reminder tracking
+    reminder_sent = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="reservations")
@@ -373,3 +393,43 @@ class Waitlist(Base):
     # Relationships
     resource = relationship("Resource", back_populates="waitlist_entries")
     user = relationship("User", back_populates="waitlist_entries")
+
+
+# ============================================================================
+# Business Hours Models
+# ============================================================================
+
+
+class BusinessHours(Base):
+    """Operating hours for resources."""
+
+    __tablename__ = "business_hours"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(
+        Integer, ForeignKey("resources.id"), nullable=True
+    )  # null = global default
+    day_of_week = Column(Integer, nullable=False)  # 0=Monday, 6=Sunday
+    open_time = Column(Time, nullable=False)
+    close_time = Column(Time, nullable=False)
+    is_closed = Column(Boolean, default=False)  # For marking specific days as closed
+
+    # Relationships
+    resource = relationship("Resource", back_populates="business_hours")
+
+
+class BlackoutDate(Base):
+    """Dates when resources are unavailable (holidays, maintenance, etc.)."""
+
+    __tablename__ = "blackout_dates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(
+        Integer, ForeignKey("resources.id"), nullable=True
+    )  # null = applies to all
+    date = Column(Date, nullable=False)
+    reason = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    # Relationships
+    resource = relationship("Resource", back_populates="blackout_dates")

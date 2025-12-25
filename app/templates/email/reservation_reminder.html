@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Reservation Reminder - Resource Reserver{% endblock %}
+
+{% block content %}
+<p class="greeting">Hello {{ username }},</p>
+
+<div class="alert-box">
+    Your reservation is starting in {{ hours_until }} hour{% if hours_until != 1 %}s{% endif %}!
+</div>
+
+<p class="message">
+    This is a friendly reminder about your upcoming reservation:
+</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Resource:</span>
+        <span class="info-value">{{ resource_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Start Time:</span>
+        <span class="info-value">{{ start_time }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Reservation ID:</span>
+        <span class="info-value">#{{ reservation_id }}</span>
+    </div>
+</div>
+
+<p class="message">
+    Please make sure you're ready to use the resource at the scheduled time.
+</p>
+
+<p class="message" style="margin-top: 32px; color: #64748b; font-size: 14px;">
+    Can't make it? Please cancel your reservation to allow others to use this resource.
+</p>
+{% endblock %}

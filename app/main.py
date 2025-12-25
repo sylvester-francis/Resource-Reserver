@@ -39,7 +39,10 @@ from app.auth import (
 )
 from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.config import get_settings
+from app.core.cache import cache_manager
 from app.database import SessionLocal, engine, get_db
+from app.routers.business_hours import router as business_hours_router
+from app.routers.calendar import router as calendar_router
 from app.routers.notifications import router as notifications_router
 from app.routers.waitlist import router as waitlist_router
 from app.services import (
@@ -213,10 +216,104 @@ async def cleanup_expired_reservations():
         await asyncio.sleep(300)
 
 
+async def send_reservation_reminders():
+    """Background task to send email reminders for upcoming reservations."""
+    from app.database import SessionLocal
+    from app.email_service import email_service
+
+    logger.info("Starting email reminder task")
+
+    while True:
+        try:
+            if not settings.email_enabled:
+                logger.debug("Email service disabled, skipping reminders")
+                await asyncio.sleep(900)  # Check every 15 minutes
+                continue
+
+            db = SessionLocal()
+            now = utcnow()
+
+            # Find reservations that need reminders
+            # Get active reservations starting within the next 24 hours that haven't had reminders sent
+            upcoming_reservations = (
+                db.query(models.Reservation)
+                .join(models.User)
+                .filter(
+                    models.Reservation.status == "active",
+                    models.Reservation.reminder_sent == False,  # noqa: E712
+                    models.Reservation.start_time > now,
+                    models.User.email_notifications == True,  # noqa: E712
+                    models.User.email.isnot(None),
+                )
+                .all()
+            )
+
+            reminders_sent = 0
+            for reservation in upcoming_reservations:
+                user = reservation.user
+                if not user or not user.email:
+                    continue
+
+                # Calculate hours until reservation starts
+                time_until = reservation.start_time - now
+                hours_until = time_until.total_seconds() / 3600
+
+                # Send reminder if within user's reminder window
+                if hours_until <= user.reminder_hours:
+                    try:
+                        resource = reservation.resource
+                        resource_name = (
+                            resource.name
+                            if resource
+                            else f"Resource #{reservation.resource_id}"
+                        )
+
+                        success = await email_service.send_reservation_reminder(
+                            to=user.email,
+                            username=user.username,
+                            resource_name=resource_name,
+                            start_time=reservation.start_time,
+                            hours_until=int(hours_until) + 1,  # Round up
+                            reservation_id=reservation.id,
+                        )
+
+                        if success:
+                            reservation.reminder_sent = True
+                            reminders_sent += 1
+                            logger.info(
+                                f"Sent reminder for reservation {reservation.id} to {user.email}"
+                            )
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to send reminder for reservation {reservation.id}: {e}"
+                        )
+
+            if reminders_sent > 0:
+                db.commit()
+                logger.info(f"Sent {reminders_sent} reservation reminders")
+            else:
+                logger.debug("No reminders to send")
+
+            db.close()
+
+        except Exception as e:
+            logger.error(f"Error in reminder task: {e}")
+            try:
+                db.close()
+            except Exception:  # nosec B110 - intentionally ignoring close errors
+                pass
+
+        await asyncio.sleep(900)  # Check every 15 minutes
+
+
+# Global variable to control the reminder task
+reminder_task = None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for FastAPI application."""
-    global cleanup_task
+    global cleanup_task, reminder_task
 
     logger.info("Starting FastAPI application...")
 
@@ -235,8 +332,22 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error creating default roles: {e}")
 
+    # Initialize Redis cache
+    try:
+        cache_connected = await cache_manager.connect()
+        if cache_connected:
+            logger.info("Redis cache connected")
+        else:
+            logger.info("Redis cache disabled or unavailable - running without cache")
+    except Exception as e:
+        logger.warning(f"Failed to connect to Redis cache: {e}")
+
     cleanup_task = asyncio.create_task(cleanup_expired_reservations())
     logger.info("Background cleanup task started")
+
+    # Start email reminder task
+    reminder_task = asyncio.create_task(send_reservation_reminders())
+    logger.info("Background email reminder task started")
 
     yield
 
@@ -250,6 +361,22 @@ async def lifespan(app: FastAPI):
             logger.info("Background cleanup task cancelled")
         except Exception as e:
             logger.error(f"Error during cleanup task shutdown: {e}")
+
+    if reminder_task:
+        reminder_task.cancel()
+        try:
+            await reminder_task
+        except asyncio.CancelledError:
+            logger.info("Background reminder task cancelled")
+        except Exception as e:
+            logger.error(f"Error during reminder task shutdown: {e}")
+
+    # Disconnect Redis cache
+    try:
+        await cache_manager.disconnect()
+        logger.info("Redis cache disconnected")
+    except Exception as e:
+        logger.warning(f"Error disconnecting Redis cache: {e}")
 
     logger.info("Application shutdown complete")
 
@@ -401,12 +528,18 @@ def health_check(db: Session = Depends(get_db)):
         "healthy" if db_status == "healthy" and api_status == "healthy" else "unhealthy"
     )
 
+    # Check cache status
+    cache_status = "disabled"
+    if settings.cache_enabled:
+        cache_status = "connected" if cache_manager.is_connected() else "disconnected"
+
     return {
         "status": overall_status,
         "timestamp": utcnow(),
         "version": settings.app_version,
         "database": db_status,
         "api": api_status,
+        "cache": cache_status,
         "resources_count": resources_count,
         "background_tasks": {"cleanup_task": task_status},
         "rate_limiting": {"enabled": settings.rate_limit_enabled},
@@ -490,8 +623,37 @@ def get_current_user_info(
     return {
         "id": current_user.id,
         "username": current_user.username,
+        "email": current_user.email,
+        "email_verified": current_user.email_verified,
         "mfa_enabled": current_user.mfa_enabled,
+        "email_notifications": current_user.email_notifications,
+        "reminder_hours": current_user.reminder_hours,
     }
+
+
+@app.patch(
+    "/api/v1/users/me/preferences",
+    response_model=schemas.UserDetailResponse,
+    tags=["Authentication"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def update_user_preferences(
+    request: Request,
+    preferences: schemas.UserPreferencesUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Update current user's notification preferences."""
+    if preferences.email_notifications is not None:
+        current_user.email_notifications = preferences.email_notifications
+
+    if preferences.reminder_hours is not None:
+        current_user.reminder_hours = preferences.reminder_hours
+
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
 
 
 @app.post("/api/v1/token/refresh", tags=["Authentication"])
@@ -1170,6 +1332,8 @@ v1_auth_router.include_router(setup_router)
 app.include_router(v1_auth_router)
 app.include_router(notifications_router)
 app.include_router(waitlist_router)
+app.include_router(business_hours_router)
+app.include_router(calendar_router)
 
 
 # =============================================================================

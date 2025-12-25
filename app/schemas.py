@@ -1,6 +1,6 @@
 """Pydantic schemas for request/response validation."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -74,6 +74,27 @@ class UserResponse(BaseModel):
     username: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserDetailResponse(BaseModel):
+    """Extended user response with email and preferences."""
+
+    id: int
+    username: str
+    email: str | None = None
+    email_verified: bool = False
+    mfa_enabled: bool = False
+    email_notifications: bool = True
+    reminder_hours: int = 24
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserPreferencesUpdate(BaseModel):
+    """Schema for updating user notification preferences."""
+
+    email_notifications: bool | None = None
+    reminder_hours: int | None = Field(None, ge=1, le=168)  # 1 hour to 1 week
 
 
 class SetupInitializeRequest(BaseModel):
@@ -376,3 +397,111 @@ class WaitlistAcceptOffer(BaseModel):
     """Schema for accepting a waitlist offer."""
 
     pass  # No additional fields needed, ID comes from path
+
+
+# ============================================================================
+# Business Hours Schemas
+# ============================================================================
+
+
+class BusinessHoursCreate(BaseModel):
+    """Schema for creating/updating business hours."""
+
+    day_of_week: int = Field(ge=0, le=6, description="0=Monday, 6=Sunday")
+    open_time: str = Field(pattern=r"^\d{2}:\d{2}$", description="HH:MM format")
+    close_time: str = Field(pattern=r"^\d{2}:\d{2}$", description="HH:MM format")
+    is_closed: bool = False
+
+    @field_validator("open_time", "close_time")
+    @classmethod
+    def validate_time_format(cls, v: str) -> str:
+        try:
+            hours, minutes = map(int, v.split(":"))
+            if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+                raise ValueError("Invalid time")
+            return v
+        except (ValueError, AttributeError) as e:
+            raise ValueError("Time must be in HH:MM format") from e
+
+    @field_validator("close_time")
+    @classmethod
+    def validate_close_after_open(cls, v: str, info: ValidationInfo) -> str:
+        open_time = info.data.get("open_time")
+        if open_time and v <= open_time:
+            is_closed = info.data.get("is_closed", False)
+            if not is_closed:
+                raise ValueError("Close time must be after open time")
+        return v
+
+
+class BusinessHoursResponse(BaseModel):
+    """Schema for business hours response."""
+
+    id: int
+    resource_id: int | None = None
+    day_of_week: int
+    open_time: time
+    close_time: time
+    is_closed: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BusinessHoursBulkUpdate(BaseModel):
+    """Schema for bulk updating business hours for a resource."""
+
+    hours: list[BusinessHoursCreate]
+
+    @field_validator("hours")
+    @classmethod
+    def validate_unique_days(
+        cls, v: list[BusinessHoursCreate]
+    ) -> list[BusinessHoursCreate]:
+        days = [h.day_of_week for h in v]
+        if len(days) != len(set(days)):
+            raise ValueError("Duplicate days of week not allowed")
+        return v
+
+
+class BlackoutDateCreate(BaseModel):
+    """Schema for creating a blackout date."""
+
+    date: date
+    reason: str | None = Field(None, max_length=255)
+
+    @field_validator("date")
+    @classmethod
+    def validate_future_date(cls, v: date) -> date:
+        if v < date.today():
+            raise ValueError("Blackout date must be today or in the future")
+        return v
+
+
+class BlackoutDateResponse(BaseModel):
+    """Schema for blackout date response."""
+
+    id: int
+    resource_id: int | None = None
+    date: date
+    reason: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TimeSlot(BaseModel):
+    """Represents a time slot with availability status."""
+
+    start: datetime
+    end: datetime
+    available: bool
+
+
+class AvailableSlotsResponse(BaseModel):
+    """Response with available time slots for a date."""
+
+    date: date
+    slots: list[TimeSlot]
+    business_hours: BusinessHoursResponse | None = None
+    is_blackout: bool = False
+    blackout_reason: str | None = None
