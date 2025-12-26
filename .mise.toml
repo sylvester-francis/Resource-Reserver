@@ -573,6 +573,23 @@ python -c "from app.database import engine, Base; Base.metadata.create_all(bind=
 echo "✅ Database reset complete!"
 """
 
+[tasks.docker-reset]
+description = "Reset Docker services and database (WARNING: deletes all data)"
+run = """
+#!/usr/bin/env bash
+echo "WARNING: This will delete all Docker data including the database."
+echo "Press Ctrl+C within 3 seconds to cancel..."
+sleep 3
+
+echo "Stopping services and removing volumes..."
+docker compose down -v 2>/dev/null || true
+
+echo "Starting fresh services..."
+docker compose up -d
+
+echo "Docker reset complete! Register a new user at http://localhost:3000/register"
+"""
+
 # =============================================================================
 # UTILITIES
 # =============================================================================
@@ -712,7 +729,8 @@ echo "  mise run build-docker - Build Docker images"
 echo ""
 echo "Database:"
 echo "  mise run db-migrate   - Run migrations"
-echo "  mise run db-reset     - Reset database"
+echo "  mise run db-reset     - Reset local database"
+echo "  mise run docker-reset - Reset Docker database (full reset)"
 echo ""
 echo "Utilities:"
 echo "  mise run clean        - Clean caches"
