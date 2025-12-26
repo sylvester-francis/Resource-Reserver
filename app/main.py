@@ -43,6 +43,7 @@ from app.config import get_settings
 from app.core.cache import cache_manager
 from app.core.metrics import check_liveness, check_readiness, metrics
 from app.database import SessionLocal, engine, get_db
+from app.routers.analytics import router as analytics_router
 from app.routers.business_hours import router as business_hours_router
 from app.routers.calendar import router as calendar_router
 from app.routers.notifications import router as notifications_router
@@ -1408,6 +1409,7 @@ v1_auth_router.include_router(oauth_router)
 v1_auth_router.include_router(setup_router)
 
 app.include_router(v1_auth_router)
+app.include_router(analytics_router)
 app.include_router(notifications_router)
 app.include_router(waitlist_router)
 app.include_router(business_hours_router)
