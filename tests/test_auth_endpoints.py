@@ -5,10 +5,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app import models  # Import full module to ensure all models are loaded
 from app.auth import hash_password
 from app.database import get_db
 from app.main import app
-from app.models import Base, User
 from app.rbac import create_default_roles
 
 # Test database
@@ -35,7 +35,7 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def setup_database():
     """Setup test database before each test."""
-    Base.metadata.create_all(bind=engine)
+    models.Base.metadata.create_all(bind=engine)
 
     # Create default roles
     db = TestingSessionLocal()
@@ -44,7 +44,7 @@ def setup_database():
 
     yield
 
-    Base.metadata.drop_all(bind=engine)
+    models.Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def auth_headers():
 
     # Create user
     db = TestingSessionLocal()
-    user = User(
+    user = models.User(
         username="testuser",
         hashed_password=hash_password("testpass123"),
         email="test@example.com",
@@ -83,7 +83,7 @@ def admin_auth_headers():
 
     # Create admin user
     db = TestingSessionLocal()
-    user = User(
+    user = models.User(
         username="adminuser",
         hashed_password=hash_password("adminpass123"),
         email="admin@example.com",
