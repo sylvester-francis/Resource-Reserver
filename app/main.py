@@ -42,15 +42,21 @@ from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.core.cache import cache_manager
 from app.core.metrics import check_liveness, check_readiness, metrics
+from app.core.rate_limiter import RateLimitMiddleware
+from app.core.versioning import VersioningMiddleware, get_version_info
 from app.database import SessionLocal, engine, get_db
 from app.routers.analytics import router as analytics_router
 from app.routers.approvals import router as approvals_router
+from app.routers.audit import router as audit_router
 from app.routers.bulk import router as bulk_router
 from app.routers.business_hours import router as business_hours_router
 from app.routers.calendar import router as calendar_router
 from app.routers.notifications import router as notifications_router
+from app.routers.quotas import router as quotas_router
+from app.routers.resource_groups import router as resource_groups_router
 from app.routers.search import router as search_router
 from app.routers.waitlist import router as waitlist_router
+from app.routers.webhooks import router as webhooks_router
 from app.services import (
     ReservationService,
     ResourceService,
@@ -450,6 +456,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add versioning middleware for deprecation headers
+app.add_middleware(VersioningMiddleware)
+
+# Add enhanced rate limiting middleware with quota tracking
+app.add_middleware(RateLimitMiddleware)
+
 
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
@@ -513,6 +525,13 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
         logger.warning("WebSocket connection closed unexpectedly: %s", exc)
     finally:
         ws_manager.disconnect(websocket, user.id)
+
+
+# API version information endpoint
+@app.get("/api/versions", tags=["system"])
+def get_api_versions():
+    """Get information about available API versions and deprecations."""
+    return get_version_info()
 
 
 # Health check at root level (no versioning needed)
@@ -1414,10 +1433,14 @@ v1_auth_router.include_router(setup_router)
 app.include_router(v1_auth_router)
 app.include_router(analytics_router)
 app.include_router(approvals_router)
+app.include_router(audit_router)
 app.include_router(bulk_router)
 app.include_router(notifications_router)
+app.include_router(quotas_router)
 app.include_router(search_router)
 app.include_router(waitlist_router)
+app.include_router(webhooks_router)
+app.include_router(resource_groups_router)
 app.include_router(business_hours_router)
 app.include_router(calendar_router)
 

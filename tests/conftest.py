@@ -2,6 +2,9 @@ import os
 import tempfile
 from datetime import UTC, datetime
 
+# Disable rate limiting before importing app
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -9,11 +12,20 @@ from sqlalchemy.orm import sessionmaker
 
 from app import models
 from app.auth import hash_password
+from app.config import get_settings
+from app.core.rate_limiter import reset_rate_limiter
 from app.database import get_db
 from app.main import app, limiter
 
-# Disable rate limiting for tests
+# Clear settings cache and reload with rate limiting disabled
+get_settings.cache_clear()
+_ = get_settings()  # Reload settings
+
+# Disable slowapi rate limiting for tests
 limiter.enabled = False
+
+# Reset the custom rate limiter before tests
+reset_rate_limiter()
 
 
 # Test database setup
@@ -50,6 +62,8 @@ def test_db():
 @pytest.fixture
 def client(test_db):
     """FastAPI test client"""
+    # Reset rate limiter before creating client to avoid rate limit issues
+    reset_rate_limiter()
     return TestClient(app)
 
 
@@ -72,9 +86,54 @@ def test_user(test_db):
 @pytest.fixture
 def auth_headers(client, test_user):
     """Get authentication headers for test user"""
+    # Reset rate limiter before getting token to avoid rate limit issues
+    reset_rate_limiter()
+
     # Use v1 API endpoint
     response = client.post(
         "/api/v1/token", data={"username": "testuser", "password": "testpass123"}
+    )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def admin_user(test_db):
+    """Create an admin test user in the database"""
+    db = test_db()
+    try:
+        hashed_password = hash_password("adminpass123")
+        user = models.User(username="adminuser", hashed_password=hashed_password)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        # Create admin role if not exists
+        admin_role = db.query(models.Role).filter(models.Role.name == "admin").first()
+        if not admin_role:
+            admin_role = models.Role(name="admin", description="Administrator role")
+            db.add(admin_role)
+            db.commit()
+            db.refresh(admin_role)
+
+        # Assign admin role to user
+        user_role = models.UserRole(user_id=user.id, role_id=admin_role.id)
+        db.add(user_role)
+        db.commit()
+
+        return user
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def admin_headers(client, admin_user):
+    """Get authentication headers for admin user"""
+    reset_rate_limiter()
+
+    response = client.post(
+        "/api/v1/token", data={"username": "adminuser", "password": "adminpass123"}
     )
     assert response.status_code == 200
     token = response.json()["access_token"]

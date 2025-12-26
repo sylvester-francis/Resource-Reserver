@@ -73,11 +73,44 @@ class SystemSetting(Base):
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class ResourceGroup(Base):
+    """Resource group for organizing resources hierarchically."""
+
+    __tablename__ = "resource_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    description = Column(String(500), nullable=True)
+
+    # Hierarchy - parent group for nesting
+    parent_id = Column(Integer, ForeignKey("resource_groups.id"), nullable=True)
+
+    # Location fields
+    building = Column(String(200), nullable=True)
+    floor = Column(String(50), nullable=True)
+    room = Column(String(100), nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    parent = relationship(
+        "ResourceGroup", remote_side="ResourceGroup.id", back_populates="children"
+    )
+    children = relationship("ResourceGroup", back_populates="parent")
+    resources = relationship("Resource", back_populates="group")
+
+
 class Resource(Base):
     __tablename__ = "resources"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), unique=True, nullable=False)
+
+    # Group/hierarchy fields
+    group_id = Column(Integer, ForeignKey("resource_groups.id"), nullable=True)
+    parent_id = Column(Integer, ForeignKey("resources.id"), nullable=True)
     available = Column(Boolean, default=True, nullable=False)
     tags = Column(JSON, default=list)
     status = Column(String(20), default="available", nullable=False)
@@ -100,6 +133,11 @@ class Resource(Base):
     blackout_dates = relationship(
         "BlackoutDate", back_populates="resource", cascade="all, delete-orphan"
     )
+    group = relationship("ResourceGroup", back_populates="resources")
+    parent = relationship(
+        "Resource", remote_side="Resource.id", back_populates="children"
+    )
+    children = relationship("Resource", back_populates="parent")
 
     @property
     def is_available_for_reservation(self) -> bool:
@@ -493,3 +531,174 @@ class SavedSearch(Base):
 
     # Relationships
     user = relationship("User", backref="saved_searches")
+
+
+# ============================================================================
+# Audit Log Model
+# ============================================================================
+
+
+class AuditLog(Base):
+    """Comprehensive audit log for tracking all system actions."""
+
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, index=True)
+
+    # User information
+    user_id = Column(
+        Integer, ForeignKey("users.id"), nullable=True
+    )  # Null for anonymous
+    username = Column(String(50), nullable=True)  # Denormalized for history
+
+    # Action details
+    action = Column(
+        String(50), nullable=False, index=True
+    )  # e.g., "create", "update", "delete", "login"
+    entity_type = Column(
+        String(50), nullable=False, index=True
+    )  # e.g., "reservation", "resource", "user"
+    entity_id = Column(Integer, nullable=True)  # ID of affected entity
+    entity_name = Column(String(255), nullable=True)  # Name/description for context
+
+    # Request context
+    ip_address = Column(String(45), nullable=True)  # IPv6 max length
+    user_agent = Column(String(500), nullable=True)
+    request_method = Column(String(10), nullable=True)  # GET, POST, PUT, DELETE
+    request_path = Column(String(500), nullable=True)
+
+    # Change details
+    old_values = Column(JSON, nullable=True)  # Previous state
+    new_values = Column(JSON, nullable=True)  # New state
+    details = Column(Text, nullable=True)  # Human-readable description
+
+    # Status
+    success = Column(Boolean, default=True, nullable=False)
+    error_message = Column(Text, nullable=True)
+
+    # Relationships
+    user = relationship("User", backref="audit_logs")
+
+
+# ============================================================================
+# API Quota Models
+# ============================================================================
+
+
+class APIQuota(Base):
+    """API usage quotas and limits per user."""
+
+    __tablename__ = "api_quotas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+
+    # Tier-based limits
+    tier = Column(
+        String(20), default="authenticated", nullable=False
+    )  # anonymous, authenticated, premium, admin
+
+    # Custom limits (override tier defaults if set)
+    custom_rate_limit = Column(Integer, nullable=True)  # Requests per minute
+    custom_daily_quota = Column(Integer, nullable=True)  # Requests per day
+
+    # Usage tracking
+    daily_request_count = Column(Integer, default=0, nullable=False)
+    last_request_date = Column(Date, nullable=True)
+    total_requests = Column(Integer, default=0, nullable=False)
+
+    # Quota management
+    quota_reset_notified = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    user = relationship("User", backref="api_quota")
+
+
+class APIUsageLog(Base):
+    """Detailed API usage log for analytics."""
+
+    __tablename__ = "api_usage_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, index=True)
+
+    # Request details
+    endpoint = Column(String(500), nullable=False)
+    method = Column(String(10), nullable=False)
+    status_code = Column(Integer, nullable=False)
+    response_time_ms = Column(Integer, nullable=True)
+
+    # Rate limit info at time of request
+    rate_limit = Column(Integer, nullable=True)
+    rate_remaining = Column(Integer, nullable=True)
+
+    # IP and user agent for analytics
+    ip_address = Column(String(45), nullable=True)
+
+    # Relationships
+    user = relationship("User", backref="api_usage_logs")
+
+
+# ============================================================================
+# Webhook Models
+# ============================================================================
+
+
+class Webhook(Base):
+    """Webhook configuration for external integrations."""
+
+    __tablename__ = "webhooks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # Configuration
+    url = Column(String(500), nullable=False)
+    secret = Column(String(64), nullable=False)  # For HMAC signing
+    events = Column(JSON, nullable=False)  # List of subscribed event types
+    description = Column(String(255), nullable=True)
+
+    # Status
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    user = relationship("User", backref="webhooks")
+    deliveries = relationship(
+        "WebhookDelivery", back_populates="webhook", cascade="all, delete-orphan"
+    )
+
+
+class WebhookDelivery(Base):
+    """Record of webhook delivery attempts."""
+
+    __tablename__ = "webhook_deliveries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    webhook_id = Column(Integer, ForeignKey("webhooks.id"), nullable=False)
+
+    # Event details
+    event_type = Column(String(50), nullable=False, index=True)
+    payload = Column(JSON, nullable=False)
+
+    # Delivery status
+    status = Column(
+        String(20), default="pending", nullable=False
+    )  # pending, delivered, failed
+    status_code = Column(Integer, nullable=True)  # HTTP response code
+    response_body = Column(String(1000), nullable=True)  # Truncated response
+    error_message = Column(String(500), nullable=True)
+
+    # Timing
+    created_at = Column(DateTime(timezone=True), default=utcnow, index=True)
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+    retry_count = Column(Integer, default=0, nullable=False)
+
+    # Relationships
+    webhook = relationship("Webhook", back_populates="deliveries")

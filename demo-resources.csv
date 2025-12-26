@@ -1,0 +1,115 @@
+name,tags,description,capacity,location,requires_approval
+# ============================================================
+# HEADQUARTERS - MAIN BUILDING
+# ============================================================
+# Floor 1 - Reception & Common Areas
+Reception Desk,"reception,front,customer,public","Main entrance reception and visitor check-in",2,"HQ/Floor 1/Lobby",false
+Visitor Lounge,"lounge,waiting,public","Comfortable seating area for visitors",12,"HQ/Floor 1/Lobby",false
+Cafeteria Main,"dining,cafeteria,food","Main employee cafeteria with full kitchen",80,"HQ/Floor 1/Cafeteria",false
+Coffee Station 1,"coffee,break,beverage","Self-service coffee and refreshments",4,"HQ/Floor 1/Break Area",false
+# Floor 2 - Meeting Rooms & Collaboration
+Conference Room Alpha,"meeting,large,video,executive","Large boardroom with 4K display and video conferencing",20,"HQ/Floor 2/East Wing",true
+Conference Room Beta,"meeting,medium,video","Medium meeting room with video conferencing",12,"HQ/Floor 2/East Wing",false
+Conference Room Gamma,"meeting,small,whiteboard","Small meeting room with whiteboard",6,"HQ/Floor 2/West Wing",false
+Huddle Space 2A,"huddle,quick,informal","Quick meeting space for 2-4 people",4,"HQ/Floor 2/Open Area",false
+Huddle Space 2B,"huddle,quick,informal","Quick meeting space for 2-4 people",4,"HQ/Floor 2/Open Area",false
+Phone Booth 201,"private,call,focus","Soundproof booth for calls or focus work",1,"HQ/Floor 2/Corridor",false
+Phone Booth 202,"private,call,focus","Soundproof booth for calls or focus work",1,"HQ/Floor 2/Corridor",false
+Phone Booth 203,"private,call,focus","Soundproof booth for calls or focus work",1,"HQ/Floor 2/Corridor",false
+Collaboration Zone,"collaboration,whiteboard,creative","Open collaboration area with writable walls",15,"HQ/Floor 2/Center",false
+# Floor 3 - Executive & Board
+Executive Boardroom,"executive,boardroom,premium,video","Premium boardroom for board meetings and VIP clients",24,"HQ/Floor 3/Executive Suite",true
+Executive Suite A,"executive,private,office","Private executive meeting room",6,"HQ/Floor 3/Executive Suite",true
+Executive Suite B,"executive,private,office","Private executive meeting room",6,"HQ/Floor 3/Executive Suite",true
+CEO Office,"executive,ceo,private","CEO's office for meetings",4,"HQ/Floor 3/Executive Suite",true
+# Floor 4 - Training & Events
+Training Room Large,"training,workshop,projector,large","Large training room with projector and podium",40,"HQ/Floor 4/Training Center",true
+Training Room Medium,"training,workshop,projector","Medium training room for workshops",20,"HQ/Floor 4/Training Center",false
+Computer Lab,"training,computer,lab,software","Computer training lab with 20 workstations",20,"HQ/Floor 4/Training Center",false
+Event Hall,"event,large,stage,av","Large event hall with stage and AV equipment",150,"HQ/Floor 4/Event Center",true
+# Floor 5 - Technical & Innovation
+Innovation Lab,"innovation,prototyping,maker","Innovation space with prototyping equipment",10,"HQ/Floor 5/Labs",true
+3D Printing Lab,"3dprinting,prototyping,equipment","3D printing and rapid prototyping facility",6,"HQ/Floor 5/Labs",true
+Server Room,"datacenter,secure,restricted,it","Secure server room access",4,"HQ/Floor 5/IT",true
+Network Operations Center,"noc,monitoring,it","Network monitoring and operations",8,"HQ/Floor 5/IT",true
+# ============================================================
+# EQUIPMENT - PORTABLE & SHARED
+# ============================================================
+# Audio/Visual Equipment
+Projector HD 1,"equipment,projector,portable,hd","Portable HD projector 3000 lumens",1,"Equipment Room A",false
+Projector HD 2,"equipment,projector,portable,hd","Portable HD projector 3000 lumens",1,"Equipment Room A",false
+Projector 4K,"equipment,projector,portable,4k,premium","Portable 4K projector 5000 lumens",1,"Equipment Room A",true
+Video Camera Pro,"equipment,camera,video,professional","Professional video camera for events",1,"Equipment Room B",true
+Video Camera Standard,"equipment,camera,video","Standard video camera",1,"Equipment Room B",false
+Webcam 4K,"equipment,webcam,4k,streaming","4K webcam for streaming and conferencing",1,"Equipment Room B",false
+Microphone Wireless Set,"equipment,microphone,wireless,set","Wireless microphone set (4 mics)",1,"Equipment Room B",false
+Microphone Handheld,"equipment,microphone,handheld","Handheld microphone for presentations",1,"Equipment Room B",false
+Audio System Portable,"equipment,audio,portable,pa","Portable PA system with speakers",1,"Equipment Room B",true
+Presentation Clicker,"equipment,clicker,presentation","Wireless presentation clicker with laser",1,"Equipment Room A",false
+# Computing Equipment
+Laptop Windows 1,"equipment,laptop,windows,dell","Dell Windows laptop for presentations",1,"IT Loan Desk",false
+Laptop Windows 2,"equipment,laptop,windows,dell","Dell Windows laptop for presentations",1,"IT Loan Desk",false
+Laptop Windows 3,"equipment,laptop,windows,hp","HP Windows laptop for training",1,"IT Loan Desk",false
+Laptop Mac Pro 1,"equipment,laptop,mac,apple,premium","MacBook Pro 16-inch",1,"IT Loan Desk",true
+Laptop Mac Pro 2,"equipment,laptop,mac,apple,premium","MacBook Pro 16-inch",1,"IT Loan Desk",true
+Laptop Mac Air,"equipment,laptop,mac,apple","MacBook Air M2",1,"IT Loan Desk",false
+iPad Pro 1,"equipment,tablet,ipad,apple","iPad Pro 12.9-inch with pencil",1,"IT Loan Desk",false
+iPad Pro 2,"equipment,tablet,ipad,apple","iPad Pro 12.9-inch with pencil",1,"IT Loan Desk",false
+Surface Pro,"equipment,tablet,surface,windows","Microsoft Surface Pro with keyboard",1,"IT Loan Desk",false
+Monitor 4K Portable,"equipment,monitor,4k,portable","Portable 15.6-inch 4K monitor",1,"IT Loan Desk",false
+Docking Station USB-C,"equipment,dock,usbc,universal","Universal USB-C docking station",1,"IT Loan Desk",false
+# Office Equipment
+Whiteboard Mobile Large,"equipment,whiteboard,mobile,large","Large mobile whiteboard 6x4ft",1,"Storage Room",false
+Whiteboard Mobile Medium,"equipment,whiteboard,mobile,medium","Medium mobile whiteboard 4x3ft",1,"Storage Room",false
+Flipchart Stand 1,"equipment,flipchart,presentation","Flipchart stand with paper pad",1,"Storage Room",false
+Flipchart Stand 2,"equipment,flipchart,presentation","Flipchart stand with paper pad",1,"Storage Room",false
+Standing Desk Converter,"equipment,desk,standing,ergonomic","Portable standing desk converter",1,"Ergonomics Dept",false
+Ergonomic Chair Loaner,"equipment,chair,ergonomic,loaner","Ergonomic chair for temporary use",1,"Ergonomics Dept",false
+# ============================================================
+# VEHICLES - COMPANY FLEET
+# ============================================================
+Company Car Tesla,"vehicle,car,electric,tesla","Tesla Model 3 for business travel",4,"Parking Garage B1",true
+Company Car Hybrid,"vehicle,car,hybrid,toyota","Toyota Camry Hybrid",5,"Parking Garage B1",true
+Company Van,"vehicle,van,cargo,ford","Ford Transit cargo van",2,"Parking Garage B1",true
+Electric Scooter 1,"vehicle,scooter,electric","Electric scooter for campus",1,"Bike Storage",false
+Electric Scooter 2,"vehicle,scooter,electric","Electric scooter for campus",1,"Bike Storage",false
+Company Bicycle 1,"vehicle,bicycle,manual","Company bicycle for local errands",1,"Bike Storage",false
+Company Bicycle 2,"vehicle,bicycle,manual","Company bicycle for local errands",1,"Bike Storage",false
+# ============================================================
+# PARKING - RESERVED SPOTS
+# ============================================================
+Parking VIP 1,"parking,covered,vip,reserved","Covered VIP parking spot near entrance",1,"Parking Garage A",true
+Parking VIP 2,"parking,covered,vip,reserved","Covered VIP parking spot near entrance",1,"Parking Garage A",true
+Parking EV Charging 1,"parking,ev,charging,covered","Electric vehicle charging spot",1,"Parking Garage A",false
+Parking EV Charging 2,"parking,ev,charging,covered","Electric vehicle charging spot",1,"Parking Garage A",false
+Parking Visitor 1,"parking,visitor,outdoor","Visitor parking spot",1,"Visitor Lot",false
+Parking Visitor 2,"parking,visitor,outdoor","Visitor parking spot",1,"Visitor Lot",false
+Motorcycle Spot 1,"parking,motorcycle","Motorcycle parking spot",1,"Parking Garage B1",false
+# ============================================================
+# SATELLITE OFFICE - DOWNTOWN
+# ============================================================
+Downtown Meeting Room A,"meeting,downtown,video,medium","Downtown office meeting room",10,"Downtown/Floor 1",false
+Downtown Meeting Room B,"meeting,downtown,small","Small downtown meeting room",4,"Downtown/Floor 1",false
+Downtown Hot Desk Zone,"hotdesk,downtown,flexible","Flexible hot desk workspace",8,"Downtown/Floor 1",false
+Downtown Phone Booth,"private,call,downtown","Phone booth at downtown office",1,"Downtown/Floor 1",false
+# ============================================================
+# WAREHOUSE FACILITY
+# ============================================================
+Warehouse Loading Dock 1,"warehouse,loading,dock","Loading dock for deliveries",2,"Warehouse/Dock Area",false
+Warehouse Loading Dock 2,"warehouse,loading,dock","Loading dock for deliveries",2,"Warehouse/Dock Area",false
+Warehouse Meeting Room,"meeting,warehouse,simple","Simple meeting room at warehouse",8,"Warehouse/Office",false
+Forklift 1,"equipment,forklift,warehouse","Electric forklift",1,"Warehouse/Equipment",true
+Forklift 2,"equipment,forklift,warehouse","Electric forklift",1,"Warehouse/Equipment",true
+Pallet Jack Electric,"equipment,palletjack,warehouse","Electric pallet jack",1,"Warehouse/Equipment",false
+# ============================================================
+# SPECIALTY RESOURCES
+# ============================================================
+Photo Studio,"creative,photo,studio,lighting","Professional photo studio with lighting",4,"Creative Dept",true
+Recording Booth,"creative,audio,recording,podcast","Soundproof recording booth for podcasts",2,"Creative Dept",true
+Green Screen Room,"creative,video,greenscreen","Video production room with green screen",6,"Creative Dept",true
+Quiet Room,"wellness,quiet,meditation","Quiet room for meditation or rest",1,"Wellness Center",false
+Mother's Room,"wellness,private,nursing","Private room for nursing mothers",1,"Wellness Center",false
+First Aid Station,"health,firstaid,emergency","First aid station and supplies",2,"Wellness Center",false
+Gym Equipment Area,"fitness,gym,equipment","Gym equipment usage slot",10,"Fitness Center",false
+Shower Room 1,"amenity,shower,locker","Shower and locker room access",1,"Locker Room",false
+Shower Room 2,"amenity,shower,locker","Shower and locker room access",1,"Locker Room",false

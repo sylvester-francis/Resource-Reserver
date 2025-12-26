@@ -125,9 +125,17 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Theme transition styles */
+  html {
+    transition-property: color, background-color, border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+
   body {
     @apply bg-background text-foreground;
     min-height: 100dvh;
+    transition: background-color 200ms ease, color 200ms ease;
     background-image:
       radial-gradient(900px 600px at 5% -10%, var(--page-glow-1), transparent 60%),
       radial-gradient(900px 600px at 95% -20%, var(--page-glow-2), transparent 55%),
@@ -138,5 +146,22 @@
   .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
+  }
+
+  /* Card and component transitions for theme changes */
+  .card,
+  [class*="bg-card"],
+  [class*="bg-popover"],
+  [class*="bg-muted"],
+  [class*="bg-accent"] {
+    transition: background-color 200ms ease, border-color 200ms ease;
+  }
+
+  /* Input and form element transitions */
+  input,
+  textarea,
+  select,
+  button {
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
   }
 }
