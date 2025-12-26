@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { ThemeProvider } from "@/components/theme-provider";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import { InstallPWA } from "@/components/InstallPWA";
@@ -64,13 +66,16 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -80,17 +85,19 @@ export default function RootLayout({
       <body
         className={`${plusJakarta.variable} ${fraunces.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          storageKey="resource-reserver-theme"
-        >
-          <WebSocketProvider>
-            {children}
-            <InstallPWA />
-          </WebSocketProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            storageKey="resource-reserver-theme"
+          >
+            <WebSocketProvider>
+              {children}
+              <InstallPWA />
+            </WebSocketProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
         <ServiceWorkerRegistration />
       </body>
     </html>
