@@ -603,3 +603,64 @@ class APIUsageLog(Base):
 
     # Relationships
     user = relationship("User", backref="api_usage_logs")
+
+
+# ============================================================================
+# Webhook Models
+# ============================================================================
+
+
+class Webhook(Base):
+    """Webhook configuration for external integrations."""
+
+    __tablename__ = "webhooks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # Configuration
+    url = Column(String(500), nullable=False)
+    secret = Column(String(64), nullable=False)  # For HMAC signing
+    events = Column(JSON, nullable=False)  # List of subscribed event types
+    description = Column(String(255), nullable=True)
+
+    # Status
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    user = relationship("User", backref="webhooks")
+    deliveries = relationship(
+        "WebhookDelivery", back_populates="webhook", cascade="all, delete-orphan"
+    )
+
+
+class WebhookDelivery(Base):
+    """Record of webhook delivery attempts."""
+
+    __tablename__ = "webhook_deliveries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    webhook_id = Column(Integer, ForeignKey("webhooks.id"), nullable=False)
+
+    # Event details
+    event_type = Column(String(50), nullable=False, index=True)
+    payload = Column(JSON, nullable=False)
+
+    # Delivery status
+    status = Column(
+        String(20), default="pending", nullable=False
+    )  # pending, delivered, failed
+    status_code = Column(Integer, nullable=True)  # HTTP response code
+    response_body = Column(String(1000), nullable=True)  # Truncated response
+    error_message = Column(String(500), nullable=True)
+
+    # Timing
+    created_at = Column(DateTime(timezone=True), default=utcnow, index=True)
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+    retry_count = Column(Integer, default=0, nullable=False)
+
+    # Relationships
+    webhook = relationship("Webhook", back_populates="deliveries")

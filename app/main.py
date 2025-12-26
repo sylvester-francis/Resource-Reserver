@@ -55,6 +55,7 @@ from app.routers.notifications import router as notifications_router
 from app.routers.quotas import router as quotas_router
 from app.routers.search import router as search_router
 from app.routers.waitlist import router as waitlist_router
+from app.routers.webhooks import router as webhooks_router
 from app.services import (
     ReservationService,
     ResourceService,
@@ -1437,6 +1438,7 @@ app.include_router(notifications_router)
 app.include_router(quotas_router)
 app.include_router(search_router)
 app.include_router(waitlist_router)
+app.include_router(webhooks_router)
 app.include_router(business_hours_router)
 app.include_router(calendar_router)
 
