@@ -505,3 +505,172 @@ class AvailableSlotsResponse(BaseModel):
     business_hours: BusinessHoursResponse | None = None
     is_blackout: bool = False
     blackout_reason: str | None = None
+
+
+# ============================================================================
+# Approval Workflow Schemas
+# ============================================================================
+
+
+class ApprovalStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ResourceApprovalUpdate(BaseModel):
+    """Schema for updating resource approval settings."""
+
+    requires_approval: bool
+    default_approver_id: int | None = None
+
+
+class ReservationWithApprovalCreate(BaseModel):
+    """Schema for creating a reservation that may require approval."""
+
+    resource_id: int
+    start_time: datetime
+    end_time: datetime
+    request_message: str | None = Field(None, max_length=500)
+
+    @field_validator("start_time")
+    @classmethod
+    def validate_start_time(cls, v: datetime) -> datetime:
+        v = ensure_timezone_aware(v)
+        if v <= utcnow():
+            raise ValueError("Start time must be in the future")
+        return v
+
+    @field_validator("end_time")
+    @classmethod
+    def validate_end_time(cls, v: datetime, info) -> datetime:
+        v = ensure_timezone_aware(v)
+        start = info.data.get("start_time")
+        if start:
+            start = ensure_timezone_aware(start)
+            if v <= start:
+                raise ValueError("End time must be after start time")
+        return v
+
+
+class ApprovalRequestCreate(BaseModel):
+    """Schema for creating an approval request."""
+
+    reservation_id: int
+    approver_id: int
+    request_message: str | None = Field(None, max_length=500)
+
+
+class ApprovalAction(BaseModel):
+    """Schema for approving or rejecting a reservation."""
+
+    action: str = Field(pattern="^(approve|reject)$")
+    response_message: str | None = Field(None, max_length=500)
+
+
+class ApprovalRequestResponse(BaseModel):
+    """Schema for approval request response."""
+
+    id: int
+    reservation_id: int
+    approver_id: int
+    status: str
+    request_message: str | None = None
+    response_message: str | None = None
+    created_at: datetime
+    responded_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ApprovalRequestWithDetails(ApprovalRequestResponse):
+    """Approval request with reservation and user details."""
+
+    reservation: "ReservationResponse"
+    requester_username: str | None = None
+    approver_username: str | None = None
+
+
+# ============================================================================
+# Search Schemas
+# ============================================================================
+
+
+class ResourceSearchParams(BaseModel):
+    """Parameters for searching resources."""
+
+    query: str | None = Field(None, description="Text search query")
+    tags: list[str] | None = Field(None, description="Filter by tags")
+    status: str | None = Field(
+        None, description="Filter by status (available, in_use, unavailable)"
+    )
+    available_only: bool = Field(False, description="Only show available resources")
+    available_from: datetime | None = Field(
+        None, description="Filter by availability start time"
+    )
+    available_until: datetime | None = Field(
+        None, description="Filter by availability end time"
+    )
+    requires_approval: bool | None = Field(
+        None, description="Filter by approval requirement"
+    )
+    limit: int = Field(50, ge=1, le=100)
+    offset: int = Field(0, ge=0)
+
+
+class ReservationSearchParams(BaseModel):
+    """Parameters for searching reservations."""
+
+    user_id: int | None = Field(None, description="Filter by user ID")
+    resource_id: int | None = Field(None, description="Filter by resource ID")
+    status: str | list[str] | None = Field(None, description="Filter by status")
+    start_from: datetime | None = Field(
+        None, description="Filter by reservation start time (from)"
+    )
+    start_until: datetime | None = Field(
+        None, description="Filter by reservation start time (until)"
+    )
+    created_from: datetime | None = Field(
+        None, description="Filter by creation date (from)"
+    )
+    created_until: datetime | None = Field(
+        None, description="Filter by creation date (until)"
+    )
+    include_cancelled: bool = Field(False, description="Include cancelled reservations")
+    limit: int = Field(50, ge=1, le=100)
+    offset: int = Field(0, ge=0)
+
+
+class SavedSearchCreate(BaseModel):
+    """Schema for creating a saved search."""
+
+    name: str = Field(..., min_length=1, max_length=100)
+    search_type: str = Field(..., pattern="^(resources|reservations)$")
+    filters: dict
+
+
+class SavedSearchResponse(BaseModel):
+    """Schema for saved search response."""
+
+    id: int
+    name: str
+    search_type: str
+    filters: dict
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SearchSuggestionsResponse(BaseModel):
+    """Schema for search suggestions."""
+
+    resources: list[str]
+    tags: list[str]
+
+
+class PopularTagResponse(BaseModel):
+    """Schema for popular tag."""
+
+    tag: str
+    count: int

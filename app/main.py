@@ -16,6 +16,7 @@ from fastapi import (
     HTTPException,
     Query,
     Request,
+    Response,
     UploadFile,
     WebSocket,
     status,
@@ -40,10 +41,15 @@ from app.auth import (
 from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.core.cache import cache_manager
+from app.core.metrics import check_liveness, check_readiness, metrics
 from app.database import SessionLocal, engine, get_db
+from app.routers.analytics import router as analytics_router
+from app.routers.approvals import router as approvals_router
+from app.routers.bulk import router as bulk_router
 from app.routers.business_hours import router as business_hours_router
 from app.routers.calendar import router as calendar_router
 from app.routers.notifications import router as notifications_router
+from app.routers.search import router as search_router
 from app.routers.waitlist import router as waitlist_router
 from app.services import (
     ReservationService,
@@ -445,6 +451,26 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Middleware to collect request metrics."""
+    import time
+
+    start_time = time.time()
+
+    response = await call_next(request)
+
+    duration = time.time() - start_time
+    metrics.record_request(
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration=duration,
+    )
+
+    return response
+
+
 # =============================================================================
 # WebSocket endpoint
 # =============================================================================
@@ -544,6 +570,62 @@ def health_check(db: Session = Depends(get_db)):
         "background_tasks": {"cleanup_task": task_status},
         "rate_limiting": {"enabled": settings.rate_limit_enabled},
     }
+
+
+@app.get("/ready")
+def readiness_check():
+    """Kubernetes readiness probe endpoint.
+
+    Returns 200 if the application is ready to receive traffic,
+    503 if it's not ready (e.g., database not connected).
+    """
+    is_ready, details = check_readiness()
+
+    if not is_ready:
+        return Response(
+            content=str(details),
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            media_type="application/json",
+        )
+
+    return details
+
+
+@app.get("/live")
+def liveness_check():
+    """Kubernetes liveness probe endpoint.
+
+    Returns 200 if the application is alive.
+    This is a simple check that the app can respond.
+    """
+    is_alive, details = check_liveness()
+    return details
+
+
+@app.get("/metrics")
+def get_metrics():
+    """Prometheus metrics endpoint.
+
+    Returns metrics in Prometheus text format for scraping.
+    """
+    prometheus_metrics = metrics.export_prometheus()
+    return Response(
+        content=prometheus_metrics,
+        media_type="text/plain; charset=utf-8",
+    )
+
+
+@app.get("/api/v1/metrics/summary")
+@limiter.limit(settings.rate_limit_authenticated)
+def get_metrics_summary(
+    request: Request,
+    current_user: models.User = Depends(get_current_user),
+):
+    """Get application metrics summary (authenticated).
+
+    Returns a JSON summary of all collected metrics.
+    """
+    return metrics.get_summary()
 
 
 # =============================================================================
@@ -1330,7 +1412,11 @@ v1_auth_router.include_router(oauth_router)
 v1_auth_router.include_router(setup_router)
 
 app.include_router(v1_auth_router)
+app.include_router(analytics_router)
+app.include_router(approvals_router)
+app.include_router(bulk_router)
 app.include_router(notifications_router)
+app.include_router(search_router)
 app.include_router(waitlist_router)
 app.include_router(business_hours_router)
 app.include_router(calendar_router)

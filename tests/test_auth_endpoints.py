@@ -1,60 +1,65 @@
 """Integration tests for auth API endpoints."""
 
+import os
+import tempfile
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app import models  # Import full module to ensure all models are loaded
 from app.auth import hash_password
 from app.database import get_db
 from app.main import app
-from app.models import Base, User
-from app.rbac import create_default_roles
-
-# Test database
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test_api.db"
-engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from app.rbac import assign_role, create_default_roles
 
 
-def override_get_db():
-    """Override database dependency."""
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
+@pytest.fixture(scope="function")
+def test_db():
+    """Create a temporary test database for each test."""
+    db_fd, db_path = tempfile.mkstemp()
+    database_url = f"sqlite:///{db_path}"
 
+    engine = create_engine(database_url, connect_args={"check_same_thread": False})
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Setup test database before each test."""
-    Base.metadata.create_all(bind=engine)
+    # Create all tables
+    models.Base.metadata.create_all(bind=engine)
 
     # Create default roles
     db = TestingSessionLocal()
     create_default_roles(db)
     db.close()
 
-    yield
+    def override_get_db():
+        try:
+            db = TestingSessionLocal()
+            yield db
+        finally:
+            db.close()
 
-    Base.metadata.drop_all(bind=engine)
+    app.dependency_overrides[get_db] = override_get_db
+
+    yield TestingSessionLocal
+
+    # Cleanup
+    app.dependency_overrides.clear()
+    os.close(db_fd)
+    os.unlink(db_path)
 
 
 @pytest.fixture
-def auth_headers():
-    """Create a test user and return auth headers."""
-    from app.rbac import assign_role
+def client(test_db):
+    """FastAPI test client."""
+    return TestClient(app)
 
-    # Create user
-    db = TestingSessionLocal()
-    user = User(
+
+@pytest.fixture
+def auth_headers(client, test_db):
+    """Create a test user and return auth headers."""
+    db = test_db()
+    user = models.User(
         username="testuser",
         hashed_password=hash_password("testpass123"),
         email="test@example.com",
@@ -63,11 +68,9 @@ def auth_headers():
     db.commit()
     db.refresh(user)
 
-    # Assign user role
     assign_role(user.id, "user", db)
     db.close()
 
-    # Login to get token
     response = client.post(
         "/token", data={"username": "testuser", "password": "testpass123"}
     )
@@ -77,13 +80,10 @@ def auth_headers():
 
 
 @pytest.fixture
-def admin_auth_headers():
+def admin_auth_headers(client, test_db):
     """Create an admin test user and return auth headers."""
-    from app.rbac import assign_role
-
-    # Create admin user
-    db = TestingSessionLocal()
-    user = User(
+    db = test_db()
+    user = models.User(
         username="adminuser",
         hashed_password=hash_password("adminpass123"),
         email="admin@example.com",
@@ -92,11 +92,9 @@ def admin_auth_headers():
     db.commit()
     db.refresh(user)
 
-    # Assign admin role
     assign_role(user.id, "admin", db)
     db.close()
 
-    # Login to get token
     response = client.post(
         "/token", data={"username": "adminuser", "password": "adminpass123"}
     )
@@ -110,7 +108,7 @@ def admin_auth_headers():
 # ============================================================================
 
 
-def test_mfa_setup(auth_headers):
+def test_mfa_setup(client, auth_headers):
     """Test MFA setup endpoint."""
     response = client.post("/auth/mfa/setup", headers=auth_headers)
 
@@ -121,7 +119,7 @@ def test_mfa_setup(auth_headers):
     assert "backup_codes" in data
 
 
-def test_mfa_verify_and_enable(auth_headers):
+def test_mfa_verify_and_enable(client, auth_headers):
     """Test MFA verification and enablement."""
     import pyotp
 
@@ -142,7 +140,7 @@ def test_mfa_verify_and_enable(auth_headers):
     assert response.json()["message"] == "MFA enabled successfully"
 
 
-def test_mfa_disable(auth_headers):
+def test_mfa_disable(client, auth_headers):
     """Test MFA disablement."""
     import pyotp
 
@@ -167,7 +165,7 @@ def test_mfa_disable(auth_headers):
 # ============================================================================
 
 
-def test_list_roles(admin_auth_headers):
+def test_list_roles(client, admin_auth_headers):
     """Test listing all roles (requires admin)."""
     response = client.get("/roles/", headers=admin_auth_headers)
 
@@ -180,12 +178,11 @@ def test_list_roles(admin_auth_headers):
     assert "guest" in role_names
 
 
-def test_get_my_roles(auth_headers):
+def test_get_my_roles(client, auth_headers):
     """Test getting current user's roles."""
     response = client.get("/roles/my-roles", headers=auth_headers)
 
     assert response.status_code == 200
-    # New users might not have roles assigned yet
     roles = response.json()
     assert isinstance(roles, list)
 
@@ -195,7 +192,7 @@ def test_get_my_roles(auth_headers):
 # ============================================================================
 
 
-def test_create_oauth_client(auth_headers):
+def test_create_oauth_client(client, auth_headers):
     """Test creating an OAuth2 client."""
     response = client.post(
         "/oauth/clients",
@@ -215,7 +212,7 @@ def test_create_oauth_client(auth_headers):
     assert data["client_name"] == "Test App"
 
 
-def test_list_oauth_clients(auth_headers):
+def test_list_oauth_clients(client, auth_headers):
     """Test listing OAuth2 clients."""
     # Create a client first
     client.post(
@@ -231,12 +228,12 @@ def test_list_oauth_clients(auth_headers):
     response = client.get("/oauth/clients", headers=auth_headers)
 
     assert response.status_code == 200
-    clients = response.json()
-    assert len(clients) >= 1
-    assert clients[0]["client_name"] == "Test App"
+    clients_list = response.json()
+    assert len(clients_list) >= 1
+    assert clients_list[0]["client_name"] == "Test App"
 
 
-def test_delete_oauth_client(auth_headers):
+def test_delete_oauth_client(client, auth_headers):
     """Test deleting an OAuth2 client."""
     # Create a client
     create_response = client.post(
@@ -261,7 +258,7 @@ def test_delete_oauth_client(auth_headers):
 # ============================================================================
 
 
-def test_oauth_authorization_flow(auth_headers):
+def test_oauth_authorization_flow(client, auth_headers):
     """Test complete OAuth2 authorization code flow."""
     # Create OAuth client
     create_response = client.post(
@@ -303,7 +300,7 @@ def test_oauth_authorization_flow(auth_headers):
     assert token_data["token_type"] == "Bearer"
 
 
-def test_oauth_token_introspection(auth_headers):
+def test_oauth_token_introspection(client, auth_headers):
     """Test OAuth2 token introspection."""
     # Create client and get token
     create_response = client.post(
@@ -352,7 +349,7 @@ def test_oauth_token_introspection(auth_headers):
     assert data["scope"] == "read"
 
 
-def test_oauth_protected_endpoint(auth_headers):
+def test_oauth_protected_endpoint(client, auth_headers):
     """Test accessing protected endpoint with OAuth2 token."""
     # Create client and get token
     create_response = client.post(
@@ -399,7 +396,7 @@ def test_oauth_protected_endpoint(auth_headers):
 # ============================================================================
 
 
-def test_mfa_setup_when_already_enabled(auth_headers):
+def test_mfa_setup_when_already_enabled(client, auth_headers):
     """Test MFA setup fails when already enabled."""
     import pyotp
 
@@ -417,7 +414,7 @@ def test_mfa_setup_when_already_enabled(auth_headers):
     assert "already enabled" in response.json()["detail"]
 
 
-def test_oauth_invalid_client_credentials():
+def test_oauth_invalid_client_credentials(client, test_db):
     """Test OAuth2 with invalid client credentials."""
     response = client.post(
         "/oauth/token",
@@ -432,7 +429,7 @@ def test_oauth_invalid_client_credentials():
     assert "Invalid client credentials" in response.json()["detail"]
 
 
-def test_oauth_invalid_authorization_code(auth_headers):
+def test_oauth_invalid_authorization_code(client, auth_headers):
     """Test OAuth2 with invalid authorization code."""
     # Create a client first
     create_response = client.post(
