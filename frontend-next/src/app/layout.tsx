@@ -45,7 +45,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
+          storageKey="resource-reserver-theme"
         >
           <WebSocketProvider>{children}</WebSocketProvider>
         </ThemeProvider>
