@@ -73,11 +73,44 @@ class SystemSetting(Base):
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class ResourceGroup(Base):
+    """Resource group for organizing resources hierarchically."""
+
+    __tablename__ = "resource_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    description = Column(String(500), nullable=True)
+
+    # Hierarchy - parent group for nesting
+    parent_id = Column(Integer, ForeignKey("resource_groups.id"), nullable=True)
+
+    # Location fields
+    building = Column(String(200), nullable=True)
+    floor = Column(String(50), nullable=True)
+    room = Column(String(100), nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    parent = relationship(
+        "ResourceGroup", remote_side="ResourceGroup.id", back_populates="children"
+    )
+    children = relationship("ResourceGroup", back_populates="parent")
+    resources = relationship("Resource", back_populates="group")
+
+
 class Resource(Base):
     __tablename__ = "resources"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), unique=True, nullable=False)
+
+    # Group/hierarchy fields
+    group_id = Column(Integer, ForeignKey("resource_groups.id"), nullable=True)
+    parent_id = Column(Integer, ForeignKey("resources.id"), nullable=True)
     available = Column(Boolean, default=True, nullable=False)
     tags = Column(JSON, default=list)
     status = Column(String(20), default="available", nullable=False)
@@ -100,6 +133,11 @@ class Resource(Base):
     blackout_dates = relationship(
         "BlackoutDate", back_populates="resource", cascade="all, delete-orphan"
     )
+    group = relationship("ResourceGroup", back_populates="resources")
+    parent = relationship(
+        "Resource", remote_side="Resource.id", back_populates="children"
+    )
+    children = relationship("Resource", back_populates="parent")
 
     @property
     def is_available_for_reservation(self) -> bool:

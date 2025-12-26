@@ -99,6 +99,48 @@ def auth_headers(client, test_user):
 
 
 @pytest.fixture
+def admin_user(test_db):
+    """Create an admin test user in the database"""
+    db = test_db()
+    try:
+        hashed_password = hash_password("adminpass123")
+        user = models.User(username="adminuser", hashed_password=hashed_password)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        # Create admin role if not exists
+        admin_role = db.query(models.Role).filter(models.Role.name == "admin").first()
+        if not admin_role:
+            admin_role = models.Role(name="admin", description="Administrator role")
+            db.add(admin_role)
+            db.commit()
+            db.refresh(admin_role)
+
+        # Assign admin role to user
+        user_role = models.UserRole(user_id=user.id, role_id=admin_role.id)
+        db.add(user_role)
+        db.commit()
+
+        return user
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def admin_headers(client, admin_user):
+    """Get authentication headers for admin user"""
+    reset_rate_limiter()
+
+    response = client.post(
+        "/api/v1/token", data={"username": "adminuser", "password": "adminpass123"}
+    )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
 def test_resource(test_db):
     """Create a test resource"""
     db = test_db()
