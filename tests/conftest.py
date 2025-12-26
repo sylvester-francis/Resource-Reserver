@@ -2,6 +2,9 @@ import os
 import tempfile
 from datetime import UTC, datetime
 
+# Disable rate limiting before importing app
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -9,11 +12,20 @@ from sqlalchemy.orm import sessionmaker
 
 from app import models
 from app.auth import hash_password
+from app.config import get_settings
+from app.core.rate_limiter import reset_rate_limiter
 from app.database import get_db
 from app.main import app, limiter
 
-# Disable rate limiting for tests
+# Clear settings cache and reload with rate limiting disabled
+get_settings.cache_clear()
+_ = get_settings()  # Reload settings
+
+# Disable slowapi rate limiting for tests
 limiter.enabled = False
+
+# Reset the custom rate limiter before tests
+reset_rate_limiter()
 
 
 # Test database setup
@@ -50,6 +62,8 @@ def test_db():
 @pytest.fixture
 def client(test_db):
     """FastAPI test client"""
+    # Reset rate limiter before creating client to avoid rate limit issues
+    reset_rate_limiter()
     return TestClient(app)
 
 
@@ -72,6 +86,9 @@ def test_user(test_db):
 @pytest.fixture
 def auth_headers(client, test_user):
     """Get authentication headers for test user"""
+    # Reset rate limiter before getting token to avoid rate limit issues
+    reset_rate_limiter()
+
     # Use v1 API endpoint
     response = client.post(
         "/api/v1/token", data={"username": "testuser", "password": "testpass123"}

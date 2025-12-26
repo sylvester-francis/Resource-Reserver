@@ -541,3 +541,65 @@ class AuditLog(Base):
 
     # Relationships
     user = relationship("User", backref="audit_logs")
+
+
+# ============================================================================
+# API Quota Models
+# ============================================================================
+
+
+class APIQuota(Base):
+    """API usage quotas and limits per user."""
+
+    __tablename__ = "api_quotas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+
+    # Tier-based limits
+    tier = Column(
+        String(20), default="authenticated", nullable=False
+    )  # anonymous, authenticated, premium, admin
+
+    # Custom limits (override tier defaults if set)
+    custom_rate_limit = Column(Integer, nullable=True)  # Requests per minute
+    custom_daily_quota = Column(Integer, nullable=True)  # Requests per day
+
+    # Usage tracking
+    daily_request_count = Column(Integer, default=0, nullable=False)
+    last_request_date = Column(Date, nullable=True)
+    total_requests = Column(Integer, default=0, nullable=False)
+
+    # Quota management
+    quota_reset_notified = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    user = relationship("User", backref="api_quota")
+
+
+class APIUsageLog(Base):
+    """Detailed API usage log for analytics."""
+
+    __tablename__ = "api_usage_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, index=True)
+
+    # Request details
+    endpoint = Column(String(500), nullable=False)
+    method = Column(String(10), nullable=False)
+    status_code = Column(Integer, nullable=False)
+    response_time_ms = Column(Integer, nullable=True)
+
+    # Rate limit info at time of request
+    rate_limit = Column(Integer, nullable=True)
+    rate_remaining = Column(Integer, nullable=True)
+
+    # IP and user agent for analytics
+    ip_address = Column(String(45), nullable=True)
+
+    # Relationships
+    user = relationship("User", backref="api_usage_logs")

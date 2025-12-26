@@ -42,6 +42,7 @@ from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.core.cache import cache_manager
 from app.core.metrics import check_liveness, check_readiness, metrics
+from app.core.rate_limiter import RateLimitMiddleware
 from app.core.versioning import VersioningMiddleware, get_version_info
 from app.database import SessionLocal, engine, get_db
 from app.routers.analytics import router as analytics_router
@@ -51,6 +52,7 @@ from app.routers.bulk import router as bulk_router
 from app.routers.business_hours import router as business_hours_router
 from app.routers.calendar import router as calendar_router
 from app.routers.notifications import router as notifications_router
+from app.routers.quotas import router as quotas_router
 from app.routers.search import router as search_router
 from app.routers.waitlist import router as waitlist_router
 from app.services import (
@@ -454,6 +456,9 @@ app.add_middleware(
 
 # Add versioning middleware for deprecation headers
 app.add_middleware(VersioningMiddleware)
+
+# Add enhanced rate limiting middleware with quota tracking
+app.add_middleware(RateLimitMiddleware)
 
 
 @app.middleware("http")
@@ -1429,6 +1434,7 @@ app.include_router(approvals_router)
 app.include_router(audit_router)
 app.include_router(bulk_router)
 app.include_router(notifications_router)
+app.include_router(quotas_router)
 app.include_router(search_router)
 app.include_router(waitlist_router)
 app.include_router(business_hours_router)
