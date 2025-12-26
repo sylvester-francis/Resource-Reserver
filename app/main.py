@@ -42,6 +42,7 @@ from app.auth_routes import mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.core.cache import cache_manager
 from app.core.metrics import check_liveness, check_readiness, metrics
+from app.core.versioning import VersioningMiddleware, get_version_info
 from app.database import SessionLocal, engine, get_db
 from app.routers.analytics import router as analytics_router
 from app.routers.approvals import router as approvals_router
@@ -451,6 +452,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add versioning middleware for deprecation headers
+app.add_middleware(VersioningMiddleware)
+
 
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
@@ -514,6 +518,13 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
         logger.warning("WebSocket connection closed unexpectedly: %s", exc)
     finally:
         ws_manager.disconnect(websocket, user.id)
+
+
+# API version information endpoint
+@app.get("/api/versions", tags=["system"])
+def get_api_versions():
+    """Get information about available API versions and deprecations."""
+    return get_version_info()
 
 
 # Health check at root level (no versioning needed)
