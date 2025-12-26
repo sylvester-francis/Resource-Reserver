@@ -48,6 +48,7 @@ from app.routers.approvals import router as approvals_router
 from app.routers.business_hours import router as business_hours_router
 from app.routers.calendar import router as calendar_router
 from app.routers.notifications import router as notifications_router
+from app.routers.search import router as search_router
 from app.routers.waitlist import router as waitlist_router
 from app.services import (
     ReservationService,
@@ -1413,6 +1414,7 @@ app.include_router(v1_auth_router)
 app.include_router(analytics_router)
 app.include_router(approvals_router)
 app.include_router(notifications_router)
+app.include_router(search_router)
 app.include_router(waitlist_router)
 app.include_router(business_hours_router)
 app.include_router(calendar_router)

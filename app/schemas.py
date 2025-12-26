@@ -589,3 +589,88 @@ class ApprovalRequestWithDetails(ApprovalRequestResponse):
     reservation: "ReservationResponse"
     requester_username: str | None = None
     approver_username: str | None = None
+
+
+# ============================================================================
+# Search Schemas
+# ============================================================================
+
+
+class ResourceSearchParams(BaseModel):
+    """Parameters for searching resources."""
+
+    query: str | None = Field(None, description="Text search query")
+    tags: list[str] | None = Field(None, description="Filter by tags")
+    status: str | None = Field(
+        None, description="Filter by status (available, in_use, unavailable)"
+    )
+    available_only: bool = Field(False, description="Only show available resources")
+    available_from: datetime | None = Field(
+        None, description="Filter by availability start time"
+    )
+    available_until: datetime | None = Field(
+        None, description="Filter by availability end time"
+    )
+    requires_approval: bool | None = Field(
+        None, description="Filter by approval requirement"
+    )
+    limit: int = Field(50, ge=1, le=100)
+    offset: int = Field(0, ge=0)
+
+
+class ReservationSearchParams(BaseModel):
+    """Parameters for searching reservations."""
+
+    user_id: int | None = Field(None, description="Filter by user ID")
+    resource_id: int | None = Field(None, description="Filter by resource ID")
+    status: str | list[str] | None = Field(None, description="Filter by status")
+    start_from: datetime | None = Field(
+        None, description="Filter by reservation start time (from)"
+    )
+    start_until: datetime | None = Field(
+        None, description="Filter by reservation start time (until)"
+    )
+    created_from: datetime | None = Field(
+        None, description="Filter by creation date (from)"
+    )
+    created_until: datetime | None = Field(
+        None, description="Filter by creation date (until)"
+    )
+    include_cancelled: bool = Field(False, description="Include cancelled reservations")
+    limit: int = Field(50, ge=1, le=100)
+    offset: int = Field(0, ge=0)
+
+
+class SavedSearchCreate(BaseModel):
+    """Schema for creating a saved search."""
+
+    name: str = Field(..., min_length=1, max_length=100)
+    search_type: str = Field(..., pattern="^(resources|reservations)$")
+    filters: dict
+
+
+class SavedSearchResponse(BaseModel):
+    """Schema for saved search response."""
+
+    id: int
+    name: str
+    search_type: str
+    filters: dict
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SearchSuggestionsResponse(BaseModel):
+    """Schema for search suggestions."""
+
+    resources: list[str]
+    tags: list[str]
+
+
+class PopularTagResponse(BaseModel):
+    """Schema for popular tag."""
+
+    tag: str
+    count: int

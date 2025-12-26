@@ -471,3 +471,25 @@ class ApprovalRequest(Base):
     # Relationships
     reservation = relationship("Reservation", back_populates="approval_request")
     approver = relationship("User", foreign_keys=[approver_id])
+
+
+# ============================================================================
+# Saved Search Models
+# ============================================================================
+
+
+class SavedSearch(Base):
+    """User's saved search filters."""
+
+    __tablename__ = "saved_searches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(100), nullable=False)
+    search_type = Column(String(20), nullable=False)  # "resources" or "reservations"
+    filters = Column(JSON, nullable=False)  # Search filters as JSON
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    user = relationship("User", backref="saved_searches")
