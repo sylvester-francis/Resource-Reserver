@@ -493,3 +493,51 @@ class SavedSearch(Base):
 
     # Relationships
     user = relationship("User", backref="saved_searches")
+
+
+# ============================================================================
+# Audit Log Model
+# ============================================================================
+
+
+class AuditLog(Base):
+    """Comprehensive audit log for tracking all system actions."""
+
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, index=True)
+
+    # User information
+    user_id = Column(
+        Integer, ForeignKey("users.id"), nullable=True
+    )  # Null for anonymous
+    username = Column(String(50), nullable=True)  # Denormalized for history
+
+    # Action details
+    action = Column(
+        String(50), nullable=False, index=True
+    )  # e.g., "create", "update", "delete", "login"
+    entity_type = Column(
+        String(50), nullable=False, index=True
+    )  # e.g., "reservation", "resource", "user"
+    entity_id = Column(Integer, nullable=True)  # ID of affected entity
+    entity_name = Column(String(255), nullable=True)  # Name/description for context
+
+    # Request context
+    ip_address = Column(String(45), nullable=True)  # IPv6 max length
+    user_agent = Column(String(500), nullable=True)
+    request_method = Column(String(10), nullable=True)  # GET, POST, PUT, DELETE
+    request_path = Column(String(500), nullable=True)
+
+    # Change details
+    old_values = Column(JSON, nullable=True)  # Previous state
+    new_values = Column(JSON, nullable=True)  # New state
+    details = Column(Text, nullable=True)  # Human-readable description
+
+    # Status
+    success = Column(Boolean, default=True, nullable=False)
+    error_message = Column(Text, nullable=True)
+
+    # Relationships
+    user = relationship("User", backref="audit_logs")
