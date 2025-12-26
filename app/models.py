@@ -84,8 +84,13 @@ class Resource(Base):
     unavailable_since = Column(DateTime(timezone=True))
     auto_reset_hours = Column(Integer, default=8)
 
+    # Approval workflow fields
+    requires_approval = Column(Boolean, default=False, nullable=False)
+    default_approver_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
     # Relationships
     reservations = relationship("Reservation", back_populates="resource")
+    default_approver = relationship("User", foreign_keys=[default_approver_id])
     waitlist_entries = relationship(
         "Waitlist", back_populates="resource", cascade="all, delete-orphan"
     )
@@ -145,7 +150,9 @@ class Reservation(Base):
     resource_id = Column(Integer, ForeignKey("resources.id"), nullable=False)
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
-    status = Column(String(20), default="active", nullable=False)
+    status = Column(
+        String(20), default="active", nullable=False
+    )  # active, cancelled, expired, pending_approval, rejected
     created_at = Column(DateTime(timezone=True), default=utcnow)
     cancelled_at = Column(DateTime(timezone=True))
     cancellation_reason = Column(Text)
@@ -165,6 +172,9 @@ class Reservation(Base):
     resource = relationship("Resource", back_populates="reservations")
     recurrence_rule = relationship("RecurrenceRule", back_populates="reservations")
     parent_reservation = relationship("Reservation", remote_side=[id])
+    approval_request = relationship(
+        "ApprovalRequest", back_populates="reservation", uselist=False
+    )
 
     @property
     def duration_hours(self) -> float:
@@ -433,3 +443,31 @@ class BlackoutDate(Base):
 
     # Relationships
     resource = relationship("Resource", back_populates="blackout_dates")
+
+
+# ============================================================================
+# Approval Workflow Models
+# ============================================================================
+
+
+class ApprovalRequest(Base):
+    """Approval request for reservations requiring approval."""
+
+    __tablename__ = "approval_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reservation_id = Column(
+        Integer, ForeignKey("reservations.id"), nullable=False, unique=True
+    )
+    approver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(
+        String(20), default="pending", nullable=False
+    )  # pending, approved, rejected
+    request_message = Column(Text, nullable=True)  # Message from requester
+    response_message = Column(Text, nullable=True)  # Comment from approver
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    responded_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    reservation = relationship("Reservation", back_populates="approval_request")
+    approver = relationship("User", foreign_keys=[approver_id])

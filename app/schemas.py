@@ -505,3 +505,87 @@ class AvailableSlotsResponse(BaseModel):
     business_hours: BusinessHoursResponse | None = None
     is_blackout: bool = False
     blackout_reason: str | None = None
+
+
+# ============================================================================
+# Approval Workflow Schemas
+# ============================================================================
+
+
+class ApprovalStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ResourceApprovalUpdate(BaseModel):
+    """Schema for updating resource approval settings."""
+
+    requires_approval: bool
+    default_approver_id: int | None = None
+
+
+class ReservationWithApprovalCreate(BaseModel):
+    """Schema for creating a reservation that may require approval."""
+
+    resource_id: int
+    start_time: datetime
+    end_time: datetime
+    request_message: str | None = Field(None, max_length=500)
+
+    @field_validator("start_time")
+    @classmethod
+    def validate_start_time(cls, v: datetime) -> datetime:
+        v = ensure_timezone_aware(v)
+        if v <= utcnow():
+            raise ValueError("Start time must be in the future")
+        return v
+
+    @field_validator("end_time")
+    @classmethod
+    def validate_end_time(cls, v: datetime, info) -> datetime:
+        v = ensure_timezone_aware(v)
+        start = info.data.get("start_time")
+        if start:
+            start = ensure_timezone_aware(start)
+            if v <= start:
+                raise ValueError("End time must be after start time")
+        return v
+
+
+class ApprovalRequestCreate(BaseModel):
+    """Schema for creating an approval request."""
+
+    reservation_id: int
+    approver_id: int
+    request_message: str | None = Field(None, max_length=500)
+
+
+class ApprovalAction(BaseModel):
+    """Schema for approving or rejecting a reservation."""
+
+    action: str = Field(pattern="^(approve|reject)$")
+    response_message: str | None = Field(None, max_length=500)
+
+
+class ApprovalRequestResponse(BaseModel):
+    """Schema for approval request response."""
+
+    id: int
+    reservation_id: int
+    approver_id: int
+    status: str
+    request_message: str | None = None
+    response_message: str | None = None
+    created_at: datetime
+    responded_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ApprovalRequestWithDetails(ApprovalRequestResponse):
+    """Approval request with reservation and user details."""
+
+    reservation: "ReservationResponse"
+    requester_username: str | None = None
+    approver_username: str | None = None
