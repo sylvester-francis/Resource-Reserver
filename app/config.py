@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     app_version: str = "2.0.1"
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
     environment: str = os.getenv("ENVIRONMENT", "development")
+    api_url: str = os.getenv("API_URL", "http://localhost:8000")
 
     # Database
     database_url: str = os.getenv(

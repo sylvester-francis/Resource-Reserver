@@ -47,6 +47,10 @@ class AnalyticsService:
             start_date = datetime.now(UTC) - timedelta(days=30)
         if not end_date:
             end_date = datetime.now(UTC)
+        start_date = (
+            start_date.replace(tzinfo=UTC) if start_date.tzinfo is None else start_date
+        )
+        end_date = end_date.replace(tzinfo=UTC) if end_date.tzinfo is None else end_date
 
         # Get resources
         query = self.db.query(models.Resource)
@@ -73,9 +77,19 @@ class AnalyticsService:
             # Calculate total booked hours
             booked_hours = 0.0
             for res in reservations:
-                # Clip to analysis period
-                res_start = max(res.start_time, start_date)
-                res_end = min(res.end_time, end_date)
+                # Clip to analysis period with timezone-aware datetimes
+                res_start = (
+                    res.start_time.replace(tzinfo=UTC)
+                    if res.start_time.tzinfo is None
+                    else res.start_time
+                )
+                res_end = (
+                    res.end_time.replace(tzinfo=UTC)
+                    if res.end_time.tzinfo is None
+                    else res.end_time
+                )
+                res_start = max(res_start, start_date)
+                res_end = min(res_end, end_date)
                 booked_hours += (res_end - res_start).total_seconds() / 3600
 
             utilization_pct = (

@@ -247,18 +247,19 @@ class CalendarService:
 
         return event
 
-    def get_subscription_url(self, user_id: int) -> str:
+    def get_subscription_url(self, user_id: int, base_url: str | None = None) -> str:
         """Get the subscription URL for a user's calendar feed.
 
         Args:
             user_id: User ID
+            base_url: Optional base URL (e.g., from request); defaults to settings.api_url
 
         Returns:
             Full URL for calendar subscription
         """
         token = self.get_or_create_token(user_id)
-        base_url = self._settings.api_url.rstrip("/")
-        return f"{base_url}/api/v1/calendar/feed/{token}.ics"
+        resolved_base = (base_url or self._settings.api_url).rstrip("/")
+        return f"{resolved_base}/api/v1/calendar/feed/{token}.ics"
 
 
 # Convenience functions

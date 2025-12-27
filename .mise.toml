@@ -237,8 +237,9 @@ mise run up
 description = "View service logs (follow mode)"
 run = """
 #!/usr/bin/env bash
+trap "echo ''; echo 'Logs stopped'; exit 0" INT
 if docker compose ps -q 2>/dev/null | grep -q .; then
-    docker compose logs -f --tail=100
+    docker compose logs -f --tail=100 || true
 else
     echo "No services running. Start with: mise run up"
 fi

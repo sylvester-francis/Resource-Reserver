@@ -93,16 +93,31 @@ interface DashboardData {
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+const safeArray = <T,>(value: unknown, fallback: T[] = []): T[] =>
+  Array.isArray(value) ? (value as T[]) : fallback;
+
+const normalizePeakTimes = (value: unknown): PeakTimeData | null => {
+  if (!value || typeof value !== 'object') return null;
+  const v = value as Partial<PeakTimeData>;
+  return {
+    hourly_distribution: safeArray(v.hourly_distribution, []),
+    daily_distribution: safeArray(v.daily_distribution, []),
+    peak_hour: typeof v.peak_hour === 'number' ? v.peak_hour : 0,
+    peak_day: typeof v.peak_day === 'string' ? v.peak_day : '',
+  };
+};
+
 export function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [hadErrors, setHadErrors] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch from multiple endpoints in parallel
-      const [dashboardRes, utilizationRes, popularRes, peakTimesRes, userPatternsRes] = await Promise.all([
+      // Fetch from multiple endpoints in parallel; tolerate partial failures
+      const results = await Promise.allSettled([
         analyticsApi.getDashboard({ days }),
         analyticsApi.getUtilization({ days }),
         analyticsApi.getPopularResources({ days, limit: 10 }),
@@ -110,16 +125,42 @@ export function AnalyticsDashboard() {
         analyticsApi.getUserPatterns({ days }),
       ]);
 
+      const [dashboardRes, utilizationRes, popularRes, peakTimesRes, userPatternsRes] = results;
+
+      const getData = <T,>(res: typeof results[number], fallback: T): T =>
+        res.status === 'fulfilled' ? (res.value.data as T) : fallback;
+
+      const overview = (getData(dashboardRes, { overview: null }) as { overview: DashboardOverview | null }).overview;
+      const utilization = safeArray<UtilizationData>(getData(utilizationRes, []));
+      const popularResources = safeArray<PopularResource>(getData(popularRes, []));
+      const peakTimes = normalizePeakTimes(getData(peakTimesRes, null));
+      const userPatterns = safeArray<UserPattern>(getData(userPatternsRes, []));
+
       setData({
-        overview: dashboardRes.data.overview,
-        utilization: utilizationRes.data || [],
-        popular_resources: popularRes.data || [],
-        peak_times: peakTimesRes.data || null,
-        user_patterns: userPatternsRes.data || [],
+        overview: overview ?? {
+          total_resources: 0,
+          total_users: 0,
+          total_reservations: 0,
+          active_reservations: 0,
+          cancelled_reservations: 0,
+          cancellation_rate: 0,
+          average_utilization: 0,
+        },
+        utilization,
+        popular_resources: popularResources,
+        peak_times: peakTimes,
+        user_patterns: userPatterns,
       });
+
+      const anyFailures = results.some((r) => r.status === 'rejected');
+      setHadErrors(anyFailures);
+      if (anyFailures) {
+        toast.error('Some analytics panels failed to load. Showing available data.');
+      }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
       toast.error('Failed to load analytics');
+      setHadErrors(true);
     } finally {
       setLoading(false);
     }
@@ -194,7 +235,7 @@ export function AnalyticsDashboard() {
         <div>
           <h2 className="text-2xl font-semibold">Analytics</h2>
           <p className="text-sm text-muted-foreground">
-            Resource utilization and booking insights
+            Resource utilization and booking insights{hadErrors ? ' (partial data shown)' : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">

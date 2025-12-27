@@ -9,7 +9,7 @@ Provides endpoints for:
 Author: Sylvester-Francis
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -80,6 +80,7 @@ async def get_calendar_feed(
 
 @router.get("/subscription-url", response_model=SubscriptionUrlResponse)
 async def get_subscription_url(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -90,13 +91,14 @@ async def get_subscription_url(
     """
     service = CalendarService(db)
     token = service.get_or_create_token(current_user.id)
-    url = service.get_subscription_url(current_user.id)
+    url = service.get_subscription_url(current_user.id, base_url=str(request.base_url))
 
     return SubscriptionUrlResponse(url=url, token=token)
 
 
 @router.post("/regenerate-token", response_model=TokenResponse)
 async def regenerate_calendar_token(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -107,7 +109,7 @@ async def regenerate_calendar_token(
     """
     service = CalendarService(db)
     token = service.regenerate_token(current_user.id)
-    url = service.get_subscription_url(current_user.id)
+    url = service.get_subscription_url(current_user.id, base_url=str(request.base_url))
 
     return TokenResponse(token=token, url=url)
 
