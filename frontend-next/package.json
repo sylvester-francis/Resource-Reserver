@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "CSS_TRANSFORMER_WASM=1 NEXT_DISABLE_LIGHTNINGCSS=1 next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

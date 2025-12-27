@@ -1,19 +1,19 @@
-# Frontend Dockerfile using Bun for faster builds
+# Frontend Dockerfile using Node for consistent CI builds
 # Multi-stage build for optimized production image
 
 # Stage 1: Install dependencies
-FROM oven/bun:1-alpine AS deps
+FROM node:20-slim AS deps
 
 WORKDIR /app
 
 # Copy package files
-COPY frontend-next/package.json frontend-next/bun.lock* ./
+COPY frontend-next/package.json frontend-next/package-lock.json ./
 
-# Install dependencies (no frozen-lockfile to allow platform-specific binaries)
-RUN bun install
+# Install dependencies (include optional platform binaries)
+RUN npm ci --include=optional
 
 # Stage 2: Build the application
-FROM oven/bun:1-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -26,10 +26,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Build the application
-RUN bun run build
+RUN npm run build
 
 # Stage 3: Production runner
-FROM oven/bun:1-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
@@ -53,5 +53,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the server with Bun
-CMD ["bun", "run", "server.js"]
+# Start the server with Node
+CMD ["node", "server.js"]
