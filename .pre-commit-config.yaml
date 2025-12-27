@@ -2,7 +2,7 @@
 # Runs automatically before each commit to catch issues early
 # Documentation: https://pre-commit.com
 
-default_install_hook_types: [pre-commit, post-commit]
+default_install_hook_types: [pre-commit, post-commit, pre-push]
 default_stages: [pre-commit]
 
 repos:
@@ -126,6 +126,14 @@ repos:
   # Local custom hooks
   - repo: local
     hooks:
+      - id: ci-pre-push
+        name: CI checks (pre-push)
+        entry: scripts/pre-push-ci.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
       # Run pytest on modified test files
       - id: pytest-check
         name: pytest (Python tests)
@@ -147,7 +155,7 @@ repos:
       # Frontend build check
       - id: frontend-build
         name: Frontend build check
-        entry: bash -c 'cd frontend-next && bun run build'
+        entry: bash -c 'cd frontend-next && if command -v bun > /dev/null 2>&1; then bun run build; else npm run build; fi'
         language: system
         pass_filenames: false
         files: ^frontend-next/.*\.(ts|tsx|js|jsx|css)$
