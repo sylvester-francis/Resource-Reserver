@@ -55,7 +55,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend-next
-          bun install --frozen-lockfile
+          bun install
 
       - name: Check frontend code quality
         run: |

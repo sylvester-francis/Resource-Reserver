@@ -7,10 +7,10 @@ FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 
 # Copy package files
-COPY frontend-next/package.json frontend-next/bun.lockb* ./
+COPY frontend-next/package.json frontend-next/bun.lock* ./
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies (no frozen-lockfile to allow platform-specific binaries)
+RUN bun install
 
 # Stage 2: Build the application
 FROM oven/bun:1-alpine AS builder
