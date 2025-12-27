@@ -89,11 +89,15 @@ api.interceptors.response.use(
 
       // Check if we have a refresh token
       const refreshToken = getRefreshToken();
+      const hadAccessToken = Boolean(getAuthToken());
       if (!refreshToken) {
         // No refresh token, redirect to login
         if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
           clearAuthCookies();
-          window.location.href = '/login?error=' + encodeURIComponent('Session expired. Please login again.');
+          const loginUrl = hadAccessToken
+            ? '/login?error=' + encodeURIComponent('Session expired. Please login again.')
+            : '/login';
+          window.location.href = loginUrl;
         }
         return Promise.reject(error);
       }
