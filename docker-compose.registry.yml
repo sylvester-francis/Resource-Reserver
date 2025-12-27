@@ -12,6 +12,7 @@ services:
       - DATABASE_URL=sqlite:///./data/db/resource_reserver.db
       - ENVIRONMENT=production
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - RATE_LIMIT_ENABLED=false
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs

@@ -345,6 +345,9 @@ def get_user_tier(request: Request) -> UserTier:
     # Check for user in request state (set by auth middleware)
     user = getattr(request.state, "user", None)
     if user is None:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            return UserTier.AUTHENTICATED
         return UserTier.ANONYMOUS
 
     # Check for admin role
