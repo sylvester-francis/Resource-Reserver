@@ -266,9 +266,25 @@ erDiagram
 
 ## Screenshots
 
-![Login](screenshots/Web%20Interface/login-web.png) ![Resource List](screenshots/Web%20Interface/resourcelist-web.png) ![Create Reservation](screenshots/Web%20Interface/createreservation-web.png) ![CLI Overview](screenshots/CLI%20Interface/cli-main.png)
+### Web Interface
 
-More screenshots are available in `screenshots`.
+|                      Login                      |                        Dashboard                        |
+| :---------------------------------------------: | :-----------------------------------------------------: |
+| ![Login](screenshots/Web%20Interface/login.png) | ![Dashboard](screenshots/Web%20Interface/dashboard.png) |
+
+|                        Resources                        |                           My Reservations                           |
+| :-----------------------------------------------------: | :-----------------------------------------------------------------: |
+| ![Resources](screenshots/Web%20Interface/resources.png) | ![My Reservations](screenshots/Web%20Interface/my_reservations.png) |
+
+|                        Analytics                        |                 Calendar Integration                  |
+| :-----------------------------------------------------: | :---------------------------------------------------: |
+| ![Analytics](screenshots/Web%20Interface/analytics.png) | ![Calendar](screenshots/Web%20Interface/calendar.png) |
+
+### CLI Interface
+
+![CLI Overview](screenshots/CLI%20Interface/cli-main.png)
+
+More screenshots are available in the `screenshots` directory.
 
 ## Web App Guide
 
