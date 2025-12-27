@@ -1,29 +1,38 @@
 # Resources
 
-Resources are bookable items like meeting rooms, equipment, or facilities.
+Resources are the items people reserve (rooms, equipment, vehicles, and more).
 
-## Browsing Resources
+## View and search
 
-The resource list shows:
+- Use the resource list to browse by name or tags
+- Use filters for status and availability
+- The API also supports advanced search and saved searches
 
-- Resource name and description
-- Capacity (number of people/items)
-- Current availability status
-- Business hours
+## Create a resource
 
-## Resource Details
+- Provide a name and optional tags
+- Set default availability (available or unavailable)
 
-Click a resource to see:
+## Import from CSV
 
-- Full description
-- Available time slots
-- Upcoming reservations
-- Business hours schedule
+You can upload a CSV file to create resources in bulk.
 
-## Filtering
+Required columns:
 
-Use filters to find resources:
+- `name`
 
-- **Search** - Find by name
-- **Capacity** - Filter by minimum capacity
-- **Availability** - Show only available resources
+Optional columns:
+
+- `tags` (comma-separated)
+- `available` (true or false)
+
+Sample files are available in `data/csv/resources.csv` and `data/csv/demo-resources.csv`.
+
+## Availability and status
+
+- View schedule and availability for a specific resource
+- Mark resources unavailable for maintenance and reset them later
+
+## Business hours and blackout dates
+
+Administrators can define business hours and blackout dates to control when resources can be booked. See the Admin Guide for details.

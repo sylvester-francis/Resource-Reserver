@@ -1,22 +1,25 @@
 # Analytics
 
+Analytics endpoints provide usage insights and exports.
+
 ## Dashboard
 
-View key metrics:
+- `GET /api/v1/analytics/dashboard`
 
-- Resource utilization rates
-- Popular resources
-- Peak usage times
-- Cancellation rates
+## Utilization
 
-## Reports
+- `GET /api/v1/analytics/utilization`
+- `GET /api/v1/analytics/export/utilization.csv`
 
-Generate reports for:
+## Popular resources and peak times
 
-- Utilization by resource
-- User activity
-- Booking trends
+- `GET /api/v1/analytics/popular-resources`
+- `GET /api/v1/analytics/peak-times`
 
-## Export
+## User patterns
 
-Download data as CSV for further analysis.
+- `GET /api/v1/analytics/user-patterns`
+
+## Reservation exports
+
+- `GET /api/v1/analytics/export/reservations.csv`

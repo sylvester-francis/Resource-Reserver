@@ -1,40 +1,40 @@
 # Deployment
 
-## Docker Deployment
+## Docker Compose (local or single host)
 
 ```bash
-# Build and run
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
+docker compose up -d --build
 ```
 
-## Production Configuration
+This starts:
 
-1. Set `SECRET_KEY` to a secure random value
-1. Use PostgreSQL for the database
-1. Enable Redis caching
-1. Configure SMTP for email
-1. Set up HTTPS
+- Backend API on port 8000
+- Frontend UI on port 3000
+- Redis cache
 
-## Health Checks
+Optional Postgres service:
 
 ```bash
-# Liveness probe
-curl http://localhost:8000/live
-
-# Readiness probe
-curl http://localhost:8000/ready
-
-# Detailed health
-curl http://localhost:8000/health
+docker compose --profile postgres up -d
 ```
 
-## Scaling
+## Registry images
 
-The application supports horizontal scaling:
+If you want to run prebuilt images, use:
 
-- Backend: Stateless, scale with load balancer
-- Database: Use read replicas for scale
-- Cache: Redis cluster for high availability
+```bash
+docker compose -f docker-compose.registry.yml up -d
+```
+
+## Environment configuration
+
+Set these at minimum for production:
+
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `REDIS_URL`
+- `NEXT_PUBLIC_API_URL`
+
+## Frontend
+
+The frontend is built with `output: 'standalone'` in `apps/frontend/next.config.mjs`, which is supported by `Dockerfile.frontend`.

@@ -1,44 +1,55 @@
 # Contributing
 
-We welcome contributions! Here's how to get started.
+I welcome contributions. Please fork the repository, make changes in your fork, and open a pull request against the original repo.
 
-## Development Setup
+## Contribution workflow
+
+1. Fork the repository on GitHub
+1. Clone your fork locally
+1. Create a feature branch
+1. Make changes and commit
+1. Push to your fork
+1. Open a pull request to the original repository
+
+Example commands:
 
 ```bash
-# Clone the repo
-git clone https://github.com/sylvester-francis/Resource-Reserver.git
+git clone https://github.com/<your-username>/Resource-Reserver.git
 cd Resource-Reserver
-
-# Set up backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Set up frontend
-cd frontend-next
-npm install
+git checkout -b feat/your-change
+git push -u origin feat/your-change
 ```
 
-## Code Style
+## Repository layout
 
-- Python: Follow PEP 8, use ruff for linting
-- TypeScript: ESLint with project config
-- Commits: Conventional commit messages
+- `apps/backend` - FastAPI backend and CLI
+- `apps/frontend` - Next.js frontend
+- `docs` - documentation
 
-## Pull Requests
+## Setup
 
-1. Create a feature branch
-1. Make your changes
-1. Write/update tests
-1. Submit PR with description
-
-## Testing
+Recommended:
 
 ```bash
-# Backend tests
-pytest
+mise install
+mise run setup
+```
 
-# Frontend tests
-npm run test
-npm run test:e2e
+## Development servers
+
+```bash
+mise run dev
+```
+
+## Code quality
+
+```bash
+mise run lint
+mise run format
+```
+
+Pre-commit hooks run on commit and pre-push. You can run them manually:
+
+```bash
+pre-commit run --all-files
 ```

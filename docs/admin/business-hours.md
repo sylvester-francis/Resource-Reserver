@@ -1,27 +1,30 @@
-# Business Hours
+# Business Hours and Blackout Dates
 
-Configure when resources can be booked.
+Business hours and blackout dates control when resources are reservable.
 
-## Global Hours
+## Resource business hours
 
-Set default operating hours for all resources:
+- `GET /api/v1/resources/{resource_id}/business-hours`
+- `PUT /api/v1/resources/{resource_id}/business-hours`
 
-1. Go to Admin > Business Hours
-1. Configure hours for each day
-1. Mark days as closed if needed
+## Global business hours
 
-## Per-Resource Hours
+- `GET /api/v1/business-hours/global`
+- `PUT /api/v1/business-hours/global`
 
-Override global hours for specific resources:
+## Available slots
 
-1. Edit the resource
-1. Navigate to Business Hours tab
-1. Set custom schedule
+- `GET /api/v1/resources/{resource_id}/available-slots`
+- `GET /api/v1/resources/{resource_id}/next-available`
 
-## Blackout Dates
+## Blackout dates
 
-Block specific dates (holidays, maintenance):
+- `GET /api/v1/resources/{resource_id}/blackout-dates`
+- `POST /api/v1/resources/{resource_id}/blackout-dates`
+- `GET /api/v1/blackout-dates`
+- `POST /api/v1/blackout-dates`
+- `DELETE /api/v1/blackout-dates/{blackout_id}`
 
-1. Go to Admin > Blackout Dates
-1. Add date and reason
-1. Apply to specific resources or all
+Notes:
+
+- Creating or updating hours and blackout dates requires admin permission

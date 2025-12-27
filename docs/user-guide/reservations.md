@@ -1,28 +1,21 @@
 # Reservations
 
-## Making a Reservation
+Reservations are time-based bookings against a resource.
 
-1. Select a resource
-1. Choose date and time slot
-1. Add optional notes
-1. Confirm booking
+## Create a reservation
 
-## Viewing Reservations
+1. Pick a resource
+1. Select start and end time
+1. Confirm the booking
 
-Access your reservations from:
+If the slot conflicts with an existing reservation, the API responds with a conflict error. You can adjust the time or join the waitlist.
 
-- Dashboard "My Reservations" section
-- Calendar view
-- Reservations list
+## Recurring reservations
 
-## Cancelling
+You can create recurring reservations for repeating schedules.
 
-Click "Cancel" on any upcoming reservation. Cancelled slots become available for others.
+## View and manage
 
-## Recurring Reservations
-
-Create repeating bookings:
-
-- Daily, weekly, or monthly patterns
-- Set end date or number of occurrences
-- Manage all instances at once
+- View your reservations list
+- Cancel a reservation
+- Review reservation history for audit purposes

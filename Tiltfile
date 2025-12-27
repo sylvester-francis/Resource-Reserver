@@ -11,7 +11,7 @@ dc_resource('frontend', labels=['web'], resource_deps=['backend'])
 # Custom resources for better organization
 local_resource(
     'lint-backend',
-    cmd='ruff check app/ cli/ --output-format=github',
+    cmd='cd apps/backend && ruff check app/ cli/ --output-format=github',
     labels=['quality'],
     auto_init=False,
     trigger_mode=TRIGGER_MODE_MANUAL
@@ -19,7 +19,7 @@ local_resource(
 
 local_resource(
     'test-backend',
-    cmd='pytest tests/ --maxfail=1 --tb=short',
+    cmd='cd apps/backend && pytest tests/ --maxfail=1 --tb=short',
     labels=['testing'],
     auto_init=False,
     trigger_mode=TRIGGER_MODE_MANUAL,
@@ -28,15 +28,15 @@ local_resource(
 
 local_resource(
     'format-code',
-    cmd='black . && ruff check --fix .',
+    cmd='cd apps/backend && ruff format . && ruff check --fix .',
     labels=['quality'],
     auto_init=False,
     trigger_mode=TRIGGER_MODE_MANUAL
 )
 
 # Watch additional files for changes
-watch_file('requirements.txt')
-watch_file('frontend-next/package.json')
+watch_file('apps/backend/requirements.txt')
+watch_file('apps/frontend/package.json')
 watch_file('.env')
 
 # Print helpful information on startup
@@ -57,8 +57,8 @@ Manual Tasks (click in Tilt UI):
   - format-code:  Format all code with black/ruff
 
 Live Reload:
-  - Backend: Edit files in app/ or cli/
-  - Frontend: Edit files in frontend-next/src/
+  - Backend: Edit files in apps/backend/app or apps/backend/cli
+  - Frontend: Edit files in apps/frontend/src/
 
 Press space or visit http://localhost:10350 to open Tilt UI
 Press Ctrl+C to stop all services

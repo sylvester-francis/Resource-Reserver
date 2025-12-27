@@ -1,51 +1,38 @@
 # Architecture
 
-## Overview
+## System overview
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Frontend                          │
-│                  (Next.js 14)                        │
-└──────────────────────┬──────────────────────────────┘
-                       │ REST API / WebSocket
-┌──────────────────────▼──────────────────────────────┐
-│                    Backend                           │
-│                   (FastAPI)                          │
-├─────────────────────────────────────────────────────┤
-│  Routes  │  Services  │  Models  │  Core Utilities  │
-└──────────┬─────────────────────────┬────────────────┘
-           │                         │
-    ┌──────▼──────┐           ┌──────▼──────┐
-    │  PostgreSQL │           │    Redis    │
-    │  (Database) │           │   (Cache)   │
-    └─────────────┘           └─────────────┘
+```mermaid
+flowchart LR
+  User[User in browser] --> Web[Next.js frontend]
+  CLI[CLI user] --> API[FastAPI backend]
+  Web --> API
+  API --> DB[(Database)]
+  API --> Cache[(Redis cache)]
+  API --> Mail[SMTP server]
+  API --> Webhooks[Webhook targets]
 ```
 
-## Backend Structure
+## Real-time updates
 
-```
-app/
-├── main.py           # Application entry point
-├── config.py         # Configuration
-├── database.py       # Database connection
-├── models.py         # SQLAlchemy models
-├── schemas.py        # Pydantic schemas
-├── services.py       # Business logic
-├── auth.py           # Authentication
-├── rbac.py           # Role-based access
-├── routers/          # API endpoints
-└── core/             # Utilities (cache, i18n, etc.)
+```mermaid
+flowchart LR
+  Web[Next.js frontend] <--> WS[WebSocket /ws]
+  WS --> API[FastAPI backend]
 ```
 
-## Frontend Structure
+## Reservation flow
 
-```
-frontend-next/
-├── src/
-│   ├── app/          # Next.js app router
-│   ├── components/   # React components
-│   ├── contexts/     # React contexts
-│   ├── lib/          # Utilities
-│   └── i18n.ts       # Internationalization
-└── e2e/              # Playwright tests
+```mermaid
+sequenceDiagram
+  actor User
+  participant UI as Frontend
+  participant API as Backend API
+  participant DB as Database
+
+  User->>UI: Select resource and time
+  UI->>API: POST /api/v1/reservations
+  API->>DB: Validate availability and save reservation
+  DB-->>API: Reservation record
+  API-->>UI: Reservation response
 ```

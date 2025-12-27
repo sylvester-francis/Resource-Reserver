@@ -1,33 +1,15 @@
 # Dashboard
 
-The dashboard is your central hub for managing reservations.
+The dashboard provides a quick snapshot of what is happening right now.
 
-## Overview Section
+## What you can see
 
-At a glance, see:
+- Current availability summary across resources
+- Your upcoming reservations
+- Recent notifications
 
-- **Upcoming Reservations** - Your next scheduled bookings
-- **Available Resources** - Resources ready to book now
-- **Quick Stats** - Your reservation history
+## Common actions
 
-## Quick Actions
-
-- **New Reservation** - Book a resource instantly
-- **View Calendar** - See all reservations in calendar view
-- **Browse Resources** - Explore available resources
-
-## My Reservations
-
-View and manage your bookings:
-
-- Click any reservation for details
-- Cancel bookings you no longer need
-- Export to your calendar
-
-## Notifications
-
-The dashboard shows:
-
-- Upcoming reservation reminders
-- Waitlist position updates
-- Resource availability alerts
+- Create a reservation from the resources list
+- Open notifications and mark items as read
+- Navigate to analytics or admin tools if you have access

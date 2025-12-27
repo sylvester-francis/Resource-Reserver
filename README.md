@@ -1,306 +1,543 @@
 # Resource Reserver
 
-Resource scheduling platform with conflict-aware reservations, waitlists, notifications, MFA/RBAC security, real-time updates, and both web and CLI access. Built with FastAPI, Next.js, PostgreSQL/SQLite, Redis caching, Alembic migrations, and Playwright/Vitest tests.
+Resource Reserver is a booking system that prevents double-booking of shared assets such as rooms, equipment, labs, or desks. It includes a web app for daily use, a CLI for automation, and a FastAPI backend for integrations.
+
+This README is the single source of documentation for this repository. It is written for both non-technical and technical readers.
 
 ## Contents
 
 - Overview
-- Core Capabilities
-- Architecture (Mermaid)
-- Repository Layout
-- Run the Stack (Docker)
-- Run Locally (Backend, Frontend, CLI)
+- Features
+- Glossary
+- Quick Start (No Technical Knowledge Required)
+- Quick Start (Developers)
+- Architecture
+- Screenshots
+- Web App Guide
+- Admin and Operations Guide
+- CLI Guide
+- API Guide
 - Configuration
-- How to Use (Web, CLI, API)
-- Data & Imports
+- Data Import and Export
+- Operations and Monitoring
 - Testing
-- Deployment & Operations
 - Troubleshooting
 - License
 
-______________________________________________________________________
-
 ## Overview
 
-For non-technical readers: Resource Reserver prevents double-booking of shared assets (rooms, equipment, labs). Users browse availability, book or cancel, join waitlists, and receive reminders. Admins manage roles, approvals, business hours, blackout dates, analytics, quotas, webhooks, and audit logs.
+Resource Reserver lets teams share resources without collisions. Users can check availability, reserve time, join waitlists when resources are busy, and subscribe to calendar feeds. Admins can manage access, approvals, quotas, and integrations.
 
-For technical readers: The backend exposes versioned REST endpoints with JWT auth, TOTP MFA, rate limiting, WebSockets, and Redis caching. The frontend is a Next.js app consuming the same API. A Typer-based CLI wraps common workflows. Docker Compose brings up backend, frontend, and Redis; SQLite is default, PostgreSQL is optional.
+## Features
 
-______________________________________________________________________
+- Resource catalog with tags, status, groups, and hierarchy.
+- Availability rules: business hours, blackout dates, available slots, and next available.
+- Reservations with conflict detection, recurring schedules, and approval workflow.
+- Waitlist with offers and acceptance.
+- Calendar integration (subscription URL, personal feed, per-reservation export).
+- Notifications center, email reminders, and WebSocket live updates.
+- Analytics dashboards and CSV exports.
+- Audit logs with filters and export.
+- Webhooks with HMAC signing, retries, and delivery history.
+- Security: JWT auth, refresh tokens, MFA, password policy, RBAC roles, OAuth2 clients.
+- Rate limiting, quotas, metrics, and health checks.
+- PWA support (offline page and asset caching) and multi-language UI (en, es, fr).
 
-## Core Capabilities
+## Glossary
 
-- **Reservations**: Conflict detection, recurring series, cancellation, history.
-- **Resources**: Search/filter, status and maintenance with auto-reset, CSV upload.
-- **Waitlist**: Join/leave, accept offers, track positions.
-- **Security**: JWT auth, TOTP MFA, RBAC roles, OAuth2 client support.
-- **Real-time**: WebSocket channel for live updates and notification center.
-- **Calendar & Email**: iCal feeds (.ics), single-event export, SMTP notifications.
-- **Operations**: Health/readiness/live, Prometheus metrics, rate limits/quotas, audit logs.
-- **Integrations**: Webhooks with HMAC signing and retry; analytics CSV exports.
+- Resource: The item you can reserve (room, desk, equipment).
+- Reservation: A confirmed time slot on a resource.
+- Waitlist: A queue for a resource when your desired time is not available.
+- Business hours: Allowed hours for reservations.
+- Blackout date: A date when reservations are not allowed.
+- Approval: A review step for resources that require approval before a reservation becomes active.
+- Quota: Limits on API usage and rate limits per user or tier.
 
-______________________________________________________________________
+## Quick Start (No Technical Knowledge Required)
 
-## Architecture
+This option uses Docker to run everything.
 
-### Component View
+1. Install Docker Desktop:
 
-```mermaid
-flowchart LR
-    UserBrowser["User (Browser)"] -->|HTTPS| NextApp["Next.js Frontend (3000)"]
-    UserCLI["User (CLI)"] -->|HTTPS| API["FastAPI Backend (8000)"]
-    NextApp -->|REST| API
-    API --> DB["Database (SQLite dev / PostgreSQL prod)"]
-    API --> Redis["Redis Cache (optional)"]
-    API --> Email["SMTP Server (optional)"]
-    API --> WS["WebSocket /ws"]
-    API --> Storage["Local storage (CSV uploads, logs)"]
-```
+   - Mac/Windows: https://www.docker.com/products/docker-desktop
+   - Linux: https://docs.docker.com/engine/install/
 
-### Reservation Flow
+1. Get the project folder:
 
-```mermaid
-sequenceDiagram
-    participant UI as Next.js UI
-    participant API as FastAPI API
-    participant Svc as ReservationService
-    participant DB as Database
-    participant WS as WebSocket
+   - If you already have the folder, skip this step.
+   - Option A (download): download the project ZIP, unzip it, and open the folder.
+   - Option B (git): `git clone <repo-url>` then `cd Resource-Reserver`
 
-    UI->>API: POST /api/v1/reservations (JWT)
-    API->>Svc: Validate & process
-    Svc->>DB: Check conflicts, write reservation
-    DB-->>Svc: Commit
-    Svc-->>API: Reservation created
-    API-->>UI: 201 Created + payload
-    API-->>WS: Push update to subscribers
-```
-
-______________________________________________________________________
-
-## Repository Layout
-
-```
-app/             FastAPI backend (routers, services, models)
-frontend-next/   Next.js frontend (pages, components, e2e tests)
-cli/             Typer-based CLI
-docs/            MkDocs site
-docker-compose.yml, Dockerfile.*   Container definitions
-tests/           Backend tests
-demo-resources.csv, resources.csv  Sample data
-```
-
-______________________________________________________________________
-
-## Run the Stack (Docker)
-
-Prerequisites: Docker + Docker Compose.
+1. Open a terminal and go to the project folder:
 
 ```bash
-git clone https://github.com/sylvester-francis/Resource-Reserver.git
 cd Resource-Reserver
-docker compose up -d                 # backend, frontend, redis (SQLite default)
-# docker compose down                # stop
 ```
 
-Service URLs:
-
-- Web UI: http://localhost:3000
-- API + Swagger UI: http://localhost:8000 (docs at /docs)
-- Health: /health, /ready, /live
-- Metrics: http://localhost:8000/metrics
-
-PostgreSQL profile (optional):
+4. Start the app:
 
 ```bash
-docker compose --profile postgres up -d
+docker compose up -d
 ```
 
-Dev hot-reload profile:
+5. Open the app:
+
+- Web app: http://localhost:3000
+- API docs: http://localhost:8000/docs
+
+6. Create the first admin account:
+
+- Visit http://localhost:3000/setup and follow the prompts.
+
+7. Add resources and make a reservation.
+
+To stop everything:
 
 ```bash
-docker compose --profile dev up -d    # backend-dev on 8001, frontend-dev on 3001
+docker compose down
 ```
 
-### Using mise (optional)
+## Quick Start (Developers)
 
-If you have [mise](https://mise.jdx.dev/) installed, the common tasks are wrapped as simple commands:
+### Option A: Docker Compose (production-like)
 
 ```bash
-mise run up           # start backend, frontend, redis (SQLite default)
-mise run down         # stop services
-mise run dev          # dev profile with hot reload (backend-dev:8001, frontend-dev:3001)
-mise run test         # run test suite(s)
-mise run lint         # run linters
-mise run docs         # serve MkDocs site (if needed)
+docker compose up -d --build
 ```
 
-______________________________________________________________________
+Default ports:
 
-## Run Locally (without Docker)
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
 
-Prerequisites: Python 3.11+, Node 20+ (npm) or Bun, Redis optional, SQLite default or PostgreSQL.
+By default the backend uses SQLite. To use PostgreSQL instead:
 
-### Backend
+1. Start the postgres profile:
+
+```bash
+docker compose --profile postgres up -d --build
+```
+
+2. Set `DATABASE_URL` for the backend:
+
+- In Docker: `DATABASE_URL=postgresql://postgres:postgres@postgres:5432/resource_reserver`
+- On your host: `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/resource_reserver`
+
+### Option B: Docker Compose dev profile (hot reload)
+
+```bash
+docker compose --profile dev up --build
+```
+
+Ports in dev profile:
+
+- Backend (hot reload): http://localhost:8001
+- Frontend (hot reload): http://localhost:3001
+
+### Option C: Local development
+
+Prerequisites:
+
+- Python 3.11+
+- Node 20+ and npm
+
+Backend:
 
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env    # set SECRET_KEY, DATABASE_URL, etc.
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+pip install -r apps/backend/requirements.txt
+uvicorn --app-dir apps/backend app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend
+Frontend:
 
 ```bash
-cd frontend-next
-npm ci                  # or bun install
-echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
-npm run dev             # or bun run dev
+cd apps/frontend
+npm ci
+printf "NEXT_PUBLIC_API_URL=http://localhost:8000\n" > .env.local
+npm run dev
+```
+
+CLI:
+
+```bash
+pip install -e apps/backend
+resource-reserver-cli auth register
+resource-reserver-cli auth login
+```
+
+### Optional: mise shortcuts
+
+If you use `mise`, these tasks are already defined:
+
+```bash
+mise run up
+mise run dev
+mise run test
+mise run lint
+mise run format
+mise run build
+mise run help
+```
+
+### Optional: one-command dev script
+
+```bash
+./dev
+```
+
+The script installs mise if needed, sets up dependencies, and starts dev servers.
+
+## Architecture
+
+### System Overview
+
+```mermaid
+flowchart LR
+    User[User Browser] --> Web[Next.js Web App]
+    CLI[CLI User] --> API[FastAPI API]
+    Web --> API
+    API --> DB[(Database)]
+    API --> Redis[(Redis Cache)]
+    API --> WS[WebSocket /ws]
+    API --> Email[SMTP Email]
+    API --> Hooks[Webhook Targets]
+```
+
+### Reservation, Approval, and Waitlist Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant API
+    participant DB
+    participant Approver
+    participant WS
+
+    User->>UI: Request reservation
+    UI->>API: POST /api/v1/reservations
+    alt Resource requires approval
+        API->>DB: Create reservation (pending_approval)
+        API->>WS: approval_request
+        Approver->>API: POST /api/v1/approvals/{id}/respond
+        API->>DB: Update reservation status
+        API->>WS: reservation_approved or reservation_rejected
+    else Available
+        API->>DB: Create reservation (active)
+        API->>WS: reservation_created
+    end
+
+    opt Resource is busy
+        UI->>API: POST /api/v1/waitlist
+        API->>DB: Enqueue waitlist entry
+        API->>WS: waitlist_offer (when a slot opens)
+    end
+```
+
+### Deployment (Docker Compose)
+
+```mermaid
+flowchart TB
+    Compose[docker compose] --> Backend[backend container :8000]
+    Compose --> Frontend[frontend container :3000]
+    Compose --> Redis[redis container :6379]
+    Compose --> Postgres[postgres container :5432]
+    Backend --> Data[(volumes)]
+    Frontend --> Users[users]
+```
+
+### Data Model (Key Entities)
+
+```mermaid
+erDiagram
+    USER ||--o{ RESERVATION : books
+    USER ||--o{ WAITLIST : joins
+    USER ||--o{ NOTIFICATION : receives
+    USER ||--o{ WEBHOOK : owns
+    RESOURCE_GROUP ||--o{ RESOURCE : contains
+    RESOURCE ||--o{ RESERVATION : has
+    RESOURCE ||--o{ WAITLIST : has
+    RESOURCE ||--o{ BUSINESS_HOURS : defines
+    RESOURCE ||--o{ BLACKOUT_DATE : has
+    RESERVATION ||--o| APPROVAL_REQUEST : may_require
+```
+
+## Screenshots
+
+![Login](screenshots/Web%20Interface/login-web.png) ![Resource List](screenshots/Web%20Interface/resourcelist-web.png) ![Create Reservation](screenshots/Web%20Interface/createreservation-web.png) ![CLI Overview](screenshots/CLI%20Interface/cli-main.png)
+
+More screenshots are available in `screenshots`.
+
+## Web App Guide
+
+### Setup and accounts
+
+- First run: visit `/setup` to create the initial admin account.
+- Register and log in from `/login` after setup is complete.
+- Password rules: at least 8 characters with uppercase, lowercase, number, and special character; cannot include the username.
+- Account lockout: 5 failed login attempts triggers a 15 minute lockout.
+- MFA: enable or disable multi-factor authentication from the account dialog.
+- Preferences: configure email notifications and reminder timing.
+- Language selector: English, Spanish, and French.
+- Offline support: the app registers a service worker for offline page and static asset caching.
+
+### Dashboard and system status
+
+- Summary cards show total resources, availability, active and upcoming reservations.
+- Open the system status dialog to check health and service metrics.
+
+### Resources
+
+- Search, filter by status, and sort by name, status, or ID.
+- Add resources with tags and availability status.
+- Upload resources from CSV (see Data Import and Export).
+- Reserve a resource, view its schedule, or set it to maintenance.
+- Manage business hours and blackout dates for each resource.
+
+### Reservations and calendar
+
+- Create one-time or recurring reservations.
+- View My Reservations and Upcoming reservations.
+- Cancel reservations and view reservation history.
+- Export calendar events as .ics or subscribe via a personal feed URL.
+
+### Waitlist
+
+- Join the waitlist from a resource when it is busy.
+- Choose flexible time if you can accept nearby slots.
+- Accept offers when a slot becomes available.
+
+### Analytics
+
+- View utilization, peak times, and popular resources.
+- Export reservations and utilization reports as CSV.
+
+### Webhooks
+
+- Create and manage webhook subscriptions.
+- Test webhooks and view delivery history.
+
+### Notifications
+
+- Open the notification center and mark items as read.
+
+## Admin and Operations Guide
+
+- Roles: default roles are admin, user, and guest. Manage roles at `/admin/roles`.
+- Approvals: resources can require approval; manage settings via `/api/v1/approvals/resources/{resource_id}/settings`.
+- Resource groups: build hierarchies and assign resources via `/api/v1/resource-groups`.
+- Quotas and rate limits: view and manage via `/api/v1/quotas` (admin endpoints require admin role).
+- Audit logs: view, filter, and export via `/api/v1/audit`.
+- Setup reopen: set `SETUP_REOPEN_TOKEN` and call `/setup/unlock` with header `X-Setup-Token`.
+
+Some admin operations are API-only and are not surfaced in the UI yet.
+
+## CLI Guide
+
+Install the CLI:
+
+```bash
+pip install -e apps/backend
+```
+
+Configuration:
+
+- API base URL uses `API_URL` (default: http://localhost:8000)
+- Tokens are stored in `~/.reservation-cli` (override with `CLI_CONFIG_DIR`)
+
+Common commands:
+
+```bash
+resource-reserver-cli commands
+resource-reserver-cli auth register
+resource-reserver-cli auth login
+resource-reserver-cli auth logout
+resource-reserver-cli resources list --details
+resource-reserver-cli reservations create 12 "2025-01-10 09:00" "2025-01-10 10:00"
+resource-reserver-cli waitlist join --resource 12 --start "2025-01-10 09:00" --end "2025-01-10 10:00"
+resource-reserver-cli mfa setup
+resource-reserver-cli mfa enable
+resource-reserver-cli roles list
+resource-reserver-cli oauth list
+```
+
+## API Guide
+
+Base URL: `http://localhost:8000/api/v1`
+
+Authentication:
+
+- Register: `POST /api/v1/register`
+- Login (form data): `POST /api/v1/token`
+- Refresh: `POST /api/v1/token/refresh`
+- Logout: `POST /api/v1/logout`
+- Current user: `GET /api/v1/users/me`
+- Preferences: `PATCH /api/v1/users/me/preferences`
+
+Example login:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=user1&password=password"
+```
+
+Time formats:
+
+- Use ISO-8601 with timezone (example: `2025-01-10T09:00:00Z`).
+
+WebSocket:
+
+- Connect to `ws://localhost:8000/ws?token=<JWT>`.
+- Event types: `resource_status_changed`, `reservation_created`, `reservation_cancelled`, `waitlist_offer`, `approval_request`, `reservation_approved`, `reservation_rejected`.
+
+Webhook events (examples):
+
+- `reservation.created`, `reservation.cancelled`, `reservation.updated`, `reservation.expired`
+- `resource.created`, `resource.updated`, `resource.deleted`, `resource.unavailable`, `resource.available`
+- `user.created`, `waitlist.offer`, `waitlist.accepted`, `waitlist.expired`
+
+Endpoint map (key groups and examples):
+
+- System: `/health`, `/ready`, `/live`, `/metrics`, `/api/versions`, `/api/v1/metrics/summary`
+- Resources: `/api/v1/resources`, `/api/v1/resources/search`, `/api/v1/resources/upload`
+- Reservations: `/api/v1/reservations`, `/api/v1/reservations/recurring`, `/api/v1/reservations/my`
+- Availability: `/api/v1/resources/{id}/business-hours`, `/api/v1/resources/{id}/available-slots`, `/api/v1/resources/{id}/blackout-dates`
+- Waitlist: `/api/v1/waitlist`, `/api/v1/waitlist/{id}`, `/api/v1/waitlist/{id}/accept`
+- Calendar: `/api/v1/calendar/subscription-url`, `/api/v1/calendar/feed/{token}.ics`, `/api/v1/calendar/export/{id}.ics`
+- Notifications: `/api/v1/notifications`, `/api/v1/notifications/{id}/read`
+- Analytics: `/api/v1/analytics/dashboard`, `/api/v1/analytics/utilization`, `/api/v1/analytics/export/utilization.csv`
+- Approvals: `/api/v1/approvals/pending`, `/api/v1/approvals/{id}/respond`
+- Resource groups: `/api/v1/resource-groups`, `/api/v1/resource-groups/tree`
+- Search: `/api/v1/search/resources`, `/api/v1/search/reservations`, `/api/v1/search/saved`
+- Bulk ops: `/api/v1/bulk/reservations`, `/api/v1/bulk/reservations/import`, `/api/v1/bulk/reservations/export`
+- Webhooks: `/api/v1/webhooks`, `/api/v1/webhooks/events`, `/api/v1/webhooks/{id}/deliveries`
+- Audit: `/api/v1/audit/logs`, `/api/v1/audit/export/csv`, `/api/v1/audit/filters`
+- Quotas: `/api/v1/quotas/config`, `/api/v1/quotas/my-usage`, `/api/v1/quotas/users`
+
+Full OpenAPI docs are available at:
+
+- http://localhost:8000/docs
+- http://localhost:8000/redoc
+
+## Configuration
+
+### Backend (.env)
+
+Create `.env` in the repo root. Example:
+
+```env
+DATABASE_URL=sqlite:///./data/db/resource_reserver_dev.db
+SECRET_KEY=your-secret-key-change-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+API_URL=http://localhost:8000
+DEFAULT_CSV_PATH=data/csv/resources.csv
+DEBUG=false
+ENVIRONMENT=development
+
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_ANONYMOUS=20/minute
+RATE_LIMIT_AUTHENTICATED=100/minute
+RATE_LIMIT_ADMIN=500/minute
+RATE_LIMIT_AUTH=5/minute
+RATE_LIMIT_HEAVY=10/minute
+
+REDIS_URL=redis://localhost:6379/0
+CACHE_ENABLED=true
+CACHE_TTL_RESOURCES=30
+CACHE_TTL_STATS=60
+CACHE_TTL_USER_SESSION=300
+
+EMAIL_ENABLED=false
+SMTP_HOST=localhost
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=noreply@resource-reserver.local
+SMTP_FROM_NAME=Resource Reserver
+SMTP_TLS=true
+SMTP_SSL=false
+EMAIL_TEMPLATES_DIR=apps/backend/app/templates/email
+
+SETUP_REOPEN_TOKEN=
+```
+
+Notes:
+
+- `DATABASE_URL` defaults to SQLite if unset; set it explicitly for consistency.
+- CORS origins are defined in `apps/backend/app/config.py` (defaults allow localhost ports 3000, 8080, 8000).
+- `API_URL` is used for calendar subscription URLs.
+
+### Frontend (.env.local)
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ### CLI
 
-```bash
-pip install -e .
-resource-reserver-cli auth register
-resource-reserver-cli auth login
-resource-reserver-cli system status
-```
+Environment variables:
 
-______________________________________________________________________
+- `API_URL` sets the CLI base URL.
+- `CLI_CONFIG_DIR` sets the token/config directory (default: `~/.reservation-cli`).
 
-## Configuration
+## Data Import and Export
 
-Backend `.env` (copy from `.env.example`):
+- Upload resources from CSV in the Resources tab or via `POST /api/v1/resources/upload`.
+- Sample CSV files are available in `data/csv/resources.csv` and `data/csv/demo-resources.csv`.
+- Bulk reservation import/export:
+  - `POST /api/v1/bulk/reservations/import`
+  - `GET /api/v1/bulk/reservations/export`
+- Analytics exports:
+  - `GET /api/v1/analytics/export/utilization.csv`
+  - `GET /api/v1/analytics/export/reservations.csv`
+- Audit exports:
+  - `GET /api/v1/audit/export/csv`
+  - `GET /api/v1/audit/export/json`
 
-| Variable                          | Purpose                       | Example                          |
-| --------------------------------- | ----------------------------- | -------------------------------- |
-| DATABASE_URL                      | SQLite or Postgres connection | `sqlite:///./reservations.db`    |
-| SECRET_KEY                        | JWT signing key               | `change-me`                      |
-| ALGORITHM                         | JWT algorithm                 | `HS256`                          |
-| ACCESS_TOKEN_EXPIRE_MINUTES       | Access token lifetime         | `30`                             |
-| REDIS_URL                         | Redis connection              | `redis://localhost:6379/0`       |
-| CACHE_ENABLED                     | Toggle Redis cache            | `true`                           |
-| EMAIL_ENABLED                     | Toggle SMTP notifications     | `false`                          |
-| SMTP_HOST/PORT/USER/PASSWORD/FROM | SMTP settings                 | `smtp.example.com` / `587` / ... |
-| DEBUG                             | Dev mode flag                 | `true`                           |
+## Operations and Monitoring
 
-Frontend `.env.local`:
-
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-______________________________________________________________________
-
-## How to Use
-
-### Web UI
-
-- Register/login, enable MFA, manage roles (admin).
-- Browse/search resources, upload CSVs, toggle availability/maintenance.
-- Create single or recurring reservations; view history; cancel.
-- Join/leave waitlist; accept offers.
-- View notifications; download iCal feeds (.ics).
-
-### CLI (examples)
-
-```bash
-resource-reserver-cli auth register
-resource-reserver-cli auth login
-resource-reserver-cli resources list
-resource-reserver-cli resources search --query "room"
-resource-reserver-cli reservations create <resource_id> <start> <end>
-resource-reserver-cli reservations cancel <reservation_id>
-resource-reserver-cli waitlist join --resource <id> --start <ts> --end <ts>
-resource-reserver-cli system status
-```
-
-### API
-
-- Swagger/OpenAPI: http://localhost:8000/docs
-- Auth flow: `POST /api/v1/register` -> `POST /api/v1/token` -> use `Authorization: Bearer <token>`
-- Key families:
-  - Resources: `/api/v1/resources`, `/api/v1/resources/search`, `/api/v1/resources/upload`, status/availability endpoints
-  - Reservations: `/api/v1/reservations`, `/recurring`, `/my`, `/history`, `/cancel`
-  - Waitlist: `/api/v1/waitlist/*`
-  - Notifications: `/api/v1/notifications/*`
-  - Calendar: `/api/v1/calendar/*` (subscription URL, .ics export)
-  - Business hours/blackouts: `/api/v1/resources/{id}/business-hours`, `/blackout-dates`
-  - Analytics: `/api/v1/analytics/*`
-  - Webhooks: `/api/v1/webhooks/*`
-  - Quotas/rate limits: `/api/v1/quotas/*`
-  - Audit: `/api/v1/audit/*`
-  - Admin cleanup: `/api/v1/admin/cleanup-expired`
-
-______________________________________________________________________
-
-## Data & Imports
-
-- Sample CSVs: `demo-resources.csv`, `resources.csv`.
-- Import resources via Web UI upload or `POST /api/v1/resources/upload` (CSV).
-- Business hours and blackout dates via respective endpoints.
-- Calendar exports: `/api/v1/calendar/subscription-url` (tokenized feed) and `/api/v1/calendar/export/{reservation_id}.ics`.
-
-______________________________________________________________________
+- Health endpoints: `/health`, `/ready`, `/live`.
+- Metrics: `/metrics` (Prometheus format), `/api/v1/metrics/summary` (JSON).
+- Background tasks:
+  - Expired reservation cleanup runs continuously.
+  - Email reminders are sent every 15 minutes for upcoming reservations.
+- Cache behavior:
+  - If Redis is unavailable, the app runs without cache and logs a warning.
+- Rate limiting:
+  - Per-endpoint limits are configured via `RATE_LIMIT_*` variables.
+  - Tiered quotas are available in `/api/v1/quotas/config`.
 
 ## Testing
 
 Backend:
 
 ```bash
+cd apps/backend
 pytest tests/ -v
 ```
 
 Frontend:
 
 ```bash
-cd frontend-next
-npm run test          # Vitest
-```
-
-E2E (Playwright):
-
-```bash
-cd frontend-next
+cd apps/frontend
+npm run lint
+npm run test
 npm run test:e2e
-# install browsers once:
-npx playwright install chromium --with-deps
 ```
-
-Coverage (backend):
-
-```bash
-pytest --cov=app --cov=cli
-```
-
-______________________________________________________________________
-
-## Deployment & Operations
-
-- Compose: `docker compose up -d`
-- Migrations: `alembic upgrade head`
-- Health: `GET /health`, readiness `/ready`, liveness `/live`
-- Metrics: `GET /metrics` (Prometheus)
-- Rate limits/quotas: `/api/v1/quotas/*`
-- Admin cleanup: `POST /api/v1/admin/cleanup-expired`
-
-Production tips: use PostgreSQL, set a strong `SECRET_KEY`, enable HTTPS at the reverse proxy, configure SMTP if email is required.
-
-______________________________________________________________________
 
 ## Troubleshooting
 
-- Authentication errors: verify `SECRET_KEY` and token expiry; refresh via `/api/v1/token/refresh`.
-- 401/403 from frontend: check `NEXT_PUBLIC_API_URL`, CORS, and auth cookies.
-- SQLite locking: switch to PostgreSQL (`--profile postgres`).
-- Emails not sending: set `EMAIL_ENABLED=true` and valid SMTP credentials.
-- Playwright failures: install browsers (`npx playwright install`) and ensure backend/frontend are running.
-
-______________________________________________________________________
+- 401 Unauthorized: log in again or refresh the token.
+- 403 Forbidden: you may not have the required role or permission.
+- Setup already complete: `/setup` redirects. Use `SETUP_REOPEN_TOKEN` and `/setup/unlock` to reopen.
+- CORS errors: make sure the frontend points to the correct API URL and CORS allows your origin.
+- 429 Too Many Requests: wait for the rate limit window to reset.
 
 ## License
 
-MIT License (see `LICENSE`).
+MIT License. See `LICENSE`.

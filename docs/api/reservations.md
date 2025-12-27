@@ -1,49 +1,16 @@
 # Reservations API
 
-## List Reservations
+All endpoints require authentication.
 
-```http
-GET /api/v1/reservations
-Authorization: Bearer <token>
-```
+## Endpoints
 
-**Query Parameters:**
+- `POST /api/v1/reservations` - create a reservation
+- `POST /api/v1/reservations/recurring` - create recurring reservations
+- `GET /api/v1/reservations/my` - list the current user's reservations
+- `POST /api/v1/reservations/{reservation_id}/cancel` - cancel a reservation
+- `GET /api/v1/reservations/{reservation_id}/history` - reservation history
 
-| Parameter     | Type | Description          |
-| ------------- | ---- | -------------------- |
-| `resource_id` | int  | Filter by resource   |
-| `start_date`  | date | Filter by start date |
-| `end_date`    | date | Filter by end date   |
+## Notes
 
-## Create Reservation
-
-```http
-POST /api/v1/reservations
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "resource_id": 1,
-  "start_time": "2024-01-15T09:00:00Z",
-  "end_time": "2024-01-15T10:00:00Z",
-  "notes": "Team standup meeting"
-}
-```
-
-## Cancel Reservation
-
-```http
-DELETE /api/v1/reservations/{reservation_id}
-Authorization: Bearer <token>
-```
-
-## Get My Reservations
-
-```http
-GET /api/v1/reservations/mine
-Authorization: Bearer <token>
-```
+- Conflicts return HTTP 409
+- Time values are handled as ISO 8601 timestamps

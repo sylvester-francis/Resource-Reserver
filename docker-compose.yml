@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # FastAPI Backend Service
   backend:
@@ -10,11 +8,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./data/resource_reserver.db
+      - DATABASE_URL=sqlite:///./data/db/resource_reserver.db
       - ENVIRONMENT=production
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - REDIS_URL=redis://redis:6379/0
       - CACHE_ENABLED=true
+      - RATE_LIMIT_ENABLED=false
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs
@@ -105,14 +104,15 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=sqlite:///./data/resource_reserver_dev.db
+      - DATABASE_URL=sqlite:///./data/db/resource_reserver_dev.db
       - ENVIRONMENT=development
       - SECRET_KEY=dev-secret-key
       - REDIS_URL=redis://redis:6379/0
       - CACHE_ENABLED=true
+      - RATE_LIMIT_ENABLED=false
     volumes:
-      - ./app:/app/app
-      - ./cli:/app/cli
+      - ./apps/backend/app:/app/app
+      - ./apps/backend/cli:/app/cli
       - ./data:/app/data
     networks:
       - resource-reserver-network
@@ -133,7 +133,7 @@ services:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://backend-dev:8000
     volumes:
-      - ./frontend-next:/app
+      - ./apps/frontend:/app
       - /app/node_modules
       - /app/.next
     networks:

@@ -2,7 +2,7 @@
 # Runs automatically before each commit to catch issues early
 # Documentation: https://pre-commit.com
 
-default_install_hook_types: [pre-commit, post-commit]
+default_install_hook_types: [pre-commit, post-commit, pre-push]
 default_stages: [pre-commit]
 
 repos:
@@ -13,13 +13,16 @@ repos:
       # Run the ruff linter
       - id: ruff
         name: ruff linter (Python)
-        args: [--fix]
+        args: [--fix, --config, apps/backend/pyproject.toml]
         types_or: [python]
+        files: ^apps/backend/.*\.py$
 
       # Run the ruff formatter
       - id: ruff-format
         name: ruff formatter (Python)
         types_or: [python]
+        args: [--config, apps/backend/pyproject.toml]
+        files: ^apps/backend/.*\.py$
 
   # Additional Python code quality checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -85,9 +88,9 @@ repos:
     hooks:
       - id: bandit
         name: bandit (Python security)
-        args: [-c, pyproject.toml]
+        args: [-c, apps/backend/pyproject.toml]
         additional_dependencies: ["bandit[toml]"]
-        files: ^(app|cli)/.*\.py$
+        files: ^apps/backend/(app|cli)/.*\.py$
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
@@ -126,48 +129,55 @@ repos:
   # Local custom hooks
   - repo: local
     hooks:
+      - id: ci-pre-push
+        name: CI checks (pre-push)
+        entry: scripts/pre-push-ci.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
       # Run pytest on modified test files
       - id: pytest-check
         name: pytest (Python tests)
-        entry: pytest
+        entry: bash -c 'cd apps/backend && pytest --maxfail=1 --tb=short -q'
         language: system
         pass_filenames: false
         always_run: false
-        args: [--maxfail=1, --tb=short, -q]
-        files: ^tests/.*\.py$
+        files: ^apps/backend/tests/.*\.py$
 
       # Frontend ESLint check
       - id: frontend-lint
         name: ESLint (Frontend)
-        entry: bash -c 'cd frontend-next && bun run lint'
+        entry: bash -c 'cd apps/frontend && bun run lint'
         language: system
         pass_filenames: false
-        files: ^frontend-next/.*\.(ts|tsx|js|jsx)$
+        files: ^apps/frontend/.*\.(ts|tsx|js|jsx)$
 
       # Frontend build check
       - id: frontend-build
         name: Frontend build check
-        entry: bash -c 'cd frontend-next && bun run build'
+        entry: bash -c 'cd apps/frontend && if command -v bun > /dev/null 2>&1; then bun run build; else npm run build; fi'
         language: system
         pass_filenames: false
-        files: ^frontend-next/.*\.(ts|tsx|js|jsx|css)$
+        files: ^apps/frontend/.*\.(ts|tsx|js|jsx|css)$
         stages: [pre-push]
 
       # Frontend tests
       - id: frontend-test
         name: Vitest (Frontend tests)
-        entry: bash -c 'cd frontend-next && bun run test'
+        entry: bash -c 'cd apps/frontend && bun run test'
         language: system
         pass_filenames: false
-        files: ^frontend-next/.*\.(ts|tsx)$
+        files: ^apps/frontend/.*\.(ts|tsx)$
 
       # Check that __init__.py files exist in Python packages
       - id: check-init-files
         name: Check for __init__.py files
-        entry: bash -c 'find app -name "*.py" | head -1 | xargs dirname | xargs -I{} test -f {}/__init__.py'
+        entry: bash -c 'find apps/backend/app -name "*.py" | head -1 | xargs dirname | xargs -I{} test -f {}/__init__.py'
         language: system
         pass_filenames: false
-        files: ^app/.*\.py$
+        files: ^apps/backend/app/.*\.py$
 
 # CI mode - stricter checks when running in CI/CD
 ci:

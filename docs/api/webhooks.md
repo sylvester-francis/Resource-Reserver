@@ -1,60 +1,33 @@
 # Webhooks API
 
-## Overview
+All endpoints require authentication.
 
-Webhooks allow you to receive real-time notifications about events in Resource Reserver.
+## Core endpoints
 
-## Available Events
+- `GET /api/v1/webhooks/events` - list supported event types
+- `GET /api/v1/webhooks/signature-example` - signature verification examples
+- `POST /api/v1/webhooks` - create a webhook
+- `GET /api/v1/webhooks` - list webhooks
+- `GET /api/v1/webhooks/{webhook_id}` - get a webhook
+- `PATCH /api/v1/webhooks/{webhook_id}` - update a webhook
+- `DELETE /api/v1/webhooks/{webhook_id}` - delete a webhook
 
-| Event                   | Description                 |
-| ----------------------- | --------------------------- |
-| `reservation.created`   | New reservation created     |
-| `reservation.updated`   | Reservation modified        |
-| `reservation.cancelled` | Reservation cancelled       |
-| `resource.created`      | New resource added          |
-| `resource.updated`      | Resource modified           |
-| `user.created`          | New user registered         |
-| `waitlist.promoted`     | User promoted from waitlist |
+## Deliveries
 
-## Register Webhook
+- `GET /api/v1/webhooks/{webhook_id}/deliveries` - delivery history
+- `GET /api/v1/webhooks/{webhook_id}/deliveries/{delivery_id}` - delivery details
+- `POST /api/v1/webhooks/{webhook_id}/deliveries/{delivery_id}/retry` - retry
 
-```http
-POST /api/v1/webhooks
-Authorization: Bearer <token>
-Content-Type: application/json
+## Testing
+
+- `POST /api/v1/webhooks/{webhook_id}/test` - send a test event
+
+## Signature verification
+
+Payloads include the `X-Webhook-Signature` header using HMAC-SHA256:
+
+```
+X-Webhook-Signature: sha256=<signature>
 ```
 
-```json
-{
-  "url": "https://your-server.com/webhook",
-  "events": ["reservation.created", "reservation.cancelled"]
-}
-```
-
-## Webhook Payload
-
-```json
-{
-  "event": "reservation.created",
-  "timestamp": "2024-01-15T10:00:00Z",
-  "data": {
-    "reservation_id": 123,
-    "resource_id": 1,
-    "user_id": 5
-  }
-}
-```
-
-## Signature Verification
-
-Webhooks include an HMAC-SHA256 signature in the `X-Webhook-Signature` header:
-
-```python
-import hmac
-import hashlib
-
-
-def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(f"sha256={expected}", signature)
-```
+Use `/api/v1/webhooks/signature-example` for ready-to-use examples.

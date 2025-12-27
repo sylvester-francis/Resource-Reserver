@@ -1,26 +1,23 @@
 # User Management
 
-## Viewing Users
+## Initial setup
 
-Access Admin > Users to see all registered users with:
+The first admin account is created via the setup flow:
 
-- Username and email
-- Assigned roles
-- Last login time
-- Account status
+- `GET /setup/status` to check status
+- `POST /setup/initialize` to create the initial admin user
 
-## Creating Users
+## Reopening setup
 
-Admins can create accounts for users directly.
+If setup is already complete, you can reopen it with a token:
 
-## Managing Roles
+1. Set `SETUP_REOPEN_TOKEN` in your environment
+1. Call `POST /setup/unlock` with header `X-Setup-Token`
 
-Assign or remove roles to control access:
+## Roles and access
 
-- **user** - Standard booking access
-- **admin** - Full system access
-- **viewer** - Read-only access
+User access is controlled by roles. See `admin/roles.md` for role management endpoints.
 
-## Deactivating Users
+## Approval workflows
 
-Disable accounts without deleting data. Deactivated users cannot log in.
+Resources can require approval. Approval endpoints live under `/api/v1/approvals` and allow approvers to approve or reject requests.

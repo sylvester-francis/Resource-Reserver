@@ -1,47 +1,37 @@
 # Testing
 
-## Backend Tests
-
-Run with pytest:
+## Backend
 
 ```bash
-# All tests
-pytest
-
-# With coverage
-pytest --cov=app
-
-# Specific test file
-pytest tests/test_api/test_resources.py
+cd apps/backend
+pytest tests/ -v
 ```
 
-## Frontend Tests
-
-### Unit Tests (Vitest)
+## Frontend
 
 ```bash
+cd apps/frontend
+npm run lint
 npm run test
-npm run test:watch
 ```
 
-### E2E Tests (Playwright)
+## End-to-end (Playwright)
+
+Playwright runs against a live backend. Start the backend first:
 
 ```bash
+mise run backend-dev
+```
+
+In another terminal:
+
+```bash
+cd apps/frontend
 npm run test:e2e
-npm run test:e2e:ui      # Interactive mode
-npm run test:e2e:headed  # With browser
 ```
 
-## Test Structure
+You can override the base URL:
 
-```
-tests/
-├── conftest.py           # Shared fixtures
-├── test_api/             # API endpoint tests
-├── test_services/        # Service layer tests
-└── test_cli/             # CLI tests
-
-frontend-next/
-├── __tests__/            # Unit tests
-└── e2e/                  # Playwright tests
+```bash
+PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:e2e
 ```

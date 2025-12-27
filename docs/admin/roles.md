@@ -1,25 +1,16 @@
 # Role Management
 
-## Default Roles
+Role-based access control (RBAC) is used to manage permissions.
 
-| Role     | Description                        |
-| -------- | ---------------------------------- |
-| `user`   | Create and manage own reservations |
-| `admin`  | Full system access                 |
-| `viewer` | Read-only access                   |
+## Endpoints
 
-## Creating Roles
+- `GET /api/v1/roles` - list roles
+- `POST /api/v1/roles` - create a role (admin)
+- `POST /api/v1/roles/assign` - assign a role to a user (admin)
+- `DELETE /api/v1/roles/assign` - remove a role (admin)
+- `GET /api/v1/roles/my-roles` - current user's roles
 
-1. Navigate to Admin > Roles
-1. Click "Add Role"
-1. Enter name and description
-1. Save
+## Notes
 
-## Permissions
-
-Roles grant access to specific actions:
-
-- Create resources
-- Manage all reservations
-- View analytics
-- Configure system settings
+- Default roles are created during setup
+- Admin-only actions require the admin role

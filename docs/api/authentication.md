@@ -1,107 +1,45 @@
-# Authentication API
+# Authentication and Access
 
-## Login
+## Core authentication
 
-Obtain an access token for API authentication.
+- `POST /api/v1/register` - create a user
+- `POST /api/v1/token` - login and receive tokens
+- `POST /api/v1/token/refresh` - refresh access token (query param `refresh_token`)
+- `POST /api/v1/logout` - revoke refresh tokens
 
-```http
-POST /api/v1/token
-Content-Type: application/x-www-form-urlencoded
-```
+## Current user
 
-**Request Body:**
+- `GET /api/v1/users/me` - current user profile
+- `PATCH /api/v1/users/me/preferences` - notification preferences
 
-| Field      | Type   | Required | Description     |
-| ---------- | ------ | -------- | --------------- |
-| `username` | string | Yes      | User's username |
-| `password` | string | Yes      | User's password |
+## Setup (first run)
 
-**Example:**
+- `GET /setup/status` - setup status
+- `POST /setup/initialize` - create the first admin
+- `POST /setup/unlock` - reopen setup with token
 
-```bash
-curl -X POST "http://localhost:8000/api/v1/token" \
-  -d "username=john&password=secret123"
-```
+## MFA
 
-**Response:**
+- `POST /api/v1/auth/mfa/setup`
+- `POST /api/v1/auth/mfa/verify`
+- `POST /api/v1/auth/mfa/disable`
+- `POST /api/v1/auth/mfa/backup-codes`
 
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer"
-}
-```
+## Roles
 
-## Register User
+- `GET /api/v1/roles`
+- `POST /api/v1/roles`
+- `POST /api/v1/roles/assign`
+- `DELETE /api/v1/roles/assign`
+- `GET /api/v1/roles/my-roles`
 
-Create a new user account.
+## OAuth2
 
-```http
-POST /api/v1/users/
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "username": "newuser",
-  "password": "securepassword123"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "username": "newuser",
-  "created_at": "2024-01-15T10:00:00Z"
-}
-```
-
-## Get Current User
-
-Get the authenticated user's profile.
-
-```http
-GET /api/v1/users/me
-Authorization: Bearer <token>
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "username": "john",
-  "email": "john@example.com",
-  "roles": ["user"],
-  "created_at": "2024-01-15T10:00:00Z"
-}
-```
-
-## Update Preferences
-
-Update user notification preferences.
-
-```http
-PATCH /api/v1/users/me/preferences
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "email_notifications": true,
-  "reminder_hours": 24
-}
-```
-
-## Token Refresh
-
-Tokens expire after 30 minutes by default. Request a new token before expiration.
-
-!!! tip "Best Practice" Store the token securely and refresh it before it expires to maintain session continuity.
+- `POST /api/v1/oauth/clients`
+- `GET /api/v1/oauth/clients`
+- `DELETE /api/v1/oauth/clients/{client_id}`
+- `GET /api/v1/oauth/authorize`
+- `POST /api/v1/oauth/token`
+- `POST /api/v1/oauth/revoke`
+- `POST /api/v1/oauth/introspect`
+- `GET /api/v1/oauth/protected`

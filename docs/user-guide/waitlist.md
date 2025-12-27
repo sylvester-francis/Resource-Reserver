@@ -1,23 +1,14 @@
 # Waitlist
 
-When a resource is fully booked, join the waitlist to be notified when slots open.
+If a resource is fully booked, you can join the waitlist for a desired time window.
 
-## Joining
+## How it works
 
-Click "Join Waitlist" on any fully booked resource. Specify your preferred time window.
+- Join the waitlist for a resource and time range
+- When a slot opens, you receive an offer
+- Offers expire after 30 minutes
 
-## Position
+## Actions
 
-Your position shows where you are in the queue. When someone cancels, the first person in line is notified.
-
-## Notifications
-
-Receive alerts via:
-
-- In-app notifications
-- Email (if enabled)
-- Push notifications (PWA)
-
-## Leaving
-
-Remove yourself from a waitlist anytime from the dashboard.
+- Accept an offer to create a reservation
+- Leave the waitlist if you no longer need the slot

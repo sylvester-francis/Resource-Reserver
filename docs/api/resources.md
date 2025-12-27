@@ -1,68 +1,21 @@
 # Resources API
 
-## List Resources
+All endpoints require authentication.
 
-```http
-GET /api/v1/resources
-```
+## Endpoints
 
-**Query Parameters:**
+- `POST /api/v1/resources` - create a resource
+- `GET /api/v1/resources` - list resources (cursor pagination)
+- `GET /api/v1/resources/search` - search resources with filters
+- `POST /api/v1/resources/upload` - CSV import
+- `GET /api/v1/resources/{resource_id}/schedule` - availability schedule
+- `GET /api/v1/resources/{resource_id}/availability` - availability summary
+- `PUT /api/v1/resources/{resource_id}/status/unavailable` - mark unavailable
+- `PUT /api/v1/resources/{resource_id}/status/available` - mark available
+- `GET /api/v1/resources/{resource_id}/status` - status details
+- `PUT /api/v1/resources/{resource_id}/availability` - set base availability
+- `GET /api/v1/resources/availability/summary` - system-wide summary
 
-| Parameter | Type | Description                            |
-| --------- | ---- | -------------------------------------- |
-| `skip`    | int  | Number of items to skip                |
-| `limit`   | int  | Maximum items to return (default: 100) |
+## Related endpoints
 
-**Response:**
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Conference Room A",
-    "description": "Main conference room with projector",
-    "capacity": 12,
-    "created_at": "2024-01-15T10:00:00Z"
-  }
-]
-```
-
-## Get Resource
-
-```http
-GET /api/v1/resources/{resource_id}
-```
-
-## Create Resource
-
-```http
-POST /api/v1/resources
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "name": "Meeting Room B",
-  "description": "Small meeting room",
-  "capacity": 6
-}
-```
-
-## Update Resource
-
-```http
-PUT /api/v1/resources/{resource_id}
-Authorization: Bearer <token>
-```
-
-## Delete Resource
-
-```http
-DELETE /api/v1/resources/{resource_id}
-Authorization: Bearer <token>
-```
-
-!!! warning "Admin Only" Creating, updating, and deleting resources requires admin privileges.
+Business hours and blackout dates live under `/api/v1` and are documented in `admin/business-hours.md`.

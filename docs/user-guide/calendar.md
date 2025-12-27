@@ -1,28 +1,28 @@
-# Calendar Integration
+# Calendar
 
-## Calendar View
+Resource Reserver provides iCal feeds so you can see reservations in your calendar app.
 
-View all reservations in a visual calendar:
+## Subscribe to your calendar
 
-- Day, week, or month view
-- Color-coded by resource
-- Click events for details
+1. Get your subscription URL in the UI or via the API
+1. Add the URL in your calendar app
 
-## iCal Export
+API endpoint:
 
-Subscribe to your reservations from any calendar app:
+- `GET /api/v1/calendar/subscription-url`
 
-1. Go to Settings > Calendar
-1. Copy your subscription URL
-1. Add as subscription in your calendar app
+The subscription URL points to:
 
-## Supported Apps
+- `GET /api/v1/calendar/feed/{token}.ics`
 
-- Google Calendar
-- Apple Calendar
-- Microsoft Outlook
-- Any iCal-compatible app
+## Regenerate the token
 
-## Single Event Export
+If your URL is shared or compromised, regenerate it:
 
-Download individual reservations as `.ics` files for one-time import.
+- `POST /api/v1/calendar/regenerate-token`
+
+## Export a single reservation
+
+Download one reservation as an `.ics` file:
+
+- `GET /api/v1/calendar/export/{reservation_id}.ics`
