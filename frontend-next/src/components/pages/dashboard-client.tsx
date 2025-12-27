@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, LogOut, Activity, Settings, CheckCircle2, Clock, Shield } from 'lucide-react';
+import { Calendar, LogOut, Activity, Settings, CheckCircle2, Clock, Shield, BarChart3, Webhook } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -31,6 +31,11 @@ import { MfaDialog } from '@/components/mfa-dialog';
 import { NotificationBadge } from '@/components/NotificationBadge';
 import { LiveIndicator } from '@/components/LiveIndicator';
 import { WaitlistManager } from '@/components/WaitlistManager';
+import { CalendarExport } from '@/components/CalendarExport';
+import { UserPreferences } from '@/components/UserPreferences';
+import { QuotaDisplay } from '@/components/QuotaDisplay';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
+import { WebhookSettings } from '@/components/WebhookSettings';
 
 interface Stats {
     totalResources: number;
@@ -212,6 +217,8 @@ export default function DashboardClient() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <CalendarExport />
+                        <QuotaDisplay />
                         <Button
                             variant="ghost"
                             size="icon"
@@ -254,6 +261,9 @@ export default function DashboardClient() {
                                 <DropdownMenuItem onClick={() => setMfaDialogOpen(true)}>
                                     <Settings className="mr-2 h-4 w-4" />
                                     Security Settings
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <UserPreferences />
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => router.push('/admin/roles')}>
                                     <Shield className="mr-2 h-4 w-4" />
@@ -392,6 +402,14 @@ export default function DashboardClient() {
                             <Clock className="h-4 w-4" />
                             Waitlist
                         </TabsTrigger>
+                        <TabsTrigger value="analytics" className="gap-2">
+                            <BarChart3 className="h-4 w-4" />
+                            Analytics
+                        </TabsTrigger>
+                        <TabsTrigger value="webhooks" className="gap-2">
+                            <Webhook className="h-4 w-4" />
+                            Webhooks
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="resources">
@@ -413,6 +431,14 @@ export default function DashboardClient() {
 
                     <TabsContent value="waitlist">
                         <WaitlistManager onReservationCreated={fetchData} />
+                    </TabsContent>
+
+                    <TabsContent value="analytics">
+                        <AnalyticsDashboard />
+                    </TabsContent>
+
+                    <TabsContent value="webhooks">
+                        <WebhookSettings />
                     </TabsContent>
                 </Tabs>
             </main>
