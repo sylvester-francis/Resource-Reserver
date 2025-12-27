@@ -35,7 +35,7 @@ import { toast } from 'sonner';
 interface UtilizationData {
   resource_id: number;
   resource_name: string;
-  total_hours: number;
+  total_hours_available: number;
   booked_hours: number;
   utilization_percent: number;
 }
@@ -44,30 +44,51 @@ interface PopularResource {
   resource_id: number;
   resource_name: string;
   reservation_count: number;
-  total_hours: number;
+  rank: number;
+}
+
+interface HourlyData {
+  hour: number;
+  count: number;
+}
+
+interface DailyData {
+  day: string;
+  day_number: number;
+  count: number;
 }
 
 interface PeakTimeData {
-  hourly: { hour: number; count: number }[];
-  daily: { day: number; count: number }[];
+  hourly_distribution: HourlyData[];
+  daily_distribution: DailyData[];
+  peak_hour: number;
+  peak_day: string;
 }
 
 interface UserPattern {
   user_id: number;
   username: string;
-  reservation_count: number;
-  total_hours: number;
-  avg_duration_hours: number;
+  total_reservations: number;
+  cancelled_count: number;
+  cancellation_rate: number;
+}
+
+interface DashboardOverview {
+  total_resources: number;
+  total_users: number;
+  total_reservations: number;
+  active_reservations: number;
+  cancelled_reservations: number;
+  cancellation_rate: number;
+  average_utilization: number;
 }
 
 interface DashboardData {
+  overview: DashboardOverview;
   utilization: UtilizationData[];
   popular_resources: PopularResource[];
-  peak_times: PeakTimeData;
+  peak_times: PeakTimeData | null;
   user_patterns: UserPattern[];
-  total_reservations: number;
-  total_hours_booked: number;
-  avg_utilization: number;
 }
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -80,8 +101,22 @@ export function AnalyticsDashboard() {
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await analyticsApi.getDashboard({ days });
-      setData(response.data);
+      // Fetch from multiple endpoints in parallel
+      const [dashboardRes, utilizationRes, popularRes, peakTimesRes, userPatternsRes] = await Promise.all([
+        analyticsApi.getDashboard({ days }),
+        analyticsApi.getUtilization({ days }),
+        analyticsApi.getPopularResources({ days, limit: 10 }),
+        analyticsApi.getPeakTimes({ days }),
+        analyticsApi.getUserPatterns({ days }),
+      ]);
+
+      setData({
+        overview: dashboardRes.data.overview,
+        utilization: utilizationRes.data || [],
+        popular_resources: popularRes.data || [],
+        peak_times: peakTimesRes.data || null,
+        user_patterns: userPatternsRes.data || [],
+      });
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
       toast.error('Failed to load analytics');
@@ -150,8 +185,8 @@ export function AnalyticsDashboard() {
     );
   }
 
-  const maxHourlyCount = Math.max(...(data.peak_times?.hourly?.map(h => h.count) || [1]));
-  const maxDailyCount = Math.max(...(data.peak_times?.daily?.map(d => d.count) || [1]));
+  const maxHourlyCount = Math.max(...(data.peak_times?.hourly_distribution?.map(h => h.count) || [1]));
+  const maxDailyCount = Math.max(...(data.peak_times?.daily_distribution?.map(d => d.count) || [1]));
 
   return (
     <div className="space-y-6">
@@ -186,7 +221,7 @@ export function AnalyticsDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Reservations</p>
-                <p className="text-2xl font-semibold">{data.total_reservations}</p>
+                <p className="text-2xl font-semibold">{data.overview.total_reservations}</p>
               </div>
             </div>
           </CardContent>
@@ -199,8 +234,8 @@ export function AnalyticsDashboard() {
                 <Clock className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Hours Booked</p>
-                <p className="text-2xl font-semibold">{data.total_hours_booked?.toFixed(1) || 0}</p>
+                <p className="text-sm text-muted-foreground">Active Reservations</p>
+                <p className="text-2xl font-semibold">{data.overview.active_reservations}</p>
               </div>
             </div>
           </CardContent>
@@ -214,7 +249,7 @@ export function AnalyticsDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg Utilization</p>
-                <p className="text-2xl font-semibold">{data.avg_utilization?.toFixed(1) || 0}%</p>
+                <p className="text-2xl font-semibold">{data.overview.average_utilization?.toFixed(1) || 0}%</p>
               </div>
             </div>
           </CardContent>
@@ -227,8 +262,8 @@ export function AnalyticsDashboard() {
                 <Users className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Active Users</p>
-                <p className="text-2xl font-semibold">{data.user_patterns?.length || 0}</p>
+                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-2xl font-semibold">{data.overview.total_users}</p>
               </div>
             </div>
           </CardContent>
@@ -250,10 +285,10 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {data.popular_resources?.slice(0, 5).map((resource, index) => (
+              {data.popular_resources?.slice(0, 5).map((resource) => (
                 <div key={resource.resource_id} className="flex items-center gap-4">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                    {index + 1}
+                    {resource.rank}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{resource.resource_name}</p>
@@ -261,9 +296,6 @@ export function AnalyticsDashboard() {
                       {resource.reservation_count} reservations
                     </p>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {resource.total_hours?.toFixed(1)}h
-                  </span>
                 </div>
               )) || (
                 <p className="text-sm text-muted-foreground">No data available</p>
@@ -313,7 +345,7 @@ export function AnalyticsDashboard() {
             <div>
               <h4 className="text-sm font-medium mb-3">By Hour</h4>
               <div className="space-y-1">
-                {data.peak_times?.hourly?.slice(0, 12).map(({ hour, count }) => (
+                {data.peak_times?.hourly_distribution?.slice(0, 12).map(({ hour, count }) => (
                   <div key={hour} className="flex items-center gap-2">
                     <span className="w-12 text-xs text-muted-foreground">
                       {hour.toString().padStart(2, '0')}:00
@@ -337,10 +369,10 @@ export function AnalyticsDashboard() {
             <div>
               <h4 className="text-sm font-medium mb-3">By Day</h4>
               <div className="space-y-1">
-                {data.peak_times?.daily?.map(({ day, count }) => (
-                  <div key={day} className="flex items-center gap-2">
+                {data.peak_times?.daily_distribution?.map(({ day, day_number, count }) => (
+                  <div key={day_number} className="flex items-center gap-2">
                     <span className="w-12 text-xs text-muted-foreground">
-                      {DAYS[day] || day}
+                      {DAYS[day_number] || day}
                     </span>
                     <div className="flex-1 h-4 bg-muted rounded-sm overflow-hidden">
                       <div
@@ -380,17 +412,17 @@ export function AnalyticsDashboard() {
                 <tr className="border-b">
                   <th className="text-left py-2 font-medium">User</th>
                   <th className="text-right py-2 font-medium">Reservations</th>
-                  <th className="text-right py-2 font-medium">Total Hours</th>
-                  <th className="text-right py-2 font-medium">Avg Duration</th>
+                  <th className="text-right py-2 font-medium">Cancelled</th>
+                  <th className="text-right py-2 font-medium">Cancel Rate</th>
                 </tr>
               </thead>
               <tbody>
                 {data.user_patterns?.slice(0, 10).map((user) => (
                   <tr key={user.user_id} className="border-b border-border/50">
                     <td className="py-2">{user.username}</td>
-                    <td className="text-right py-2">{user.reservation_count}</td>
-                    <td className="text-right py-2">{user.total_hours?.toFixed(1)}h</td>
-                    <td className="text-right py-2">{user.avg_duration_hours?.toFixed(1)}h</td>
+                    <td className="text-right py-2">{user.total_reservations}</td>
+                    <td className="text-right py-2">{user.cancelled_count}</td>
+                    <td className="text-right py-2">{user.cancellation_rate?.toFixed(1)}%</td>
                   </tr>
                 )) || (
                   <tr>
