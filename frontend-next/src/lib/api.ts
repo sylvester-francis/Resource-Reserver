@@ -187,3 +187,157 @@ export const waitlistApi = {
   getResourceWaitlist: (resourceId: number) =>
     api.get(`/waitlist/resource/${resourceId}`),
 };
+
+// Calendar Integration API
+export const calendarApi = {
+  getSubscriptionUrl: () => api.get('/calendar/subscription-url'),
+  regenerateToken: () => api.post('/calendar/regenerate-token'),
+  exportReservation: (reservationId: number) =>
+    api.get(`/calendar/export/${reservationId}.ics`, { responseType: 'blob' }),
+  getMyFeed: () => api.get('/calendar/my-feed', { responseType: 'blob' }),
+};
+
+// Analytics API
+export const analyticsApi = {
+  getDashboard: (params?: { days?: number }) =>
+    api.get('/analytics/dashboard', { params }),
+  getUtilization: (params?: { days?: number }) =>
+    api.get('/analytics/utilization', { params }),
+  getPopularResources: (params?: { days?: number; limit?: number }) =>
+    api.get('/analytics/popular-resources', { params }),
+  getPeakTimes: (params?: { days?: number }) =>
+    api.get('/analytics/peak-times', { params }),
+  getUserPatterns: (params?: { days?: number }) =>
+    api.get('/analytics/user-patterns', { params }),
+  exportUtilization: (params?: { days?: number }) =>
+    api.get('/analytics/export/utilization.csv', { params, responseType: 'blob' }),
+  exportReservations: (params?: { days?: number }) =>
+    api.get('/analytics/export/reservations.csv', { params, responseType: 'blob' }),
+};
+
+// Business Hours API
+export const businessHoursApi = {
+  getResourceHours: (resourceId: number) =>
+    api.get(`/resources/${resourceId}/business-hours`),
+  setResourceHours: (resourceId: number, hours: Array<{
+    day_of_week: number;
+    open_time: string;
+    close_time: string;
+    is_closed?: boolean;
+  }>) => api.put(`/resources/${resourceId}/business-hours`, hours),
+  getGlobalHours: () => api.get('/business-hours/global'),
+  setGlobalHours: (hours: Array<{
+    day_of_week: number;
+    open_time: string;
+    close_time: string;
+    is_closed?: boolean;
+  }>) => api.put('/business-hours/global', hours),
+  getAvailableSlots: (resourceId: number, date: string) =>
+    api.get(`/resources/${resourceId}/available-slots`, { params: { date } }),
+  getNextAvailable: (resourceId: number) =>
+    api.get(`/resources/${resourceId}/next-available`),
+  getBlackoutDates: (resourceId?: number) =>
+    api.get(resourceId ? `/resources/${resourceId}/blackout-dates` : '/blackout-dates'),
+  createBlackoutDate: (data: {
+    date: string;
+    reason?: string;
+    resource_id?: number;
+  }) => api.post(data.resource_id ? `/resources/${data.resource_id}/blackout-dates` : '/blackout-dates', data),
+  deleteBlackoutDate: (blackoutId: number) =>
+    api.delete(`/blackout-dates/${blackoutId}`),
+};
+
+// Webhooks API
+export const webhooksApi = {
+  getEventTypes: () => api.get('/webhooks/events'),
+  getSignatureExample: () => api.get('/webhooks/signature-example'),
+  list: () => api.get('/webhooks/'),
+  get: (webhookId: number) => api.get(`/webhooks/${webhookId}`),
+  create: (data: {
+    url: string;
+    events: string[];
+    description?: string;
+    is_active?: boolean;
+  }) => api.post('/webhooks/', data),
+  update: (webhookId: number, data: {
+    url?: string;
+    events?: string[];
+    description?: string;
+    is_active?: boolean;
+  }) => api.patch(`/webhooks/${webhookId}`, data),
+  delete: (webhookId: number) => api.delete(`/webhooks/${webhookId}`),
+  regenerateSecret: (webhookId: number) =>
+    api.post(`/webhooks/${webhookId}/regenerate-secret`),
+  getDeliveries: (webhookId: number) =>
+    api.get(`/webhooks/${webhookId}/deliveries`),
+  getDeliveryDetails: (webhookId: number, deliveryId: number) =>
+    api.get(`/webhooks/${webhookId}/deliveries/${deliveryId}`),
+  test: (webhookId: number) => api.post(`/webhooks/${webhookId}/test`),
+  retryDelivery: (webhookId: number, deliveryId: number) =>
+    api.post(`/webhooks/${webhookId}/deliveries/${deliveryId}/retry`),
+};
+
+// Resource Groups API
+export const resourceGroupsApi = {
+  list: () => api.get('/resource-groups/'),
+  getTree: () => api.get('/resource-groups/tree'),
+  getBuildings: () => api.get('/resource-groups/buildings'),
+  getUngrouped: () => api.get('/resource-groups/ungrouped'),
+  get: (groupId: number) => api.get(`/resource-groups/${groupId}`),
+  create: (data: {
+    name: string;
+    description?: string;
+    parent_id?: number;
+    building?: string;
+    floor?: string;
+    room?: string;
+  }) => api.post('/resource-groups/', data),
+  update: (groupId: number, data: {
+    name?: string;
+    description?: string;
+    parent_id?: number;
+    building?: string;
+    floor?: string;
+    room?: string;
+  }) => api.patch(`/resource-groups/${groupId}`, data),
+  delete: (groupId: number) => api.delete(`/resource-groups/${groupId}`),
+  getResources: (groupId: number) =>
+    api.get(`/resource-groups/${groupId}/resources`),
+  assignResource: (groupId: number, resourceId: number) =>
+    api.post(`/resource-groups/${groupId}/resources`, { resource_id: resourceId }),
+  removeResource: (groupId: number, resourceId: number) =>
+    api.delete(`/resource-groups/${groupId}/resources/${resourceId}`),
+  setResourceParent: (resourceId: number, parentId: number | null) =>
+    api.post('/resource-groups/resources/set-parent', {
+      resource_id: resourceId,
+      parent_id: parentId,
+    }),
+  getResourceChildren: (resourceId: number) =>
+    api.get(`/resource-groups/resources/${resourceId}/children`),
+};
+
+// Quotas API
+export const quotasApi = {
+  getConfig: () => api.get('/quotas/config'),
+  getMyUsage: () => api.get('/quotas/my-usage'),
+  getSummary: () => api.get('/quotas/summary'),
+  // Admin endpoints
+  listUsers: () => api.get('/quotas/users'),
+  getUser: (userId: number) => api.get(`/quotas/users/${userId}`),
+  updateUser: (userId: number, data: {
+    daily_limit?: number;
+    tier?: string;
+  }) => api.patch(`/quotas/users/${userId}`, data),
+  getStats: () => api.get('/quotas/stats'),
+  getAlerts: () => api.get('/quotas/alerts'),
+  resetDaily: () => api.post('/quotas/reset-daily'),
+};
+
+// User Preferences API
+export const userPreferencesApi = {
+  get: () => api.get('/users/me'),
+  update: (data: {
+    email_notifications?: boolean;
+    reminder_hours?: number;
+  }) => api.patch('/users/me/preferences', data),
+};

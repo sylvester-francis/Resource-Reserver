@@ -23,6 +23,7 @@ import { HistoryDialog } from '@/components/history-dialog';
 import { Pagination } from '@/components/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecurringBadge } from '@/components/RecurringBadge';
+import { CalendarExport } from '@/components/CalendarExport';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -253,6 +254,7 @@ export function ReservationsTab({
                                         {reservation.recurrence_rule_id ? <RecurringBadge /> : null}
                                     </div>
                                     <div className="flex gap-2">
+                                        <CalendarExport reservationId={reservation.id} />
                                         <Button
                                             variant="outline"
                                             size="sm"
