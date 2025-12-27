@@ -46,8 +46,8 @@ export function CalendarExport({ reservationId }: CalendarExportProps) {
     setLoading(true);
     try {
       const response = await calendarApi.getSubscriptionUrl();
-      if (response.data.subscription_url) {
-        setSubscriptionUrl(`${API_HOST}${response.data.subscription_url}`);
+      if (response.data.url) {
+        setSubscriptionUrl(`${API_HOST}${response.data.url}`);
       }
     } catch (error) {
       console.error('Failed to fetch subscription URL:', error);
@@ -60,8 +60,8 @@ export function CalendarExport({ reservationId }: CalendarExportProps) {
     setRegenerating(true);
     try {
       const response = await calendarApi.regenerateToken();
-      if (response.data.subscription_url) {
-        setSubscriptionUrl(`${API_HOST}${response.data.subscription_url}`);
+      if (response.data.url) {
+        setSubscriptionUrl(`${API_HOST}${response.data.url}`);
         toast.success('Calendar token regenerated', {
           description: 'Your old subscription URL will no longer work.',
         });
