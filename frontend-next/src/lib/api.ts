@@ -224,14 +224,14 @@ export const businessHoursApi = {
     open_time: string;
     close_time: string;
     is_closed?: boolean;
-  }>) => api.put(`/resources/${resourceId}/business-hours`, hours),
+  }>) => api.put(`/resources/${resourceId}/business-hours`, { hours }),
   getGlobalHours: () => api.get('/business-hours/global'),
   setGlobalHours: (hours: Array<{
     day_of_week: number;
     open_time: string;
     close_time: string;
     is_closed?: boolean;
-  }>) => api.put('/business-hours/global', hours),
+  }>) => api.put('/business-hours/global', { hours }),
   getAvailableSlots: (resourceId: number, date: string) =>
     api.get(`/resources/${resourceId}/available-slots`, { params: { date } }),
   getNextAvailable: (resourceId: number) =>

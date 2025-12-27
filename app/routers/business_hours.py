@@ -61,7 +61,7 @@ async def set_resource_business_hours(
 ):
     """Set business hours for a resource. Admin only."""
     # Check admin permission
-    if not check_permission(current_user.id, db, action="update"):
+    if not check_permission(current_user, resource="resource", action="update", db=db):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     # Verify resource exists
@@ -101,7 +101,7 @@ async def set_global_business_hours(
 ):
     """Set global default business hours. Admin only."""
     # Check admin permission
-    if not check_permission(current_user.id, db, action="update"):
+    if not check_permission(current_user, resource="resource", action="update", db=db):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     service = AvailabilityService(db)
@@ -206,7 +206,7 @@ async def add_resource_blackout_date(
 ):
     """Add a blackout date for a resource. Admin only."""
     # Check admin permission
-    if not check_permission(current_user.id, db, action="update"):
+    if not check_permission(current_user, resource="resource", action="update", db=db):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     # Verify resource exists
@@ -245,7 +245,7 @@ async def add_global_blackout_date(
 ):
     """Add a global blackout date. Admin only."""
     # Check admin permission
-    if not check_permission(current_user.id, db, action="update"):
+    if not check_permission(current_user, resource="resource", action="update", db=db):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     service = AvailabilityService(db)
@@ -260,7 +260,7 @@ async def remove_blackout_date(
 ):
     """Remove a blackout date. Admin only."""
     # Check admin permission
-    if not check_permission(current_user.id, db, action="delete"):
+    if not check_permission(current_user, resource="resource", action="delete", db=db):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     service = AvailabilityService(db)
