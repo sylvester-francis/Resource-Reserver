@@ -49,7 +49,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import sessionmaker
 
@@ -77,6 +77,57 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def ensure_sqlite_schema() -> None:
+    """Patch legacy SQLite schemas to include newer user fields.
+
+    This keeps pre-seeded SQLite databases compatible with newer models by
+    adding missing columns and indexes. It is a no-op for non-SQLite databases.
+    """
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    existing_columns = {col["name"] for col in inspector.get_columns("users")}
+    existing_indexes = {idx["name"] for idx in inspector.get_indexes("users")}
+    statements: list[str] = []
+
+    if "email_notifications" not in existing_columns:
+        statements.append(
+            "ALTER TABLE users ADD COLUMN email_notifications BOOLEAN NOT NULL DEFAULT 1"
+        )
+
+    if "reminder_hours" not in existing_columns:
+        statements.append(
+            "ALTER TABLE users ADD COLUMN reminder_hours INTEGER NOT NULL DEFAULT 24"
+        )
+
+    add_calendar_token = "calendar_token" not in existing_columns
+    if add_calendar_token:
+        statements.append("ALTER TABLE users ADD COLUMN calendar_token VARCHAR(64)")
+
+    needs_calendar_token_index = "ix_users_calendar_token" not in existing_indexes
+
+    if not statements and not needs_calendar_token_index:
+        return
+
+    with engine.begin() as conn:
+        for statement in statements:
+            conn.execute(text(statement))
+
+        if needs_calendar_token_index and (
+            add_calendar_token or "calendar_token" in existing_columns
+        ):
+            conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS "
+                    "ix_users_calendar_token ON users (calendar_token)"
+                )
+            )
 
 
 def get_db():

@@ -79,7 +79,7 @@ from app.core.cache import cache_manager
 from app.core.metrics import check_liveness, check_readiness, metrics
 from app.core.rate_limiter import RateLimitMiddleware
 from app.core.versioning import VersioningMiddleware, get_version_info
-from app.database import SessionLocal, engine, get_db
+from app.database import SessionLocal, engine, ensure_sqlite_schema, get_db
 from app.routers.analytics import router as analytics_router
 from app.routers.approvals import router as approvals_router
 from app.routers.audit import router as audit_router
@@ -529,6 +529,12 @@ async def lifespan(app: FastAPI):
         logger.info("Database tables verified/created")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
+
+    try:
+        ensure_sqlite_schema()
+        logger.info("SQLite schema verified")
+    except Exception as e:
+        logger.warning(f"SQLite schema check failed: {e}")
 
     try:
         db = SessionLocal()
