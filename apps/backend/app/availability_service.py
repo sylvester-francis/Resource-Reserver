@@ -126,10 +126,8 @@ class AvailabilityService:
         # Create new hours
         created_hours = []
         for hour_data in hours_data.hours:
-            hours, minutes = map(int, hour_data.open_time.split(":"))
-            open_time = time(hours, minutes)
-            hours, minutes = map(int, hour_data.close_time.split(":"))
-            close_time = time(hours, minutes)
+            open_time = time.fromisoformat(hour_data.open_time)
+            close_time = time.fromisoformat(hour_data.close_time)
 
             business_hours = models.BusinessHours(
                 resource_id=resource_id,

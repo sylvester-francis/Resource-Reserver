@@ -58,7 +58,11 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/db/resource_reserver_dev.db")
 
 db_url = make_url(DATABASE_URL)
-if db_url.drivername.startswith("sqlite") and db_url.database and db_url.database != ":memory:":
+if (
+    db_url.drivername.startswith("sqlite")
+    and db_url.database
+    and db_url.database != ":memory:"
+):
     db_path = Path(db_url.database)
     if not db_path.is_absolute():
         db_path = Path.cwd() / db_path

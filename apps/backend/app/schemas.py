@@ -1017,8 +1017,12 @@ class BusinessHoursCreate(BaseModel):
     """
 
     day_of_week: int = Field(ge=0, le=6, description="0=Monday, 6=Sunday")
-    open_time: str = Field(pattern=r"^\d{2}:\d{2}$", description="HH:MM format")
-    close_time: str = Field(pattern=r"^\d{2}:\d{2}$", description="HH:MM format")
+    open_time: str = Field(
+        pattern=r"^\d{2}:\d{2}(:\d{2})?$", description="HH:MM or HH:MM:SS format"
+    )
+    close_time: str = Field(
+        pattern=r"^\d{2}:\d{2}(:\d{2})?$", description="HH:MM or HH:MM:SS format"
+    )
     is_closed: bool = False
 
     @field_validator("open_time", "close_time")
@@ -1036,12 +1040,19 @@ class BusinessHoursCreate(BaseModel):
             ValueError: If format is invalid or time values are out of range.
         """
         try:
-            hours, minutes = map(int, v.split(":"))
-            if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+            parts = v.split(":")
+            if len(parts) == 2:
+                hours, minutes = map(int, parts)
+                seconds = 0
+            elif len(parts) == 3:
+                hours, minutes, seconds = map(int, parts)
+            else:
+                raise ValueError("Invalid time")
+            if not (0 <= hours <= 23 and 0 <= minutes <= 59 and 0 <= seconds <= 59):
                 raise ValueError("Invalid time")
             return v
         except (ValueError, AttributeError) as e:
-            raise ValueError("Time must be in HH:MM format") from e
+            raise ValueError("Time must be in HH:MM or HH:MM:SS format") from e
 
     @field_validator("close_time")
     @classmethod
@@ -1059,7 +1070,11 @@ class BusinessHoursCreate(BaseModel):
             ValueError: If close time is not after open time (when not closed).
         """
         open_time = info.data.get("open_time")
-        if open_time and v <= open_time:
+        if not open_time:
+            return v
+        open_parsed = time.fromisoformat(open_time)
+        close_parsed = time.fromisoformat(v)
+        if close_parsed <= open_parsed:
             is_closed = info.data.get("is_closed", False)
             if not is_closed:
                 raise ValueError("Close time must be after open time")
