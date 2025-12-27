@@ -2,6 +2,11 @@
 # Pre-push CI checks for backend and frontend.
 set -euo pipefail
 
+if [[ "${SKIP_PRE_PUSH_CI:-}" =~ ^(1|true|yes)$ ]]; then
+  echo "Skipping pre-push checks (SKIP_PRE_PUSH_CI set)."
+  exit 0
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="${ROOT_DIR}/apps/backend"
 FRONTEND_DIR="${ROOT_DIR}/apps/frontend"
