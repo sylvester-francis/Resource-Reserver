@@ -23,7 +23,7 @@ tilt = "latest"
 
 [env]
 # Development environment variables
-DATABASE_URL = "sqlite:///./data/resource_reserver_dev.db"
+DATABASE_URL = "sqlite:///./data/db/resource_reserver_dev.db"
 ENVIRONMENT = "development"
 SECRET_KEY = "dev-secret-key-change-in-production"
 API_BASE_URL = "http://localhost:8000"
@@ -49,7 +49,7 @@ run = """
 #!/usr/bin/env bash
 
 # Create data directory if missing
-mkdir -p data 2>/dev/null || true
+mkdir -p data/db data/csv 2>/dev/null || true
 
 # Ensure Python venv exists and is activated
 if [ ! -d "venv" ]; then
@@ -64,22 +64,22 @@ source venv/bin/activate 2>/dev/null || true
 if ! python -c "import fastapi" 2>/dev/null; then
     echo "📦 Installing Python dependencies..."
     if command -v uv > /dev/null 2>&1; then
-        uv pip install -r requirements.txt -q
+        uv pip install -r apps/backend/requirements.txt -q
     else
-        pip install -r requirements.txt -q
+        pip install -r apps/backend/requirements.txt -q
     fi
 fi
 
 # Check frontend deps
-if [ ! -d "frontend-next/node_modules" ]; then
+if [ ! -d "apps/frontend/node_modules" ]; then
     echo "📦 Installing frontend dependencies..."
-    cd frontend-next
+    pushd apps/frontend > /dev/null
     if command -v bun > /dev/null 2>&1; then
         bun install --silent
     elif command -v npm > /dev/null 2>&1; then
         npm install --silent
     fi
-    cd ..
+    popd > /dev/null
 fi
 """
 
@@ -96,7 +96,7 @@ echo "🚀 Setting up Resource-Reserver..."
 echo ""
 
 # Create directories
-mkdir -p data 2>/dev/null || true
+mkdir -p data/db data/csv 2>/dev/null || true
 
 # Setup Python environment
 echo "📦 Setting up Python environment..."
@@ -112,9 +112,9 @@ source venv/bin/activate
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
 if command -v uv > /dev/null 2>&1; then
-    uv pip install -r requirements.txt -q && echo "   ✓ Python dependencies installed (via uv)"
+    uv pip install -r apps/backend/requirements.txt -q && echo "   ✓ Python dependencies installed (via uv)"
 else
-    pip install -r requirements.txt -q && echo "   ✓ Python dependencies installed (via pip)"
+    pip install -r apps/backend/requirements.txt -q && echo "   ✓ Python dependencies installed (via pip)"
 fi
 
 # Install pre-commit hooks
@@ -124,7 +124,7 @@ fi
 
 # Install frontend dependencies
 echo "📦 Installing frontend dependencies..."
-cd frontend-next
+cd apps/frontend
 if command -v bun > /dev/null 2>&1; then
     bun install --silent && echo "   ✓ Frontend dependencies installed (via bun)"
 elif command -v npm > /dev/null 2>&1; then
@@ -132,7 +132,7 @@ elif command -v npm > /dev/null 2>&1; then
 else
     echo "   ⚠ No package manager found (install bun or npm)"
 fi
-cd ..
+cd ../..
 
 echo ""
 echo "✅ Setup complete!"
@@ -260,7 +260,7 @@ echo ""
 
 # Start backend in background
 echo "Starting backend on http://localhost:8000..."
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
+uvicorn --app-dir apps/backend app.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 # Give backend time to start
@@ -268,14 +268,14 @@ sleep 2
 
 # Start frontend
 echo "Starting frontend on http://localhost:3000..."
-cd frontend-next
+cd apps/frontend
 if command -v bun > /dev/null 2>&1; then
     bun run dev &
 else
     npm run dev &
 fi
 FRONTEND_PID=$!
-cd ..
+cd ../..
 
 echo ""
 echo "✅ Development servers running:"
@@ -297,7 +297,7 @@ run = """
 #!/usr/bin/env bash
 source venv/bin/activate 2>/dev/null || true
 echo "🚀 Starting backend on http://localhost:8000..."
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn --app-dir apps/backend app.main:app --reload --host 0.0.0.0 --port 8000
 """
 
 [tasks.frontend-dev]
@@ -305,7 +305,7 @@ description = "Start frontend development server only"
 depends = ["_ensure-env"]
 run = """
 #!/usr/bin/env bash
-cd frontend-next
+cd apps/frontend
 echo "🚀 Starting frontend on http://localhost:3000..."
 if command -v bun > /dev/null 2>&1; then
     bun run dev
@@ -341,6 +341,7 @@ run = """
 #!/usr/bin/env bash
 source venv/bin/activate 2>/dev/null || true
 echo "🧪 Running all tests..."
+cd apps/backend
 pytest tests/ -v --tb=short
 """
 
@@ -351,6 +352,7 @@ run = """
 #!/usr/bin/env bash
 source venv/bin/activate 2>/dev/null || true
 echo "🧪 Running fast tests..."
+cd apps/backend
 pytest tests/ -v --tb=short -m "not slow" 2>/dev/null || pytest tests/ -v --tb=short
 """
 
@@ -361,6 +363,7 @@ run = """
 #!/usr/bin/env bash
 source venv/bin/activate 2>/dev/null || true
 echo "🧪 Running backend tests..."
+cd apps/backend
 pytest tests/test_api/ tests/test_services/ -v --tb=short
 """
 
@@ -371,6 +374,7 @@ run = """
 #!/usr/bin/env bash
 source venv/bin/activate 2>/dev/null || true
 echo "🧪 Running CLI tests..."
+cd apps/backend
 pytest tests/test_cli/ -v --tb=short
 """
 
@@ -379,7 +383,7 @@ description = "Run E2E tests with Playwright"
 depends = ["_ensure-env"]
 run = """
 #!/usr/bin/env bash
-cd frontend-next
+cd apps/frontend
 
 # Install Playwright if needed
 if [ ! -d "node_modules/@playwright" ]; then
@@ -394,9 +398,9 @@ fi
 
 echo "🧪 Running E2E tests..."
 if command -v bun > /dev/null 2>&1; then
-    bun run test:e2e
+    NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}" bun run test:e2e
 else
-    npm run test:e2e
+    NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}" npm run test:e2e
 fi
 """
 
@@ -407,6 +411,7 @@ run = """
 #!/usr/bin/env bash
 source venv/bin/activate 2>/dev/null || true
 echo "🧪 Running tests with coverage..."
+cd apps/backend
 pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
 echo ""
 echo "Coverage report: htmlcov/index.html"
@@ -425,22 +430,26 @@ EXIT_CODE=0
 
 echo "🔍 Linting Python..."
 if command -v ruff > /dev/null 2>&1; then
+    pushd apps/backend > /dev/null
     ruff check . --fix || EXIT_CODE=1
+    popd > /dev/null
 else
     echo "   ⚠ ruff not found, installing..."
     pip install ruff -q
+    pushd apps/backend > /dev/null
     ruff check . --fix || EXIT_CODE=1
+    popd > /dev/null
 fi
 
 echo ""
 echo "🔍 Linting frontend..."
-cd frontend-next
+pushd apps/frontend > /dev/null
 if command -v bun > /dev/null 2>&1; then
     bun run lint 2>/dev/null || npm run lint 2>/dev/null || echo "   ⚠ Frontend lint skipped"
 else
     npm run lint 2>/dev/null || echo "   ⚠ Frontend lint skipped"
 fi
-cd ..
+popd > /dev/null
 
 if [ $EXIT_CODE -eq 0 ]; then
     echo ""
@@ -461,10 +470,12 @@ source venv/bin/activate 2>/dev/null || true
 
 echo "✨ Formatting Python..."
 if command -v ruff > /dev/null 2>&1; then
+    cd apps/backend
     ruff format .
     ruff check --fix . 2>/dev/null || true
 else
     pip install ruff -q
+    cd apps/backend
     ruff format .
 fi
 
@@ -481,20 +492,22 @@ source venv/bin/activate 2>/dev/null || true
 
 echo "🔍 Type checking Python..."
 if command -v mypy > /dev/null 2>&1; then
+    pushd apps/backend > /dev/null
     mypy app/ --ignore-missing-imports || true
+    popd > /dev/null
 else
     echo "   ⚠ mypy not installed, skipping (pip install mypy)"
 fi
 
 echo ""
 echo "🔍 Type checking frontend..."
-cd frontend-next
+pushd apps/frontend > /dev/null
 if command -v bun > /dev/null 2>&1; then
     bun run build 2>&1 | head -20 || true
 else
     npm run build 2>&1 | head -20 || true
 fi
-cd ..
+popd > /dev/null
 """
 
 # =============================================================================
@@ -508,13 +521,13 @@ run = """
 source venv/bin/activate 2>/dev/null || true
 
 echo "🔨 Building frontend..."
-cd frontend-next
+cd apps/frontend
 if command -v bun > /dev/null 2>&1; then
     bun run build
 else
     npm run build
 fi
-cd ..
+cd ../..
 
 echo ""
 echo "🔨 Building documentation..."
@@ -548,13 +561,16 @@ run = """
 #!/usr/bin/env bash
 source venv/bin/activate 2>/dev/null || true
 
-if [ -d "migrations" ]; then
+BACKEND_DIR="apps/backend"
+if [ -d "${BACKEND_DIR}/migrations" ]; then
     echo "🗄️ Running migrations..."
+    pushd "${BACKEND_DIR}" > /dev/null
     alembic upgrade head
+    popd > /dev/null
     echo "✅ Migrations complete!"
 else
     echo "No migrations directory found. Using auto-create tables."
-    python -c "from app.database import engine, Base; Base.metadata.create_all(bind=engine)"
+    PYTHONPATH="${BACKEND_DIR}" python -c "from app.database import engine, Base; Base.metadata.create_all(bind=engine)"
     echo "✅ Database tables created!"
 fi
 """
@@ -568,9 +584,10 @@ source venv/bin/activate 2>/dev/null || true
 echo "⚠️  This will delete all data. Press Ctrl+C to cancel..."
 sleep 3
 
-rm -f data/*.db 2>/dev/null || true
+rm -f data/db/*.db 2>/dev/null || true
+mkdir -p data/db 2>/dev/null || true
 echo "🗄️ Creating fresh database..."
-python -c "from app.database import engine, Base; Base.metadata.create_all(bind=engine)"
+PYTHONPATH="apps/backend" python -c "from app.database import engine, Base; Base.metadata.create_all(bind=engine)"
 echo "✅ Database reset complete!"
 """
 
@@ -606,8 +623,8 @@ find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
 # Frontend caches
-rm -rf frontend-next/.next frontend-next/node_modules/.cache 2>/dev/null || true
-rm -rf frontend-next/playwright-report frontend-next/test-results 2>/dev/null || true
+rm -rf apps/frontend/.next apps/frontend/node_modules/.cache 2>/dev/null || true
+rm -rf apps/frontend/playwright-report apps/frontend/test-results 2>/dev/null || true
 
 # Build artifacts
 rm -rf site .tiltbuild 2>/dev/null || true
@@ -624,7 +641,7 @@ echo "🧹 Deep cleaning..."
 mise run clean
 
 rm -rf venv 2>/dev/null || true
-rm -rf frontend-next/node_modules 2>/dev/null || true
+rm -rf apps/frontend/node_modules 2>/dev/null || true
 
 echo "✅ Deep clean complete! Run 'mise run setup' to reinstall."
 """
@@ -654,7 +671,7 @@ fi
 # Frontend
 echo ""
 echo "Frontend:"
-if [ -d "frontend-next/node_modules" ]; then
+if [ -d "apps/frontend/node_modules" ]; then
     echo "   ✓ Dependencies installed"
 else
     echo "   ✗ Dependencies missing (run: mise run setup)"

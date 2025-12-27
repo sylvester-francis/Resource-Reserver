@@ -7,7 +7,7 @@ FROM node:20-slim AS deps
 WORKDIR /app
 
 # Copy package files
-COPY frontend-next/package.json frontend-next/package-lock.json ./
+COPY apps/frontend/package.json apps/frontend/package-lock.json ./
 
 # Install dependencies (include optional platform binaries)
 RUN npm ci --include=optional
@@ -19,7 +19,7 @@ WORKDIR /app
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY frontend-next/ .
+COPY apps/frontend/ .
 
 # Set environment for build
 ENV NEXT_TELEMETRY_DISABLED=1

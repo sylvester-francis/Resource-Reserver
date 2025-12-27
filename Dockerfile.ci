@@ -1,4 +1,4 @@
-# CI-specific Dockerfile that expects pre-built frontend assets
+# CI-specific backend Dockerfile
 FROM python:3.11-slim
 
 # Set environment variables
@@ -21,16 +21,16 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY apps/backend/requirements.txt .
 # hadolint ignore=DL3013
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY apps/backend/ .
 
 # Create necessary directories and set permissions
-RUN mkdir -p /app/data && \
+RUN mkdir -p /app/data/db && \
     chown -R appuser:appuser /app
 
 # Switch to non-root user

@@ -146,14 +146,14 @@ Backend:
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+pip install -r apps/backend/requirements.txt
+uvicorn --app-dir apps/backend app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Frontend:
 
 ```bash
-cd frontend-next
+cd apps/frontend
 npm ci
 printf "NEXT_PUBLIC_API_URL=http://localhost:8000\n" > .env.local
 npm run dev
@@ -162,7 +162,7 @@ npm run dev
 CLI:
 
 ```bash
-pip install -e .
+pip install -e apps/backend
 resource-reserver-cli auth register
 resource-reserver-cli auth login
 ```
@@ -339,7 +339,7 @@ Some admin operations are API-only and are not surfaced in the UI yet.
 Install the CLI:
 
 ```bash
-pip install -e .
+pip install -e apps/backend
 ```
 
 Configuration:
@@ -429,12 +429,13 @@ Full OpenAPI docs are available at:
 Create `.env` in the repo root. Example:
 
 ```env
-DATABASE_URL=sqlite:///./reservations.db
+DATABASE_URL=sqlite:///./data/db/resource_reserver_dev.db
 SECRET_KEY=your-secret-key-change-in-production
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 API_URL=http://localhost:8000
+DEFAULT_CSV_PATH=data/csv/resources.csv
 DEBUG=false
 ENVIRONMENT=development
 
@@ -460,7 +461,7 @@ SMTP_FROM=noreply@resource-reserver.local
 SMTP_FROM_NAME=Resource Reserver
 SMTP_TLS=true
 SMTP_SSL=false
-EMAIL_TEMPLATES_DIR=app/templates/email
+EMAIL_TEMPLATES_DIR=apps/backend/app/templates/email
 
 SETUP_REOPEN_TOKEN=
 ```
@@ -468,7 +469,7 @@ SETUP_REOPEN_TOKEN=
 Notes:
 
 - `DATABASE_URL` defaults to SQLite if unset; set it explicitly for consistency.
-- CORS origins are defined in `app/config.py` (defaults allow localhost ports 3000, 8080, 8000).
+- CORS origins are defined in `apps/backend/app/config.py` (defaults allow localhost ports 3000, 8080, 8000).
 - `API_URL` is used for calendar subscription URLs.
 
 ### Frontend (.env.local)
@@ -487,7 +488,7 @@ Environment variables:
 ## Data Import and Export
 
 - Upload resources from CSV in the Resources tab or via `POST /api/v1/resources/upload`.
-- Sample CSV files are available in `resources.csv` and `demo-resources.csv`.
+- Sample CSV files are available in `data/csv/resources.csv` and `data/csv/demo-resources.csv`.
 - Bulk reservation import/export:
   - `POST /api/v1/bulk/reservations/import`
   - `GET /api/v1/bulk/reservations/export`
@@ -516,13 +517,14 @@ Environment variables:
 Backend:
 
 ```bash
+cd apps/backend
 pytest tests/ -v
 ```
 
 Frontend:
 
 ```bash
-cd frontend-next
+cd apps/frontend
 npm run lint
 npm run test
 npm run test:e2e

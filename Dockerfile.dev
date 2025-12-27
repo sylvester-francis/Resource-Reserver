@@ -1,4 +1,4 @@
-# Development Dockerfile with hot reload for both frontend and backend
+# Development Dockerfile with hot reload for the backend
 FROM python:3.11-slim
 
 # Set environment variables
@@ -7,19 +7,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     PORT=8000
 
-# Install system dependencies including Node.js
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# Install system dependencies
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    ca-certificates \
-    gnupg \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user
@@ -29,32 +21,23 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 # Copy and install Python dependencies
-COPY requirements.txt .
+COPY apps/backend/requirements.txt .
 # hadolint ignore=DL3013
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy and install Node.js dependencies
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY vite.config.ts ./
-RUN npm install
-
 # Copy application code
-COPY . .
-
-# Build frontend initially
-RUN npm run build
+COPY apps/backend/ .
 
 # Create necessary directories and set permissions
-RUN mkdir -p /app/data && \
+RUN mkdir -p /app/data/db && \
     chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
 
-# Expose ports (8000 for backend, 3000 for frontend dev server)
-EXPOSE 8000 3000
+# Expose backend port
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \

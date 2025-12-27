@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+# Pre-push CI checks for backend and frontend.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BACKEND_DIR="${ROOT_DIR}/apps/backend"
+FRONTEND_DIR="${ROOT_DIR}/apps/frontend"
 
 backend_pid=""
 frontend_pid=""
@@ -45,6 +48,7 @@ if [[ -f "venv/bin/activate" ]]; then
 fi
 
 echo "==> Running Python lint and format checks"
+cd "${BACKEND_DIR}"
 ruff check . --output-format=github
 ruff format . --check
 
@@ -52,7 +56,7 @@ echo "==> Running Python tests"
 pytest --cov=app --cov=cli --cov-report=term-missing -v
 
 echo "==> Running frontend lint, build, and unit tests"
-cd "${ROOT_DIR}/frontend-next"
+cd "${FRONTEND_DIR}"
 npm run lint
 npm run build
 npm run test
@@ -70,20 +74,16 @@ docker compose down
 docker_started="false"
 
 echo "==> Running Playwright E2E tests"
-DATABASE_URL="${DATABASE_URL:-sqlite:///./reservations.db}" \
+DATABASE_URL="${DATABASE_URL:-sqlite:///./data/db/resource_reserver_dev.db}" \
 REDIS_URL="${REDIS_URL:-redis://localhost:6379/0}" \
 SECRET_KEY="${SECRET_KEY:-test-secret-key}" \
 ALGORITHM="${ALGORITHM:-HS256}" \
-uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+uvicorn --app-dir "${BACKEND_DIR}" app.main:app --host 0.0.0.0 --port 8000 &
 backend_pid=$!
 wait_for_url "http://localhost:8000/health" 30 1
 
-cd "${ROOT_DIR}/frontend-next"
+cd "${FRONTEND_DIR}"
 NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}" \
-npm run start &
-frontend_pid=$!
-cd "${ROOT_DIR}"
-wait_for_url "http://localhost:3000/login" 30 1
-
-PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL:-http://localhost:3000}" CI="" \
-npm --prefix frontend-next run test:e2e
+PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL:-http://localhost:3000}" \
+CI="" \
+npm run test:e2e
