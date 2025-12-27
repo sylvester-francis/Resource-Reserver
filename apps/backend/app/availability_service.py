@@ -12,12 +12,23 @@ Author: Sylvester-Francis
 import logging
 from datetime import UTC, date, datetime, time, timedelta
 
+import anyio
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.config import get_settings
+from app.core.cache import invalidate_resource_cache
 
 logger = logging.getLogger(__name__)
+
+
+def _invalidate_cache_sync() -> None:
+    """Invalidate resource cache from a synchronous context."""
+    try:
+        anyio.from_thread.run(invalidate_resource_cache)
+        logger.debug("Resource cache invalidated")
+    except Exception as e:
+        logger.debug(f"Cache invalidation skipped: {e}")
 
 
 def utcnow() -> datetime:
@@ -143,7 +154,55 @@ class AvailabilityService:
         for h in created_hours:
             self.db.refresh(h)
 
+        self._sync_resource_availability(resource_id, hours_data)
+
         return created_hours
+
+    def _sync_resource_availability(
+        self, resource_id: int | None, hours_data: schemas.BusinessHoursBulkUpdate
+    ) -> None:
+        """Update resource availability when all business hours are closed.
+
+        Marks a resource as unavailable when every configured day is closed.
+        If hours are reopened, restores availability when the unavailable
+        status was set by schedule (no unavailable_since timestamp).
+        """
+        if resource_id is None:
+            return
+
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+        if not resource:
+            return
+
+        all_closed = not hours_data.hours or all(
+            hour.is_closed for hour in hours_data.hours
+        )
+        changed = False
+
+        if all_closed:
+            if resource.available:
+                resource.available = False
+                resource.status = "unavailable"
+                resource.unavailable_since = None
+                changed = True
+        else:
+            if (
+                resource.status == "unavailable"
+                and resource.unavailable_since is None
+                and not resource.available
+            ):
+                resource.available = True
+                resource.status = "available"
+                changed = True
+
+        if changed:
+            self.db.commit()
+            self.db.refresh(resource)
+            _invalidate_cache_sync()
 
     def is_blackout_date(
         self, resource_id: int | None, check_date: date
