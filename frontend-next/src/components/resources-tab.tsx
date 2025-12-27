@@ -25,10 +25,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/pagination';
-import { CreateResourceDialog } from '@/components/create-resource-dialog';
-import { UploadCsvDialog } from '@/components/upload-csv-dialog';
-import { ReservationDialog } from '@/components/reservation-dialog';
 import { AvailabilityDialog } from '@/components/availability-dialog';
+import { BusinessHoursEditor } from '@/components/BusinessHoursEditor';
+import { CreateResourceDialog } from '@/components/create-resource-dialog';
+import { ReservationDialog } from '@/components/reservation-dialog';
+import { UploadCsvDialog } from '@/components/upload-csv-dialog';
 import {
     Select,
     SelectContent,
@@ -306,6 +307,11 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                                         >
                                             Schedule
                                         </Button>
+                                        <BusinessHoursEditor
+                                            resourceId={resource.id}
+                                            resourceName={resource.name}
+                                            isAdmin={true}
+                                        />
                                         {resource.available && resource.status !== 'in_use' && (
                                             <Button size="sm" onClick={() => handleReserve(resource)}>
                                                 Reserve

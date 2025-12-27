@@ -66,13 +66,14 @@ export function WaitlistButton({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           disabled={disabled}
           className="gap-2"
+          title="Get notified when this time opens up"
         >
           <Clock className="h-4 w-4" />
-          Join Waitlist
+          Notify me (waitlist)
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
