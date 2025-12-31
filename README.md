@@ -270,23 +270,115 @@ erDiagram
 
 ### Web Interface
 
-|                      Login                      |                        Dashboard                        |
-| :---------------------------------------------: | :-----------------------------------------------------: |
-| ![Login](screenshots/Web%20Interface/login.png) | ![Dashboard](screenshots/Web%20Interface/dashboard.png) |
+#### Authentication
 
-|                        Resources                        |                           My Reservations                           |
-| :-----------------------------------------------------: | :-----------------------------------------------------------------: |
-| ![Resources](screenshots/Web%20Interface/resources.png) | ![My Reservations](screenshots/Web%20Interface/my_reservations.png) |
+|                        Login                        |                       Registration                        |
+| :-------------------------------------------------: | :-------------------------------------------------------: |
+| ![Login](screenshots/Web%20Interface/login-web.png) | ![Register](screenshots/Web%20Interface/register-web.png) |
+
+#### Dashboard & System Status
+
+|                        Dashboard                        |                           System Status                            |
+| :-----------------------------------------------------: | :----------------------------------------------------------------: |
+| ![Dashboard](screenshots/Web%20Interface/dashboard.png) | ![System Status](screenshots/Web%20Interface/systemstatus-web.png) |
+
+#### Resource Management
+
+|                           Resource List                            |                            Create Resource                             |
+| :----------------------------------------------------------------: | :--------------------------------------------------------------------: |
+| ![Resource List](screenshots/Web%20Interface/resourcelist-web.png) | ![Create Resource](screenshots/Web%20Interface/createresource-web.png) |
+
+|                             Resource History                             |                            Upload Resources                             |
+| :----------------------------------------------------------------------: | :---------------------------------------------------------------------: |
+| ![Resource History](screenshots/Web%20Interface/resourcehistory-web.png) | ![Upload Resources](screenshots/Web%20Interface/uploadresource-web.png) |
+
+|                            Resource Schedule                            |                               Business Hours                               |
+| :---------------------------------------------------------------------: | :------------------------------------------------------------------------: |
+| ![Resource Schedule](screenshots/Web%20Interface/resource-schedule.png) | ![Business Hours](screenshots/Web%20Interface/resource-business-hours.png) |
+
+#### Reservations
+
+|                              Create Reservation                              |                            My Reservations                             |
+| :--------------------------------------------------------------------------: | :--------------------------------------------------------------------: |
+| ![Create Reservation](screenshots/Web%20Interface/createreservation-web.png) | ![My Reservations](screenshots/Web%20Interface/myreservations-web.png) |
+
+#### Waitlist
+
+|                          Waitlist View                          |                          Join Waitlist                          |
+| :-------------------------------------------------------------: | :-------------------------------------------------------------: |
+| ![Waitlist View](screenshots/Web%20Interface/waitlist-view.png) | ![Join Waitlist](screenshots/Web%20Interface/waitlist-join.png) |
+
+#### Analytics & Calendar
 
 |                        Analytics                        |                 Calendar Integration                  |
 | :-----------------------------------------------------: | :---------------------------------------------------: |
 | ![Analytics](screenshots/Web%20Interface/analytics.png) | ![Calendar](screenshots/Web%20Interface/calendar.png) |
 
+|                           Calendar Export                           |                              Calendar Subscription                              |
+| :-----------------------------------------------------------------: | :-----------------------------------------------------------------------------: |
+| ![Calendar Export](screenshots/Web%20Interface/calendar-export.png) | ![Calendar Subscription](screenshots/Web%20Interface/calendar-subscription.png) |
+
+#### Notifications
+
+|                             Notifications Panel                             |                             Notifications Empty                             |
+| :-------------------------------------------------------------------------: | :-------------------------------------------------------------------------: |
+| ![Notifications Panel](screenshots/Web%20Interface/notifications-panel.png) | ![Notifications Empty](screenshots/Web%20Interface/notifications-empty.png) |
+
+#### Webhooks
+
+|                          Webhooks List                          |                          Create Webhook                           |
+| :-------------------------------------------------------------: | :---------------------------------------------------------------: |
+| ![Webhooks List](screenshots/Web%20Interface/webhooks-list.png) | ![Create Webhook](screenshots/Web%20Interface/webhook-create.png) |
+
+|                          Webhook Events                           |                           Webhook History                           |
+| :---------------------------------------------------------------: | :-----------------------------------------------------------------: |
+| ![Webhook Events](screenshots/Web%20Interface/webhook-events.png) | ![Webhook History](screenshots/Web%20Interface/webhook-history.png) |
+
+#### Account & Security
+
+|                           Account Settings                            |                        MFA Setup                        |
+| :-------------------------------------------------------------------: | :-----------------------------------------------------: |
+| ![Account Settings](screenshots/Web%20Interface/account-settings.png) | ![MFA Setup](screenshots/Web%20Interface/mfa-setup.png) |
+
+#### Internationalization
+
+|                            Language Selector                            |
+| :---------------------------------------------------------------------: |
+| ![Language Selector](screenshots/Web%20Interface/language-selector.png) |
+
+#### Dark Theme
+
+|                          Dark Dashboard                           |                          Dark Resources                           |
+| :---------------------------------------------------------------: | :---------------------------------------------------------------: |
+| ![Dark Dashboard](screenshots/Web%20Interface/dark-dashboard.png) | ![Dark Resources](screenshots/Web%20Interface/dark-resources.png) |
+
+|                        Dark Login                         |                          Dark Register                          |
+| :-------------------------------------------------------: | :-------------------------------------------------------------: |
+| ![Dark Login](screenshots/Web%20Interface/dark-login.png) | ![Dark Register](screenshots/Web%20Interface/dark-register.png) |
+
+|                            Dark Reservations                            |
+| :---------------------------------------------------------------------: |
+| ![Dark Reservations](screenshots/Web%20Interface/dark-reservations.png) |
+
+______________________________________________________________________
+
 ### CLI Interface
 
-![CLI Overview](screenshots/CLI%20Interface/cli-main.png)
+|                         Overview                          |                         Authentication                          |
+| :-------------------------------------------------------: | :-------------------------------------------------------------: |
+| ![CLI Overview](screenshots/CLI%20Interface/cli-main.png) | ![CLI Authentication](screenshots/CLI%20Interface/cli-auth.png) |
 
-More screenshots are available in the `screenshots` directory.
+|                            Resources                            |                             Reservations                             |
+| :-------------------------------------------------------------: | :------------------------------------------------------------------: |
+| ![CLI Resources](screenshots/CLI%20Interface/cli-resources.png) | ![CLI Reservations](screenshots/CLI%20Interface/cli-reservation.png) |
+
+|                          System                           |
+| :-------------------------------------------------------: |
+| ![CLI System](screenshots/CLI%20Interface/cli-system.png) |
+
+______________________________________________________________________
+
+> 📸 **All screenshots** shown above are available in the [`screenshots`](screenshots/) directory.
 
 ## Web App Guide
 
