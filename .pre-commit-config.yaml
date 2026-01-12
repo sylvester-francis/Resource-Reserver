@@ -8,7 +8,7 @@ default_stages: [pre-commit]
 repos:
   # Python code formatting with ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.11.13
     hooks:
       # Run the ruff linter
       - id: ruff
@@ -140,7 +140,7 @@ repos:
       # Run pytest on modified test files
       - id: pytest-check
         name: pytest (Python tests)
-        entry: bash -c 'cd apps/backend && pytest --maxfail=1 --tb=short -q'
+        entry: bash -c 'source venv/bin/activate && cd apps/backend && pytest --maxfail=1 --tb=short -q'
         language: system
         pass_filenames: false
         always_run: false

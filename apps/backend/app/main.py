@@ -86,6 +86,7 @@ from app.routers.audit import router as audit_router
 from app.routers.bulk import router as bulk_router
 from app.routers.business_hours import router as business_hours_router
 from app.routers.calendar import router as calendar_router
+from app.routers.labels import router as labels_router
 from app.routers.notifications import router as notifications_router
 from app.routers.quotas import router as quotas_router
 from app.routers.resource_groups import router as resource_groups_router
@@ -2113,6 +2114,7 @@ app.include_router(webhooks_router)
 app.include_router(resource_groups_router)
 app.include_router(business_hours_router)
 app.include_router(calendar_router)
+app.include_router(labels_router)
 
 
 # =============================================================================
