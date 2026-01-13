@@ -20,11 +20,22 @@ export interface PaginatedResponse<T> {
   total_count?: number | null;
 }
 
+export interface Label {
+  id: number;
+  category: string;
+  value: string;
+  color: string;
+  description?: string | null;
+  full_name: string;
+  resource_count?: number;
+}
+
 export interface Resource {
   id: number;
   name: string;
   available: boolean;
   tags: string[];
+  labels?: Label[];
   status: 'available' | 'in_use' | 'unavailable';
   current_availability?: boolean;
   unavailable_since?: string;

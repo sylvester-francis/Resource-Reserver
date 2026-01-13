@@ -34,6 +34,7 @@ import { BusinessHoursEditor } from '@/components/BusinessHoursEditor';
 import { CreateResourceDialog } from '@/components/create-resource-dialog';
 import { ReservationDialog } from '@/components/reservation-dialog';
 import { UploadCsvDialog } from '@/components/upload-csv-dialog';
+import { LabelBadgeList, type LabelData } from '@/components/LabelBadge';
 import {
     Select,
     SelectContent,
@@ -265,64 +266,74 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                             resources.map(resource => {
                                 const tags = Array.isArray(resource.tags) ? resource.tags : [];
                                 return (
-                                <div
-                                    key={resource.id}
-                                    className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                                >
-                                    {/* Avatar */}
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                                        {resource.name.charAt(0).toUpperCase()}
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="font-medium truncate">{resource.name}</h3>
-                                            <span className="text-xs text-muted-foreground">#{resource.id}</span>
+                                    <div
+                                        key={resource.id}
+                                        className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                                    >
+                                        {/* Avatar */}
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                                            {resource.name.charAt(0).toUpperCase()}
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                                            <Badge
-                                                variant={getStatusVariant(resource)}
-                                                className="cursor-pointer gap-1"
-                                                onClick={() => handleToggleStatus(resource)}
-                                            >
-                                                {getStatusIcon(resource)}
-                                                {getStatusText(resource)}
-                                            </Badge>
-                                            {tags.slice(0, 3).map(tag => (
-                                                <Badge key={tag} variant="outline" className="text-xs">
-                                                    {tag}
+
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-medium truncate">{resource.name}</h3>
+                                                <span className="text-xs text-muted-foreground">#{resource.id}</span>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                <Badge
+                                                    variant={getStatusVariant(resource)}
+                                                    className="cursor-pointer gap-1"
+                                                    onClick={() => handleToggleStatus(resource)}
+                                                >
+                                                    {getStatusIcon(resource)}
+                                                    {getStatusText(resource)}
                                                 </Badge>
-                                            ))}
-                                            {tags.length > 3 && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    +{tags.length - 3} more
-                                                </span>
+                                                {/* Display labels */}
+                                                {resource.labels && resource.labels.length > 0 && (
+                                                    <LabelBadgeList
+                                                        labels={resource.labels as LabelData[]}
+                                                        maxDisplay={3}
+                                                        size="sm"
+                                                        showCategory={false}
+                                                    />
+                                                )}
+                                                {/* Legacy tags fallback */}
+                                                {tags.slice(0, 3).map(tag => (
+                                                    <Badge key={tag} variant="outline" className="text-xs">
+                                                        {tag}
+                                                    </Badge>
+                                                ))}
+                                                {tags.length > 3 && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        +{tags.length - 3} more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex shrink-0 gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleViewSchedule(resource)}
+                                            >
+                                                Schedule
+                                            </Button>
+                                            <BusinessHoursEditor
+                                                resourceId={resource.id}
+                                                resourceName={resource.name}
+                                                isAdmin={true}
+                                            />
+                                            {resource.available && resource.status !== 'in_use' && (
+                                                <Button size="sm" onClick={() => handleReserve(resource)}>
+                                                    Reserve
+                                                </Button>
                                             )}
                                         </div>
                                     </div>
-
-                                    {/* Actions */}
-                                    <div className="flex shrink-0 gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleViewSchedule(resource)}
-                                        >
-                                            Schedule
-                                        </Button>
-                                        <BusinessHoursEditor
-                                            resourceId={resource.id}
-                                            resourceName={resource.name}
-                                            isAdmin={true}
-                                        />
-                                        {resource.available && resource.status !== 'in_use' && (
-                                            <Button size="sm" onClick={() => handleReserve(resource)}>
-                                                Reserve
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
                                 );
                             })
                         )}
