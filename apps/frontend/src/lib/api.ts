@@ -349,3 +349,36 @@ export const userPreferencesApi = {
     reminder_hours?: number;
   }) => api.patch('/users/me/preferences', data),
 };
+
+// Labels API
+export const labelsApi = {
+  list: (params?: {
+    category?: string;
+    search?: string;
+    cursor?: string;
+    limit?: number;
+  }) => api.get('/labels', { params }),
+  getCategories: () => api.get('/labels/categories'),
+  get: (labelId: number) => api.get(`/labels/${labelId}`),
+  create: (data: {
+    category: string;
+    value: string;
+    color?: string;
+    description?: string;
+  }) => api.post('/labels', data),
+  update: (labelId: number, data: {
+    category?: string;
+    value?: string;
+    color?: string;
+    description?: string;
+  }) => api.put(`/labels/${labelId}`, data),
+  delete: (labelId: number) => api.delete(`/labels/${labelId}`),
+  merge: (data: {
+    source_label_ids: number[];
+    target_label_id: number;
+  }) => api.post('/labels/merge', data),
+  getResourceLabels: (resourceId: number) =>
+    api.get(`/labels/resources/${resourceId}`),
+  assignToResource: (resourceId: number, labelIds: number[]) =>
+    api.put(`/labels/resources/${resourceId}`, { label_ids: labelIds }),
+};
