@@ -67,6 +67,13 @@ npm run build
 npm run test
 cd "${ROOT_DIR}"
 
+# Check if Docker is available before running Docker-dependent tests
+if ! docker info >/dev/null 2>&1; then
+  echo "==> Docker daemon not available, skipping Docker smoke tests and E2E tests"
+  echo "    To run full tests, start Docker Desktop and re-run."
+  exit 0
+fi
+
 echo "==> Running Docker build and smoke tests"
 docker compose build backend frontend
 docker compose up -d backend frontend

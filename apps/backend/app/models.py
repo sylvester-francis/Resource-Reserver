@@ -266,6 +266,9 @@ class Resource(Base):
         "Resource", remote_side="Resource.id", back_populates="children"
     )
     children = relationship("Resource", back_populates="parent")
+    resource_labels = relationship(
+        "ResourceLabel", back_populates="resource", cascade="all, delete-orphan"
+    )
 
     @property
     def is_available_for_reservation(self) -> bool:
@@ -1251,3 +1254,96 @@ class WebhookDelivery(Base):
 
     # Relationships
     webhook = relationship("Webhook", back_populates="deliveries")
+
+
+# ============================================================================
+# Label Models
+# ============================================================================
+
+
+class Label(Base):
+    """Label for categorizing and organizing resources.
+
+    Labels provide a normalized tagging system for resources, allowing
+    administrators to create consistent categorization with color-coded
+    visual indicators for the UI.
+
+    Attributes:
+        id (int): Primary key identifier.
+        category (str): Label category for grouping (e.g., 'environment', 'team').
+        value (str): Label value within the category (e.g., 'production', 'qa').
+        color (str): Hex color code for UI display (e.g., '#6366f1').
+        description (str): Optional description of the label's purpose.
+        created_at (datetime): When the label was created.
+        updated_at (datetime): When the label was last modified.
+        resources (list[Resource]): Resources with this label assigned.
+    """
+
+    __tablename__ = "labels"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(100), nullable=False, index=True)
+    value = Column(String(200), nullable=False)
+    color = Column(String(7), default="#6366f1", nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    # Relationships
+    resource_labels = relationship(
+        "ResourceLabel", back_populates="label", cascade="all, delete-orphan"
+    )
+
+    # Unique constraint on category + value
+    from sqlalchemy import UniqueConstraint
+
+    __table_args__ = (
+        UniqueConstraint("category", "value", name="uq_label_category_value"),
+    )
+
+    @property
+    def full_name(self) -> str:
+        """Get the full label name as category:value format.
+
+        Returns:
+            str: The label in 'category:value' format.
+        """
+        return f"{self.category}:{self.value}"
+
+
+class ResourceLabel(Base):
+    """Association table for many-to-many relationship between resources and labels.
+
+    Links resources to labels, allowing each resource to have multiple labels
+    and each label to be applied to multiple resources.
+
+    Attributes:
+        id (int): Primary key identifier.
+        resource_id (int): Foreign key to the resource.
+        label_id (int): Foreign key to the label.
+        created_at (datetime): When the label was assigned to the resource.
+        resource (Resource): The associated resource.
+        label (Label): The associated label.
+    """
+
+    __tablename__ = "resource_labels"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(
+        Integer, ForeignKey("resources.id", ondelete="CASCADE"), nullable=False
+    )
+    label_id = Column(
+        Integer, ForeignKey("labels.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    # Relationships
+    resource = relationship("Resource", back_populates="resource_labels")
+    label = relationship("Label", back_populates="resource_labels")
+
+    # Unique constraint to prevent duplicate assignments
+    from sqlalchemy import UniqueConstraint
+
+    __table_args__ = (
+        UniqueConstraint("resource_id", "label_id", name="uq_resource_label"),
+    )

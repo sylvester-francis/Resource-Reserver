@@ -29,9 +29,9 @@ class TestSupportedLocales:
         """Each translation key should have all supported locales."""
         for key, translations in TRANSLATIONS.items():
             for locale in SUPPORTED_LOCALES:
-                assert (
-                    locale in translations
-                ), f"Translation key '{key}' missing locale '{locale}'"
+                assert locale in translations, (
+                    f"Translation key '{key}' missing locale '{locale}'"
+                )
 
 
 class TestGetTranslation:

@@ -1553,3 +1553,219 @@ class PopularTagResponse(BaseModel):
 
     tag: str
     count: int
+
+
+# ============================================================================
+# Label Schemas
+# ============================================================================
+
+
+class LabelCreate(BaseModel):
+    """Schema for creating a new label.
+
+    Validates label category and value constraints for creating normalized
+    labels in the system.
+
+    Attributes:
+        category: Label category for grouping (e.g., 'environment', 'team').
+            Must be 1-100 characters.
+        value: Label value within the category (e.g., 'production', 'qa').
+            Must be 1-200 characters.
+        color: Hex color code for UI display (e.g., '#6366f1').
+            Must be a valid 7-character hex color. Defaults to indigo.
+        description: Optional description of the label's purpose.
+    """
+
+    category: str = Field(..., min_length=1, max_length=100)
+    value: str = Field(..., min_length=1, max_length=200)
+    color: str = Field(default="#6366f1", pattern=r"^#[0-9A-Fa-f]{6}$")
+    description: str | None = None
+
+    @field_validator("category", "value")
+    @classmethod
+    def normalize_label_parts(cls, v: str) -> str:
+        """Normalize category and value by trimming whitespace.
+
+        Args:
+            v: The string to normalize.
+
+        Returns:
+            The trimmed string.
+
+        Raises:
+            ValueError: If the trimmed string is empty.
+        """
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("Value cannot be empty or whitespace only")
+        return stripped
+
+
+class LabelUpdate(BaseModel):
+    """Schema for updating an existing label.
+
+    All fields are optional; only provided fields will be updated.
+
+    Attributes:
+        category: New category for the label, or None to keep unchanged.
+        value: New value for the label, or None to keep unchanged.
+        color: New hex color code, or None to keep unchanged.
+        description: New description, or None to keep unchanged.
+    """
+
+    category: str | None = Field(None, min_length=1, max_length=100)
+    value: str | None = Field(None, min_length=1, max_length=200)
+    color: str | None = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
+    description: str | None = None
+
+    @field_validator("category", "value")
+    @classmethod
+    def normalize_label_parts(cls, v: str | None) -> str | None:
+        """Normalize category and value by trimming whitespace.
+
+        Args:
+            v: The string to normalize, or None.
+
+        Returns:
+            The trimmed string, or None.
+
+        Raises:
+            ValueError: If the trimmed string is empty.
+        """
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("Value cannot be empty or whitespace only")
+        return stripped
+
+
+class LabelResponse(BaseModel):
+    """Schema for label information in API responses.
+
+    Provides complete label details including timestamps and computed fields.
+
+    Attributes:
+        id: The unique identifier of the label.
+        category: Label category for grouping.
+        value: Label value within the category.
+        color: Hex color code for UI display.
+        description: Description of the label's purpose, or None.
+        full_name: Computed field in 'category:value' format.
+        created_at: When the label was created.
+        updated_at: When the label was last modified.
+        resource_count: Number of resources with this label assigned.
+    """
+
+    id: int
+    category: str
+    value: str
+    color: str
+    description: str | None = None
+    full_name: str | None = None
+    created_at: datetime
+    updated_at: datetime | None = None
+    resource_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_model(cls, label, resource_count: int = 0) -> "LabelResponse":
+        """Create a LabelResponse from a Label model instance.
+
+        Args:
+            label: The Label model instance.
+            resource_count: Number of resources with this label.
+
+        Returns:
+            A LabelResponse instance.
+        """
+        return cls(
+            id=label.id,
+            category=label.category,
+            value=label.value,
+            color=label.color,
+            description=label.description,
+            full_name=label.full_name,
+            created_at=label.created_at,
+            updated_at=label.updated_at,
+            resource_count=resource_count,
+        )
+
+
+class LabelMerge(BaseModel):
+    """Schema for merging multiple labels into one.
+
+    Allows administrators to consolidate duplicate or similar labels
+    by merging their resource assignments into a target label.
+
+    Attributes:
+        source_label_ids: List of label IDs to merge from.
+            These labels will be deleted after merging.
+        target_label_id: The label ID to merge into.
+            This label will receive all resource assignments.
+    """
+
+    source_label_ids: list[int] = Field(..., min_length=1)
+    target_label_id: int
+
+    @field_validator("source_label_ids")
+    @classmethod
+    def validate_source_labels(cls, v: list[int]) -> list[int]:
+        """Validate source label IDs.
+
+        Args:
+            v: List of source label IDs.
+
+        Returns:
+            The validated list.
+
+        Raises:
+            ValueError: If the list is empty or contains duplicates.
+        """
+        if not v:
+            raise ValueError("At least one source label is required")
+        if len(v) != len(set(v)):
+            raise ValueError("Duplicate source label IDs are not allowed")
+        return v
+
+
+class ResourceLabelsUpdate(BaseModel):
+    """Schema for updating labels assigned to a resource.
+
+    Allows administrators to set the complete list of labels for a resource,
+    replacing any existing label assignments.
+
+    Attributes:
+        label_ids: List of label IDs to assign to the resource.
+            Pass an empty list to remove all labels.
+    """
+
+    label_ids: list[int] = Field(default_factory=list)
+
+    @field_validator("label_ids")
+    @classmethod
+    def validate_label_ids(cls, v: list[int]) -> list[int]:
+        """Validate label IDs for uniqueness.
+
+        Args:
+            v: List of label IDs.
+
+        Returns:
+            The validated list with duplicates removed.
+        """
+        return list(set(v))
+
+
+class LabelCategoryResponse(BaseModel):
+    """Schema for label category information.
+
+    Provides category details for filtering and grouping in the UI.
+
+    Attributes:
+        category: The category name.
+        label_count: Number of labels in this category.
+    """
+
+    category: str
+    label_count: int
