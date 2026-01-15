@@ -11,7 +11,7 @@ test.describe('Making Reservations', () => {
   });
 
   test('should open reservation dialog', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find a reserve button or resource card
     const reserveButton = page.getByRole('button', { name: /reserve|book/i }).first();
@@ -25,7 +25,7 @@ test.describe('Making Reservations', () => {
   });
 
   test('should show reservation form fields', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Open reservation dialog
     const reserveButton = page.getByRole('button', { name: /reserve|book/i }).first();
@@ -47,7 +47,7 @@ test.describe('Making Reservations', () => {
   });
 
   test('should submit reservation successfully', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Open reservation dialog
     const reserveButton = page.getByRole('button', { name: /reserve|book/i }).first();
@@ -77,7 +77,7 @@ test.describe('Making Reservations', () => {
   });
 
   test('should show validation errors for invalid input', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Open reservation dialog
     const reserveButton = page.getByRole('button', { name: /reserve|book/i }).first();
@@ -115,7 +115,7 @@ test.describe('Viewing Reservations', () => {
   });
 
   test('should display user reservations', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Verify we're on the dashboard first
     await expect(page).toHaveURL(/\/dashboard/);
@@ -129,7 +129,7 @@ test.describe('Viewing Reservations', () => {
   });
 
   test('should show reservation details', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find a reservation card
     const reservationCard = page.locator('[data-testid="reservation-card"], .reservation-item').first();
@@ -152,7 +152,7 @@ test.describe('Cancelling Reservations', () => {
   });
 
   test('should show cancel button for active reservations', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find a reservation card
     const reservationCard = page.locator('[data-testid="reservation-card"], .reservation-item').first();
@@ -169,7 +169,7 @@ test.describe('Cancelling Reservations', () => {
   });
 
   test('should confirm before cancelling', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find cancel button
     const cancelButton = page.getByRole('button', { name: /cancel/i }).first();
@@ -186,7 +186,7 @@ test.describe('Cancelling Reservations', () => {
   });
 
   test('should cancel reservation successfully', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find cancel button
     const cancelButton = page.getByRole('button', { name: /cancel/i }).first();

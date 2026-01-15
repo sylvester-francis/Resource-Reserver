@@ -11,7 +11,7 @@ test.describe('Waitlist Workflow', () => {
   });
 
   test('should show join waitlist option for unavailable resources', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Look for waitlist button
     const waitlistButton = page.getByRole('button', { name: /waitlist|join.*queue|notify/i });
@@ -23,7 +23,7 @@ test.describe('Waitlist Workflow', () => {
   });
 
   test('should allow joining waitlist', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find join waitlist button
     const joinButton = page.getByRole('button', { name: /join.*waitlist|add.*waitlist/i }).first();
@@ -43,7 +43,7 @@ test.describe('Waitlist Workflow', () => {
   });
 
   test('should show waitlist position', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Verify we're on the dashboard first
     await expect(page).toHaveURL(/\/dashboard/);
@@ -57,7 +57,7 @@ test.describe('Waitlist Workflow', () => {
   });
 
   test('should allow leaving waitlist', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find leave waitlist button
     const leaveButton = page.getByRole('button', { name: /leave.*waitlist|remove.*queue|cancel.*wait/i }).first();
@@ -77,7 +77,7 @@ test.describe('Waitlist Workflow', () => {
   });
 
   test('should display waitlist entries in user dashboard', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Verify we're on the dashboard first
     await expect(page).toHaveURL(/\/dashboard/);
@@ -97,7 +97,7 @@ test.describe('Waitlist Notifications', () => {
   });
 
   test('should show notification preferences', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Verify we're on the dashboard first
     await expect(page).toHaveURL(/\/dashboard/);
@@ -108,7 +108,7 @@ test.describe('Waitlist Notifications', () => {
 
     if (await settingsLink.isVisible({ timeout: 2000 }).catch(() => false)) {
       await settingsLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(500); // Brief wait for content to load
 
       // Look for notification settings
       const notificationSettings = page.getByText(/notification|email|alert|preferences/i);

@@ -52,8 +52,32 @@ export async function login(page: Page, username = 'testuser', password = DEFAUL
 
   await submitButton.click();
 
-  // Wait for dashboard redirect
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
+  // Wait for either dashboard redirect OR error message
+  const dashboardPromise = page.waitForURL(/\/dashboard/, { timeout: 10000 });
+  const errorLocator = page.locator('[role="alert"], .text-destructive, .text-red-500').first();
+
+  try {
+    // Race between dashboard redirect and error appearing
+    await Promise.race([
+      dashboardPromise,
+      errorLocator.waitFor({ state: 'visible', timeout: 5000 }).then(() => {
+        throw new Error('LOGIN_ERROR');
+      }),
+    ]);
+  } catch (e) {
+    if (e instanceof Error && e.message === 'LOGIN_ERROR') {
+      // Get the error text
+      const errorText = await errorLocator.textContent().catch(() => 'Unknown error');
+      throw new Error(`Login failed for user '${username}': ${errorText}`);
+    }
+    // Check if we're still on login page
+    if (page.url().includes('/login')) {
+      // Check for any visible error text
+      const visibleError = await page.getByText(/invalid|incorrect|failed|error|wrong/i).first().textContent().catch(() => null);
+      throw new Error(`Login failed for user '${username}'. Still on login page. Error: ${visibleError || 'No error message visible'}`);
+    }
+    throw e;
+  }
 
   // Brief wait for dashboard to render
   await page.waitForTimeout(500);

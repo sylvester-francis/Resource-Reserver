@@ -60,17 +60,16 @@ test.describe('Authentication', () => {
     // First login
     await login(page);
 
-    // The avatar button is a ghost button with rounded-full containing an Avatar
-    // Click on the avatar button to open dropdown
-    const avatarButton = page.locator('button.rounded-full').filter({ has: page.locator('[class*="avatar"], .bg-primary') });
+    // Click the user menu button (avatar) to open dropdown
+    const userMenuButton = page.locator('[data-testid="user-menu"]');
 
-    await expect(avatarButton).toBeVisible({ timeout: 5000 });
-    await avatarButton.click();
+    await expect(userMenuButton).toBeVisible({ timeout: 5000 });
+    await userMenuButton.click();
 
     // Wait for dropdown menu to appear
     await page.waitForTimeout(300);
 
-    // Click "Sign Out" in dropdown - it's a DropdownMenuItem with exact text
+    // Click "Sign Out" in dropdown
     const signOutButton = page.getByRole('menuitem', { name: 'Sign Out' }).or(
       page.locator('[role="menuitem"]').filter({ hasText: 'Sign Out' })
     );
@@ -89,8 +88,9 @@ test.describe('Setup Flow', () => {
     // So we expect to see the "already set up" state or redirect to login
     await page.goto('/setup');
 
-    // Wait for the page to load and potentially redirect
-    await page.waitForLoadState('networkidle');
+    // Wait for DOM to load (don't wait for all network requests)
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000); // Brief wait for redirect
 
     // The setup page has these possible states:
     // 1. Setup form with heading "Secure your workspace with a first admin."

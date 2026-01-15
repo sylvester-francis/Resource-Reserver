@@ -39,13 +39,21 @@ async function ensureUser(apiBaseUrl: string, username: string, password: string
     return;
   }
 
-  if (response.status === 400) {
+  const detail = await response.text().catch(() => '');
+
+  // Check if user already exists (different possible messages)
+  if (response.status === 400 && (detail.includes('already') || detail.includes('exists') || detail.includes('registered'))) {
     console.log(`[E2E Setup] User ${username} already exists`);
     return;
   }
 
-  const detail = await response.text().catch(() => '');
-  console.warn(`[E2E Setup] Failed to create user ${username}: ${response.status} ${detail}`);
+  // Log the actual error for debugging
+  console.error(`[E2E Setup] Failed to create user ${username}: ${response.status} ${detail}`);
+
+  // For password validation errors, this is critical - throw to fail the setup
+  if (response.status === 422 || (response.status === 400 && detail.includes('password'))) {
+    throw new Error(`Password validation failed for user ${username}: ${detail}`);
+  }
 }
 
 async function ensureSeedUsers(apiBaseUrl: string): Promise<void> {
@@ -66,13 +74,33 @@ async function ensureSeedUsers(apiBaseUrl: string): Promise<void> {
         console.log('[E2E Setup] Initialized setup with admin user');
       } else {
         const detail = await initResponse.text().catch(() => '');
-        console.warn(`[E2E Setup] Setup init failed: ${initResponse.status} ${detail}`);
+        console.error(`[E2E Setup] Setup init failed: ${initResponse.status} ${detail}`);
+        throw new Error(`Setup initialization failed: ${detail}`);
       }
     }
   }
 
   await ensureUser(apiBaseUrl, DEFAULT_ADMIN.username, DEFAULT_ADMIN.password);
   await ensureUser(apiBaseUrl, DEFAULT_USER.username, DEFAULT_USER.password);
+
+  // Verify users can login
+  await verifyUserLogin(apiBaseUrl, DEFAULT_USER.username, DEFAULT_USER.password);
+  await verifyUserLogin(apiBaseUrl, DEFAULT_ADMIN.username, DEFAULT_ADMIN.password);
+}
+
+async function verifyUserLogin(apiBaseUrl: string, username: string, password: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ username, password }).toString(),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`[E2E Setup] Login verification failed for ${username}: ${response.status} ${detail}`);
+  }
+
+  console.log(`[E2E Setup] Verified login works for ${username}`);
 }
 
 async function waitForApi(apiBaseUrl: string): Promise<void> {

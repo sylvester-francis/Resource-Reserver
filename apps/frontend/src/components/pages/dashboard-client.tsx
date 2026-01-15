@@ -239,7 +239,7 @@ export default function DashboardClient() {
 
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                                <Button variant="ghost" className="relative h-9 w-9 rounded-full" data-testid="user-menu">
                                     <Avatar className="h-9 w-9">
                                         <AvatarFallback className="bg-primary text-primary-foreground">
                                             {user?.username?.charAt(0).toUpperCase() || 'U'}

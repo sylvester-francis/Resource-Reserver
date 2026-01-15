@@ -23,7 +23,7 @@ test.describe('Resource Browsing', () => {
     const resourceList = page.locator('[data-testid="resource-list"], .resource-card, .resource-item');
 
     // Wait for resources to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Check if resources are displayed (or empty state)
     const hasResources = await resourceList.count() > 0;
@@ -45,12 +45,12 @@ test.describe('Resource Browsing', () => {
       await page.waitForTimeout(500); // Wait for debounce
 
       // Results should update
-      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(500); // Brief wait for content to load
     }
   });
 
   test('should show resource details on click', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Find a resource card
     const resourceCard = page.locator('[data-testid="resource-card"], .resource-card, .resource-item').first();
@@ -69,7 +69,7 @@ test.describe('Resource Browsing', () => {
   });
 
   test('should display resource availability status', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Look for availability indicators
     const availabilityIndicator = page.getByText(/available|unavailable|busy|occupied/i);
@@ -91,7 +91,7 @@ test.describe('Resource Management (Admin)', () => {
   });
 
   test('should show add resource button for admins', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500); // Brief wait for content to load
 
     // Admin should see add resource button
     const addButton = page.getByRole('button', { name: /add.*resource|new.*resource|create/i });
