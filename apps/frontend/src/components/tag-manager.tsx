@@ -263,7 +263,7 @@ export function TagManager({ onTagsChanged }: TagManagerProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Tag</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete the tag &quot;{deletingTag}&quot;? 
+                            Are you sure you want to delete the tag &quot;{deletingTag}&quot;?
                             This will remove it from all resources that currently have this tag.
                             This action cannot be undone.
                         </AlertDialogDescription>

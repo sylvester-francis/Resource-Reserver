@@ -1,9 +1,9 @@
 /**
  * WebSocket Context
- * 
+ *
  * Provides real-time communication with the backend via WebSocket.
  * Supports both API proxy mode (empty API_HOST) and direct mode (full URL).
- * 
+ *
  * In API proxy mode, WebSocket connections are made relative to the current
  * page URL, allowing the Next.js proxy to forward /ws to the backend.
  */
@@ -41,14 +41,14 @@ function getAuthToken(): string | null {
 
 /**
  * Build the WebSocket URL based on API configuration.
- * 
+ *
  * API Proxy Mode (API_HOST empty): Uses window.location to connect via /ws
  * Direct Mode (API_HOST set): Connects directly to backend WebSocket endpoint
  */
 function buildWebSocketUrl(token: string) {
   let host: string;
   let protocol: string;
-  
+
   if (API_HOST) {
     // Direct mode: Connect to explicit backend URL
     const base = new URL(API_HOST);
@@ -62,7 +62,7 @@ function buildWebSocketUrl(token: string) {
     // Fallback for SSR (shouldn't happen for WebSocket)
     return '';
   }
-  
+
   return `${protocol}//${host}/ws?token=${encodeURIComponent(token)}`;
 }
 

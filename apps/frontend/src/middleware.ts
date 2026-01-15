@@ -1,10 +1,10 @@
 /**
  * Next.js Middleware
- * 
+ *
  * Handles server-side routing logic (runs on the Next.js server, not browser).
  * Uses INTERNAL_API_URL for direct container-to-container communication in Docker,
  * bypassing the browser proxy path entirely.
- * 
+ *
  * Configuration priority:
  * 1. INTERNAL_API_URL - Docker container networking (e.g., http://backend:8000)
  * 2. NEXT_PUBLIC_API_URL - Direct URL if set

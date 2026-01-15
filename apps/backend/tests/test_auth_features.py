@@ -1,7 +1,6 @@
 """Unit tests for MFA, RBAC, and OAuth2 functionality."""
 
 import tempfile
-from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine

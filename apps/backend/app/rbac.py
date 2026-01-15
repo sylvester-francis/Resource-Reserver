@@ -292,7 +292,12 @@ def assign_role(user_id: int, role_name: str, db: Session) -> bool:
         ...     print("Role assigned successfully")
     """
     from sqlalchemy import func
-    role = db.query(models.Role).filter(func.lower(models.Role.name) == role_name.lower()).first()
+
+    role = (
+        db.query(models.Role)
+        .filter(func.lower(models.Role.name) == role_name.lower())
+        .first()
+    )
     if not role:
         return False
 
@@ -329,7 +334,12 @@ def remove_role(user_id: int, role_name: str, db: Session) -> bool:
             not exist in the database.
     """
     from sqlalchemy import func
-    role = db.query(models.Role).filter(func.lower(models.Role.name) == role_name.lower()).first()
+
+    role = (
+        db.query(models.Role)
+        .filter(func.lower(models.Role.name) == role_name.lower())
+        .first()
+    )
     if not role:
         return False
 

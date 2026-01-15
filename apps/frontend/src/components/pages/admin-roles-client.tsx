@@ -30,23 +30,23 @@ type RoleFormState = {
 // Password strength calculation
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
     if (!password) return { score: 0, label: '', color: '' };
-    
+
     let score = 0;
-    
+
     // Length checks
     if (password.length >= 8) score += 1;
     if (password.length >= 12) score += 1;
     if (password.length >= 16) score += 1;
-    
+
     // Character type checks
     if (/[a-z]/.test(password)) score += 1;
     if (/[A-Z]/.test(password)) score += 1;
     if (/[0-9]/.test(password)) score += 1;
     if (/[^a-zA-Z0-9]/.test(password)) score += 1;
-    
+
     // Normalize to 0-4 scale
     const normalizedScore = Math.min(4, Math.floor(score / 1.75));
-    
+
     const levels = [
         { label: 'Very Weak', color: 'bg-red-500' },
         { label: 'Weak', color: 'bg-orange-500' },
@@ -54,7 +54,7 @@ function getPasswordStrength(password: string): { score: number; label: string; 
         { label: 'Strong', color: 'bg-lime-500' },
         { label: 'Very Strong', color: 'bg-green-500' },
     ];
-    
+
     return { score: normalizedScore, ...levels[normalizedScore] };
 }
 

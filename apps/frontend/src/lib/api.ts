@@ -1,13 +1,13 @@
 /**
  * API Client Module
- * 
+ *
  * Supports two modes of operation:
- * 
+ *
  * 1. API Proxy Mode (NEXT_PUBLIC_API_URL empty - recommended for Docker/enterprise):
  *    - Uses relative URLs (/api/v1/...)
  *    - Requests are proxied through Next.js rewrites to the backend
  *    - Works with corporate proxies and firewalls
- * 
+ *
  * 2. Direct Mode (NEXT_PUBLIC_API_URL set to full URL):
  *    - Uses absolute URLs (http://backend:8000/api/v1/...)
  *    - Browser connects directly to the backend
@@ -193,7 +193,7 @@ api.interceptors.response.use(
     if (error.response) {
       const data = error.response.data as Record<string, unknown>;
       let message = data?.detail || data?.message || data?.error || `Error (${error.response.status})`;
-      
+
       // Handle FastAPI validation errors (detail is an array) or nested objects
       if (typeof message === 'object') {
         if (Array.isArray(message)) {
@@ -204,7 +204,7 @@ api.interceptors.response.use(
           message = JSON.stringify(message);
         }
       }
-      
+
       return Promise.reject(new Error(String(message)));
     }
     return Promise.reject(new Error('Unable to connect to server'));

@@ -125,7 +125,11 @@ def assign_role_to_user(
     # Resolve user_id from username if needed
     user_id = request.user_id
     if not user_id and request.username:
-        user = db.query(models.User).filter(models.User.username == request.username).first()
+        user = (
+            db.query(models.User)
+            .filter(models.User.username == request.username)
+            .first()
+        )
         if not user:
             raise HTTPException(404, f"User '{request.username}' not found")
         user_id = user.id
@@ -148,7 +152,11 @@ def remove_role_from_user(
     # Resolve user_id from username if needed
     user_id = request.user_id
     if not user_id and request.username:
-        user = db.query(models.User).filter(models.User.username == request.username).first()
+        user = (
+            db.query(models.User)
+            .filter(models.User.username == request.username)
+            .first()
+        )
         if not user:
             raise HTTPException(404, f"User '{request.username}' not found")
         user_id = user.id
@@ -188,13 +196,18 @@ def admin_reset_user_password(
     The user will need to use this new password on their next login.
     """
     # Find the user by username
-    user = db.query(models.User).filter(models.User.username == request.username).first()
+    user = (
+        db.query(models.User).filter(models.User.username == request.username).first()
+    )
     if not user:
         raise HTTPException(404, f"User '{request.username}' not found")
 
     # Prevent admin from accidentally resetting their own password through this endpoint
     if user.id == current_user.id:
-        raise HTTPException(400, "Cannot reset your own password through admin endpoint. Use profile settings instead.")
+        raise HTTPException(
+            400,
+            "Cannot reset your own password through admin endpoint. Use profile settings instead.",
+        )
 
     # Hash and set the new password
     user.hashed_password = auth.hash_password(request.new_password)
@@ -205,7 +218,9 @@ def admin_reset_user_password(
 
     db.commit()
 
-    return {"message": f"Password for user '{request.username}' has been reset successfully"}
+    return {
+        "message": f"Password for user '{request.username}' has been reset successfully"
+    }
 
 
 @auth_router.get("/admin/users")

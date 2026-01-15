@@ -1,11 +1,11 @@
 /**
  * Next.js Configuration
- * 
+ *
  * API Proxy Mode:
  * When NEXT_PUBLIC_API_URL is empty (recommended for Docker/enterprise deployments),
  * all /api/* requests are proxied through Next.js rewrites to the backend.
  * This avoids CORS issues and works with corporate HTTP proxies.
- * 
+ *
  * The INTERNAL_API_URL environment variable specifies where the Next.js server
  * should forward requests (defaults to http://backend:8000 for Docker networking).
  */

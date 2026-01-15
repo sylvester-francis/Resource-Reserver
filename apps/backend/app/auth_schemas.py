@@ -76,8 +76,12 @@ class RoleAssignRequest(BaseModel):
 class AdminPasswordResetRequest(BaseModel):
     """Admin request to reset a user's password."""
 
-    username: str = Field(..., min_length=1, description="Username of the account to reset")
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    username: str = Field(
+        ..., min_length=1, description="Username of the account to reset"
+    )
+    new_password: str = Field(
+        ..., min_length=8, description="New password (min 8 characters)"
+    )
 
 
 # ============================================================================

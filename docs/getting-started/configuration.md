@@ -66,6 +66,7 @@ INTERNAL_API_URL=http://backend:8000
 ```
 
 This mode:
+
 - Uses relative URLs in the browser (`/api/v1/...`)
 - Proxies requests through the frontend to the backend
 - Avoids CORS and corporate proxy issues
@@ -80,6 +81,6 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 This mode:
+
 - Browser connects directly to the backend API
 - Requires backend to be accessible from the browser
-

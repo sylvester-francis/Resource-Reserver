@@ -73,7 +73,6 @@ from app.auth import (
     rotate_refresh_token,
     verify_refresh_token,
 )
-from app.rbac import is_admin
 from app.auth_routes import auth_router, mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.core.cache import cache_manager
@@ -81,6 +80,7 @@ from app.core.metrics import check_liveness, check_readiness, metrics
 from app.core.rate_limiter import RateLimitMiddleware
 from app.core.versioning import VersioningMiddleware, get_version_info
 from app.database import SessionLocal, engine, ensure_sqlite_schema, get_db
+from app.rbac import is_admin
 from app.routers.analytics import router as analytics_router
 from app.routers.approvals import router as approvals_router
 from app.routers.audit import router as audit_router
@@ -1377,7 +1377,7 @@ def rename_tag_globally(
             rename_data.old_name, rename_data.new_name
         )
         return {
-            "message": f"Tag renamed successfully",
+            "message": "Tag renamed successfully",
             "old_name": rename_data.old_name,
             "new_name": rename_data.new_name,
             "updated_resources": updated_count,
@@ -1425,7 +1425,7 @@ def delete_tag_globally(
     try:
         updated_count = resource_service.delete_tag_globally(tag_name)
         return {
-            "message": f"Tag deleted successfully",
+            "message": "Tag deleted successfully",
             "deleted_tag": tag_name,
             "updated_resources": updated_count,
         }

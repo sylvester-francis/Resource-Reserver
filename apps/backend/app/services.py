@@ -815,7 +815,9 @@ class ResourceService:
 
         # Update description if provided (can be set to empty string)
         if update_data.description is not None:
-            resource.description = update_data.description if update_data.description else None
+            resource.description = (
+                update_data.description if update_data.description else None
+            )
 
         # Update tags if provided
         if update_data.tags is not None:
@@ -1206,8 +1208,7 @@ class ResourceService:
         updated_count = 0
         for resource in resources_with_tag:
             new_tags = [
-                tag for tag in (resource.tags or [])
-                if tag.lower() != tag_name.lower()
+                tag for tag in (resource.tags or []) if tag.lower() != tag_name.lower()
             ]
             resource.tags = new_tags
             updated_count += 1

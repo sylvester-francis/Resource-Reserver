@@ -3,20 +3,24 @@
 ## Quick Start (Docker Compose)
 
 1. Copy the environment template:
+
    ```bash
    cp .env.docker .env
    ```
 
-2. Edit `.env` and set at minimum:
+1. Edit `.env` and set at minimum:
+
    - `SECRET_KEY` - Generate with `openssl rand -hex 32`
    - `FRONTEND_PORT` - External port for web access (default: 8081)
 
-3. Build and start:
+1. Build and start:
+
    ```bash
    docker compose up -d --build
    ```
 
-4. Access the application:
+1. Access the application:
+
    - Web UI: `http://your-server:8081`
    - API Docs: `http://your-server:8000/docs`
 
@@ -46,10 +50,10 @@ FRONTEND_PORT=8081
 When `NEXT_PUBLIC_API_URL` is empty:
 
 1. The frontend is built with relative API URLs (`/api/v1/...`)
-2. Next.js rewrites proxy all `/api/*` requests to the backend container
-3. Users only need to reach the frontend server
-4. No direct browser-to-backend connection required
-5. WebSocket connections are also proxied through `/ws`
+1. Next.js rewrites proxy all `/api/*` requests to the backend container
+1. Users only need to reach the frontend server
+1. No direct browser-to-backend connection required
+1. WebSocket connections are also proxied through `/ws`
 
 This eliminates issues with corporate proxies blocking API calls.
 
@@ -71,13 +75,14 @@ This eliminates issues with corporate proxies blocking API calls.
 
 ## Port Configuration
 
-| Service  | Variable         | Default | Purpose                    |
-|----------|------------------|---------|----------------------------|
-| Frontend | `FRONTEND_PORT`  | 8081    | User-facing web UI         |
-| Backend  | `BACKEND_PORT`   | 8000    | API (optional if proxied)  |
-| Redis    | `REDIS_PORT`     | 6379    | Cache (internal only)      |
+| Service  | Variable        | Default | Purpose                   |
+| -------- | --------------- | ------- | ------------------------- |
+| Frontend | `FRONTEND_PORT` | 8081    | User-facing web UI        |
+| Backend  | `BACKEND_PORT`  | 8000    | API (optional if proxied) |
+| Redis    | `REDIS_PORT`    | 6379    | Cache (internal only)     |
 
 To disable external access to backend/redis, set their ports to empty:
+
 ```env
 BACKEND_PORT=
 REDIS_PORT=
@@ -121,4 +126,3 @@ Data is persisted in Docker volumes:
 - `backend_logs` - Application logs
 - `redis_data` - Cache data
 - `postgres_data` - PostgreSQL data (if enabled)
-
