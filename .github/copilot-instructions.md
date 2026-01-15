@@ -24,3 +24,5 @@ processed_1 = process_data(data_set_1, 2)
 processed_2 = process_data(data_set_2, 3)
 ```
 This approach not only reduces code duplication but also makes it easier to update the logic in one place if needed.
+---
+Python file should not contain blank lines that contain only whitespace characters. Remove any trailing spaces on blank lines to maintain clean and consistent code formatting.

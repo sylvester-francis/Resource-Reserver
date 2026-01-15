@@ -131,7 +131,7 @@ def assign_role_to_user(
         user_id = user.id
     if not user_id:
         raise HTTPException(400, "Either user_id or username is required")
-    
+
     if rbac.assign_role(user_id, request.role_name, db):
         return {"message": f"Role '{request.role_name}' assigned successfully"}
     else:
@@ -154,7 +154,7 @@ def remove_role_from_user(
         user_id = user.id
     if not user_id:
         raise HTTPException(400, "Either user_id or username is required")
-    
+
     if rbac.remove_role(user_id, request.role_name, db):
         return {"message": f"Role '{request.role_name}' removed successfully"}
     else:
@@ -183,7 +183,7 @@ def admin_reset_user_password(
     db: Session = Depends(get_db),
 ):
     """Reset a user's password (admin only).
-    
+
     Allows administrators to set a new password for any user account.
     The user will need to use this new password on their next login.
     """
@@ -191,20 +191,20 @@ def admin_reset_user_password(
     user = db.query(models.User).filter(models.User.username == request.username).first()
     if not user:
         raise HTTPException(404, f"User '{request.username}' not found")
-    
+
     # Prevent admin from accidentally resetting their own password through this endpoint
     if user.id == current_user.id:
         raise HTTPException(400, "Cannot reset your own password through admin endpoint. Use profile settings instead.")
-    
+
     # Hash and set the new password
     user.hashed_password = auth.hash_password(request.new_password)
-    
+
     # Clear any failed login attempts
     user.failed_attempts = 0
     user.lockout_until = None
-    
+
     db.commit()
-    
+
     return {"message": f"Password for user '{request.username}' has been reset successfully"}
 
 
