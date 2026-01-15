@@ -89,7 +89,7 @@ async function ensureSeedUsers(apiBaseUrl: string): Promise<void> {
 }
 
 async function verifyUserLogin(apiBaseUrl: string, username: string, password: string): Promise<void> {
-  const response = await fetch(`${apiBaseUrl}/api/v1/login`, {
+  const response = await fetch(`${apiBaseUrl}/api/v1/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ username, password }).toString(),
