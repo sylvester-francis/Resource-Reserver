@@ -3,15 +3,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-
-// Helper to login before tests that require authentication
-async function login(page: import('@playwright/test').Page) {
-  await page.goto('/login');
-  await page.getByLabel(/username/i).fill('testuser');
-  await page.getByLabel(/password/i).fill('testpass123');
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
-}
+import { login } from './test-utils';
 
 test.describe('Waitlist Workflow', () => {
   test.beforeEach(async ({ page }) => {

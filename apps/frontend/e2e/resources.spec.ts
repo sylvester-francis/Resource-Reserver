@@ -3,15 +3,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-
-// Helper to login before tests that require authentication
-async function login(page: import('@playwright/test').Page) {
-  await page.goto('/login');
-  await page.getByLabel(/username/i).fill('testuser');
-  await page.getByLabel(/password/i).fill('testpass123');
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
-}
+import { login, loginAsAdmin } from './test-utils';
 
 test.describe('Resource Browsing', () => {
   test.beforeEach(async ({ page }) => {
@@ -92,13 +84,7 @@ test.describe('Resource Browsing', () => {
 test.describe('Resource Management (Admin)', () => {
   test.beforeEach(async ({ page }) => {
     // Login as admin user
-    await page.goto('/login');
-    await page.getByLabel(/username/i).fill('admin');
-    await page.getByLabel(/password/i).fill('adminpass123');
-    await page.getByRole('button', { name: /sign in/i }).click();
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
-  });
-
+    await loginAsAdmin(page);
   test('should show add resource button for admins', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 

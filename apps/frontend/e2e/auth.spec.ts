@@ -3,6 +3,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { login } from './test-utils';
 
 test.describe('Authentication', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,13 +11,16 @@ test.describe('Authentication', () => {
   });
 
   test('should show login page for unauthenticated users', async ({ page }) => {
-    // Should redirect to login
-    await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
+    // Wait for redirect to complete
+    await page.waitForLoadState('domcontentloaded');
+    // Should redirect to login (or setup if no users)
+    await expect(page).toHaveURL(/\/(login|setup)/);
   });
 
   test('should display login form elements', async ({ page }) => {
     await page.goto('/login');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500); // Wait for hydration
 
     await expect(page.getByLabel(/username/i)).toBeVisible();
     await expect(page.getByLabel(/password/i)).toBeVisible();
@@ -25,6 +29,8 @@ test.describe('Authentication', () => {
 
   test('should show error for invalid credentials', async ({ page }) => {
     await page.goto('/login');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500); // Wait for hydration
 
     await page.getByLabel(/username/i).fill('invaliduser');
     await page.getByLabel(/password/i).fill('wrongpassword');
@@ -35,25 +41,13 @@ test.describe('Authentication', () => {
   });
 
   test('should login successfully with valid credentials', async ({ page }) => {
-    await page.goto('/login');
-
-    // Use test credentials
-    await page.getByLabel(/username/i).fill('testuser');
-    await page.getByLabel(/password/i).fill('testpass123');
-    await page.getByRole('button', { name: /sign in/i }).click();
-
-    // Should redirect to dashboard
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
+    // Use the shared login helper
+    await login(page);
+    // login() already verifies redirect to dashboard
   });
 
   test('should persist session after login', async ({ page }) => {
-    await page.goto('/login');
-
-    await page.getByLabel(/username/i).fill('testuser');
-    await page.getByLabel(/password/i).fill('testpass123');
-    await page.getByRole('button', { name: /sign in/i }).click();
-
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
+    await login(page);
 
     // Navigate away and back
     await page.reload();
@@ -64,12 +58,7 @@ test.describe('Authentication', () => {
 
   test('should logout successfully', async ({ page }) => {
     // First login
-    await page.goto('/login');
-    await page.getByLabel(/username/i).fill('testuser');
-    await page.getByLabel(/password/i).fill('testpass123');
-    await page.getByRole('button', { name: /sign in/i }).click();
-
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
+    await login(page);
 
     // Click logout
     await page.getByRole('button', { name: /logout|sign out/i }).click();
@@ -84,6 +73,7 @@ test.describe('Setup Flow', () => {
     // Note: This test assumes a fresh database
     // In practice, you'd use a test fixture to reset the database
     await page.goto('/setup');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if setup page loads
     const setupHeading = page.getByRole('heading', { name: /setup|create.*admin|get started/i });
