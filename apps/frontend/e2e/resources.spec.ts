@@ -16,6 +16,9 @@ test.describe('Resource Browsing', () => {
   });
 
   test('should show list of available resources', async ({ page }) => {
+    // Verify we're on the dashboard first
+    await expect(page).toHaveURL(/\/dashboard/);
+
     // Look for resource cards or list items
     const resourceList = page.locator('[data-testid="resource-list"], .resource-card, .resource-item');
 

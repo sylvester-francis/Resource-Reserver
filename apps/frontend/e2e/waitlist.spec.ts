@@ -45,13 +45,15 @@ test.describe('Waitlist Workflow', () => {
   test('should show waitlist position', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 
-    // Look for waitlist position indicator
-    const positionIndicator = page.getByText(/position|#\d|queue/i);
+    // Verify we're on the dashboard first
+    await expect(page).toHaveURL(/\/dashboard/);
 
-    // This test is informational - position may or may not be visible
-    if (await positionIndicator.count() > 0) {
-      await expect(positionIndicator.first()).toBeVisible();
-    }
+    // Look for waitlist position indicator or dashboard content
+    const positionIndicator = page.getByText(/position|#\d|queue/i);
+    const dashboardContent = page.getByRole('heading', { name: /dashboard/i });
+
+    // Either position indicator (if on waitlist) or dashboard heading should be visible
+    await expect(positionIndicator.first().or(dashboardContent)).toBeVisible({ timeout: 5000 });
   });
 
   test('should allow leaving waitlist', async ({ page }) => {
@@ -77,20 +79,15 @@ test.describe('Waitlist Workflow', () => {
   test('should display waitlist entries in user dashboard', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 
-    // Look for waitlist section or any indication of waitlist feature
-    const waitlistSection = page.getByText(/waitlist|waiting|queue/i);
-    const dashboardHeading = page.getByRole('heading', { name: /dashboard/i });
-
     // Verify we're on the dashboard first
-    await expect(dashboardHeading).toBeVisible({ timeout: 5000 });
+    await expect(page).toHaveURL(/\/dashboard/);
 
-    // Waitlist section may or may not be visible depending on user's entries
-    // This test just verifies the page loads without errors
-    const hasWaitlistSection = await waitlistSection.count() > 0;
-    if (hasWaitlistSection) {
-      await expect(waitlistSection.first()).toBeVisible();
-    }
-    // Test passes as long as we're on the dashboard
+    // Look for waitlist section or dashboard content
+    const waitlistSection = page.getByText(/waitlist|waiting|queue/i);
+    const dashboardContent = page.getByRole('heading', { name: /dashboard/i });
+
+    // Either waitlist section (if entries exist) or dashboard heading should be visible
+    await expect(waitlistSection.first().or(dashboardContent)).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -102,16 +99,23 @@ test.describe('Waitlist Notifications', () => {
   test('should show notification preferences', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 
-    // Navigate to settings or preferences
-    const settingsLink = page.getByRole('link', { name: /settings|preferences/i });
+    // Verify we're on the dashboard first
+    await expect(page).toHaveURL(/\/dashboard/);
 
-    if (await settingsLink.isVisible()) {
+    // Navigate to settings or preferences if link exists
+    const settingsLink = page.getByRole('link', { name: /settings|preferences/i });
+    const dashboardContent = page.getByRole('heading', { name: /dashboard/i });
+
+    if (await settingsLink.isVisible({ timeout: 2000 }).catch(() => false)) {
       await settingsLink.click();
+      await page.waitForLoadState('networkidle');
 
       // Look for notification settings
-      const notificationSettings = page.getByText(/notification|email|alert/i);
-
-      await expect(notificationSettings).toBeVisible();
+      const notificationSettings = page.getByText(/notification|email|alert|preferences/i);
+      await expect(notificationSettings.first()).toBeVisible({ timeout: 5000 });
+    } else {
+      // If no settings link, just verify dashboard is visible
+      await expect(dashboardContent).toBeVisible({ timeout: 5000 });
     }
   });
 });
