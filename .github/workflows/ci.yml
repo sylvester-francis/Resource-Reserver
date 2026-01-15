@@ -129,7 +129,7 @@ jobs:
           docker compose up -d backend frontend
           sleep 15
           curl -f http://localhost:8000/health || exit 1
-          curl -f http://localhost:3000/login || exit 1
+          curl -f http://localhost:8081/login || exit 1
           docker compose down
 
   publish:
