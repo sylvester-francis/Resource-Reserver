@@ -129,9 +129,11 @@ describe('LabelBadgeList', () => {
         expect(onRemove).toHaveBeenCalledWith(mockLabels[0]);
     });
 
-    it('shows tooltip with hidden labels on overflow indicator', () => {
+    it('shows dropdown menu for hidden labels on overflow indicator', () => {
         render(<LabelBadgeList labels={mockLabels} maxDisplay={2} />);
         const overflow = screen.getByText('+2 more');
-        expect(overflow).toHaveAttribute('title', 'type:server, region:us-east');
+        // Overflow indicator is now a dropdown trigger button
+        expect(overflow).toBeInTheDocument();
+        expect(overflow.closest('button')).toBeInTheDocument();
     });
 });
