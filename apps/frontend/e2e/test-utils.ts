@@ -18,59 +18,45 @@ export async function login(page: Page, username = 'testuser', password = DEFAUL
 
   await page.goto('/login');
 
-  // Wait for the page to be fully loaded and stable
-  await page.waitForLoadState('networkidle');
+  // Wait for DOM content to load (don't wait for all network requests)
+  await page.waitForLoadState('domcontentloaded');
 
-  // Check if we're redirected to setup (no users exist)
+  // Check if we're redirected to setup (no users exist) - with short timeout
+  try {
+    await page.waitForURL(/\/(login|setup)/, { timeout: 5000 });
+  } catch {
+    // If timeout, check current URL
+  }
+
   const currentUrl = page.url();
   if (currentUrl.includes('/setup')) {
     throw new Error('No users exist - global setup may have failed. Check password requirements.');
   }
 
-  // Wait for the login form to be stable (React hydration complete)
+  // Wait for the login form elements to be visible
   const usernameInput = page.getByLabel(/username/i);
   const passwordInput = page.getByLabel(/password/i);
   const submitButton = page.getByRole('button', { name: /sign in/i });
 
-  // Wait for all form elements to be visible and stable
-  await expect(usernameInput).toBeVisible({ timeout: 15000 });
-  await expect(passwordInput).toBeVisible({ timeout: 15000 });
-  await expect(submitButton).toBeVisible({ timeout: 15000 });
+  // Wait for form elements with reasonable timeout
+  await expect(usernameInput).toBeVisible({ timeout: 10000 });
+  await expect(passwordInput).toBeVisible({ timeout: 5000 });
+  await expect(submitButton).toBeVisible({ timeout: 5000 });
 
   // Small delay to ensure React hydration is complete
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(300);
 
-  // Fill the form with explicit clearing first
-  await usernameInput.clear();
+  // Fill the form
   await usernameInput.fill(username);
-  await passwordInput.clear();
   await passwordInput.fill(password);
-
-  // Wait a moment for form state to settle
-  await page.waitForTimeout(200);
 
   await submitButton.click();
 
-  // Wait for either dashboard redirect or error message
-  const dashboardUrl = page.waitForURL(/\/dashboard/, { timeout: 15000 });
-  const errorMessage = page.getByText(/invalid|incorrect|failed|error/i).first();
+  // Wait for dashboard redirect
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
 
-  // Race between successful redirect and error message
-  const result = await Promise.race([
-    dashboardUrl.then(() => 'success'),
-    errorMessage.waitFor({ state: 'visible', timeout: 5000 }).then(() => 'error').catch(() => null),
-  ]);
-
-  if (result === 'error') {
-    const errorText = await errorMessage.textContent();
-    throw new Error(`Login failed with error: ${errorText}`);
-  }
-
-  // Verify we're on dashboard
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 5000 });
-
-  // Wait for dashboard to be fully loaded
-  await page.waitForLoadState('networkidle');
+  // Brief wait for dashboard to render
+  await page.waitForTimeout(500);
 }
 
 /**

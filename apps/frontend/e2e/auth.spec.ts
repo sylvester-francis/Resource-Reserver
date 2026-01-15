@@ -60,22 +60,22 @@ test.describe('Authentication', () => {
     // First login
     await login(page);
 
-    // Open user dropdown menu (click on avatar/user button)
-    const userMenuButton = page.locator('[data-testid="user-menu"]').or(
-      page.getByRole('button').filter({ has: page.locator('svg.lucide-user, svg.lucide-circle-user') })
-    ).or(
-      page.locator('button:has(.avatar, [class*="avatar"])')
+    // The avatar button is a ghost button with rounded-full containing an Avatar
+    // Click on the avatar button to open dropdown
+    const avatarButton = page.locator('button.rounded-full').filter({ has: page.locator('[class*="avatar"], .bg-primary') });
+
+    await expect(avatarButton).toBeVisible({ timeout: 5000 });
+    await avatarButton.click();
+
+    // Wait for dropdown menu to appear
+    await page.waitForTimeout(300);
+
+    // Click "Sign Out" in dropdown - it's a DropdownMenuItem with exact text
+    const signOutButton = page.getByRole('menuitem', { name: 'Sign Out' }).or(
+      page.locator('[role="menuitem"]').filter({ hasText: 'Sign Out' })
     );
 
-    // Try to find and click the user menu
-    if (await userMenuButton.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-      await userMenuButton.first().click();
-    }
-
-    // Click logout/sign out in dropdown
-    const signOutButton = page.getByRole('menuitem', { name: /sign out|logout/i }).or(
-      page.getByText(/sign out|logout/i)
-    );
+    await expect(signOutButton).toBeVisible({ timeout: 5000 });
     await signOutButton.click();
 
     // Should redirect to login
@@ -88,30 +88,29 @@ test.describe('Setup Flow', () => {
     // Note: This test assumes users already exist (created in global setup)
     // So we expect to see the "already set up" state or redirect to login
     await page.goto('/setup');
+
+    // Wait for the page to load and potentially redirect
     await page.waitForLoadState('networkidle');
 
     // The setup page has these possible states:
     // 1. Setup form with heading "Secure your workspace with a first admin."
     // 2. "Setup already complete. Redirecting..." then redirects to /login
-    // 3. Already redirected to /login with "Welcome back" heading
+    // 3. Already redirected to /login with "Welcome back" CardTitle (h3 by default)
 
-    // Wait for either the setup page content OR redirect to login
-    const setupHeading = page.getByRole('heading', { name: /secure your workspace|initial setup/i });
-    const alreadySetupText = page.getByText(/setup already complete/i);
-    const loginHeading = page.getByRole('heading', { name: /welcome back|sign in/i });
+    // Wait for URL to stabilize (either /setup or /login after redirect)
+    await expect(page).toHaveURL(/\/(login|setup)/, { timeout: 10000 });
 
-    // First check if we get any expected content
-    try {
-      await expect(
-        setupHeading.or(alreadySetupText).or(loginHeading)
-      ).toBeVisible({ timeout: 5000 });
-    } catch {
-      // If not visible yet, we might be redirecting - wait for login page
-      await expect(page).toHaveURL(/\/(login|setup)/, { timeout: 10000 });
-      // After redirect, check for login page content
-      if (page.url().includes('/login')) {
-        await expect(loginHeading).toBeVisible({ timeout: 5000 });
-      }
+    // Check for appropriate content based on URL
+    if (page.url().includes('/login')) {
+      // Login page - look for the "Welcome back" text (might be h3 or other element)
+      const welcomeText = page.getByText('Welcome back').or(
+        page.locator('h1, h2, h3').filter({ hasText: /welcome back/i })
+      );
+      await expect(welcomeText).toBeVisible({ timeout: 5000 });
+    } else {
+      // Setup page - look for setup-related content
+      const setupContent = page.getByText(/setup already complete|secure your workspace/i);
+      await expect(setupContent).toBeVisible({ timeout: 5000 });
     }
   });
 });
