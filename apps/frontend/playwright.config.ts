@@ -11,10 +11,14 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   globalSetup: './e2e/global-setup.ts',
-  fullyParallel: true,
+  fullyParallel: false, // Run tests serially to avoid login conflicts
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1, // Single worker to prevent concurrent login issues
+  timeout: 30000, // 30 second timeout per test
+  expect: {
+    timeout: 10000, // 10 second timeout for expects
+  },
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['list'],
@@ -24,6 +28,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    actionTimeout: 15000, // 15 second timeout for actions
+    navigationTimeout: 30000, // 30 second timeout for navigation
   },
   projects: [
     {

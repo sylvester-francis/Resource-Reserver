@@ -77,13 +77,20 @@ test.describe('Waitlist Workflow', () => {
   test('should display waitlist entries in user dashboard', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 
-    // Look for waitlist section
-    const waitlistSection = page.getByText(/waitlist|waiting/i);
+    // Look for waitlist section or any indication of waitlist feature
+    const waitlistSection = page.getByText(/waitlist|waiting|queue/i);
+    const dashboardHeading = page.getByRole('heading', { name: /dashboard/i });
 
-    // If user has waitlist entries, they should be displayed
-    if (await waitlistSection.count() > 0) {
+    // Verify we're on the dashboard first
+    await expect(dashboardHeading).toBeVisible({ timeout: 5000 });
+
+    // Waitlist section may or may not be visible depending on user's entries
+    // This test just verifies the page loads without errors
+    const hasWaitlistSection = await waitlistSection.count() > 0;
+    if (hasWaitlistSection) {
       await expect(waitlistSection.first()).toBeVisible();
     }
+    // Test passes as long as we're on the dashboard
   });
 });
 
