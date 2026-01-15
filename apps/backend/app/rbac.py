@@ -279,7 +279,7 @@ def assign_role(user_id: int, role_name: str, db: Session) -> bool:
     Args:
         user_id: The unique identifier of the user to assign the role to.
         role_name: The name of the role to assign (e.g., 'admin', 'user',
-            'guest').
+            'guest'). Case-insensitive.
         db: The SQLAlchemy database session for database operations.
 
     Returns:
@@ -291,7 +291,8 @@ def assign_role(user_id: int, role_name: str, db: Session) -> bool:
         >>> if success:
         ...     print("Role assigned successfully")
     """
-    role = db.query(models.Role).filter(models.Role.name == role_name).first()
+    from sqlalchemy import func
+    role = db.query(models.Role).filter(func.lower(models.Role.name) == role_name.lower()).first()
     if not role:
         return False
 
@@ -319,7 +320,7 @@ def remove_role(user_id: int, role_name: str, db: Session) -> bool:
 
     Args:
         user_id: The unique identifier of the user to remove the role from.
-        role_name: The name of the role to remove.
+        role_name: The name of the role to remove. Case-insensitive.
         db: The SQLAlchemy database session for database operations.
 
     Returns:
@@ -327,7 +328,8 @@ def remove_role(user_id: int, role_name: str, db: Session) -> bool:
             or user did not have the role), False if the specified role does
             not exist in the database.
     """
-    role = db.query(models.Role).filter(models.Role.name == role_name).first()
+    from sqlalchemy import func
+    role = db.query(models.Role).filter(func.lower(models.Role.name) == role_name.lower()).first()
     if not role:
         return False
 

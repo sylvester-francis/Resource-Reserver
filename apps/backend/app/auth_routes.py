@@ -122,7 +122,17 @@ def assign_role_to_user(
     db: Session = Depends(get_db),
 ):
     """Assign a role to a user (admin only)."""
-    if rbac.assign_role(request.user_id, request.role_name, db):
+    # Resolve user_id from username if needed
+    user_id = request.user_id
+    if not user_id and request.username:
+        user = db.query(models.User).filter(models.User.username == request.username).first()
+        if not user:
+            raise HTTPException(404, f"User '{request.username}' not found")
+        user_id = user.id
+    if not user_id:
+        raise HTTPException(400, "Either user_id or username is required")
+    
+    if rbac.assign_role(user_id, request.role_name, db):
         return {"message": f"Role '{request.role_name}' assigned successfully"}
     else:
         raise HTTPException(404, "Role not found")
@@ -135,7 +145,17 @@ def remove_role_from_user(
     db: Session = Depends(get_db),
 ):
     """Remove a role from a user (admin only)."""
-    if rbac.remove_role(request.user_id, request.role_name, db):
+    # Resolve user_id from username if needed
+    user_id = request.user_id
+    if not user_id and request.username:
+        user = db.query(models.User).filter(models.User.username == request.username).first()
+        if not user:
+            raise HTTPException(404, f"User '{request.username}' not found")
+        user_id = user.id
+    if not user_id:
+        raise HTTPException(400, "Either user_id or username is required")
+    
+    if rbac.remove_role(user_id, request.role_name, db):
         return {"message": f"Role '{request.role_name}' removed successfully"}
     else:
         raise HTTPException(404, "Role not found")
@@ -149,6 +169,65 @@ def get_my_roles(
     """Get current user's roles."""
     roles = rbac.get_user_roles(current_user.id, db)
     return roles
+
+
+# ============================================================================
+# Admin User Management Endpoints
+# ============================================================================
+
+
+@auth_router.post("/admin/reset-password")
+def admin_reset_user_password(
+    request: auth_schemas.AdminPasswordResetRequest,
+    current_user: models.User = Depends(rbac.require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    """Reset a user's password (admin only).
+    
+    Allows administrators to set a new password for any user account.
+    The user will need to use this new password on their next login.
+    """
+    # Find the user by username
+    user = db.query(models.User).filter(models.User.username == request.username).first()
+    if not user:
+        raise HTTPException(404, f"User '{request.username}' not found")
+    
+    # Prevent admin from accidentally resetting their own password through this endpoint
+    if user.id == current_user.id:
+        raise HTTPException(400, "Cannot reset your own password through admin endpoint. Use profile settings instead.")
+    
+    # Hash and set the new password
+    user.hashed_password = auth.hash_password(request.new_password)
+    
+    # Clear any failed login attempts
+    user.failed_attempts = 0
+    user.lockout_until = None
+    
+    db.commit()
+    
+    return {"message": f"Password for user '{request.username}' has been reset successfully"}
+
+
+@auth_router.get("/admin/users")
+def admin_list_users(
+    current_user: models.User = Depends(rbac.require_role("admin")),
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 50,
+):
+    """List all users (admin only)."""
+    users = db.query(models.User).offset(skip).limit(limit).all()
+    return [
+        {
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "is_active": u.is_active,
+            "mfa_enabled": u.mfa_enabled,
+            "created_at": u.created_at,
+        }
+        for u in users
+    ]
 
 
 # ============================================================================

@@ -101,12 +101,13 @@ class SearchService:
         all_resources = db_query.all()
 
         # Filter by tags (needs Python filtering for JSON)
+        # AND logic: resource must have ALL selected tags
         if tags:
             tag_set = {tag.lower() for tag in tags}
             all_resources = [
                 r
                 for r in all_resources
-                if any(t.lower() in tag_set for t in (r.tags or []))
+                if tag_set.issubset({t.lower() for t in (r.tags or [])})
             ]
 
         # Filter by time availability

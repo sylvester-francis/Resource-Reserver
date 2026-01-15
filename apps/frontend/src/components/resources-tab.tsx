@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Search,
     Plus,
@@ -16,6 +16,8 @@ import {
     Wrench,
     ArrowUpWideNarrow,
     ArrowDownWideNarrow,
+    Tag,
+    X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,11 +30,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/pagination';
 import { AvailabilityDialog } from '@/components/availability-dialog';
 import { BusinessHoursEditor } from '@/components/BusinessHoursEditor';
 import { CreateResourceDialog } from '@/components/create-resource-dialog';
+import { EditResourceDialog } from '@/components/edit-resource-dialog';
 import { ReservationDialog } from '@/components/reservation-dialog';
+import { TagManager } from '@/components/tag-manager';
 import { UploadCsvDialog } from '@/components/upload-csv-dialog';
 import { LabelBadgeList, type LabelData } from '@/components/LabelBadge';
 import {
@@ -45,11 +54,12 @@ import {
 
 interface ResourcesTabProps {
     onRefresh: () => void;
+    isAdmin?: boolean;
 }
 
 type FilterType = 'all' | 'available' | 'in_use' | 'unavailable';
 
-export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
+export function ResourcesTab({ onRefresh, isAdmin = false }: ResourcesTabProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentFilter, setCurrentFilter] = useState<FilterType>('all');
     const [sortBy, setSortBy] = useState('name');
@@ -59,6 +69,25 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
     const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
     const [availabilityDialogOpen, setAvailabilityDialogOpen] = useState(false);
     const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+    const [availableTags, setAvailableTags] = useState<string[]>([]);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+    // Fetch available tags
+    const fetchTags = useCallback(async () => {
+        try {
+            const response = await api.get('/resources/tags');
+            setAvailableTags(response.data ?? []);
+            // Clear any selected tags that no longer exist
+            setSelectedTags(prev => prev.filter(tag => response.data?.includes(tag)));
+        } catch {
+            // Silently fail - tags filter just won't be populated
+        }
+    }, []);
+
+    // Fetch tags on mount
+    useEffect(() => {
+        fetchTags();
+    }, [fetchTags]);
 
     const pageSize = 10;
     const paginationParams = useMemo(
@@ -67,8 +96,9 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
             status: currentFilter,
             sort_by: sortBy,
             sort_order: sortOrder,
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
         }),
-        [searchQuery, currentFilter, sortBy, sortOrder]
+        [searchQuery, currentFilter, sortBy, sortOrder, selectedTags]
     );
 
     const fetchResources = useCallback(
@@ -79,6 +109,7 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
             status,
             sort_by,
             sort_order,
+            tags,
         }: {
             cursor?: string | null;
             limit: number;
@@ -86,6 +117,7 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
             status?: string;
             sort_by?: string;
             sort_order?: string;
+            tags?: string[];
         }) => {
             const response = await api.get('/resources/search', {
                 params: {
@@ -95,6 +127,7 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                     status,
                     sort_by,
                     sort_order,
+                    tags,
                 },
             });
             return response.data;
@@ -161,6 +194,13 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                     <CardTitle>Resources</CardTitle>
                     <div className="flex gap-2">
+                        {isAdmin && (
+                            <TagManager onTagsChanged={() => {
+                                fetchTags();
+                                refresh();
+                                onRefresh();
+                            }} />
+                        )}
                         <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
                             <Upload className="mr-2 h-4 w-4" />
                             Upload CSV
@@ -236,6 +276,46 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                         ))}
                     </div>
 
+                    {/* Tag Filter */}
+                    {availableTags.length > 0 && (
+                        <div className="mb-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Tag className="h-3 w-3" />
+                                    Filter by tags:
+                                </span>
+                                {availableTags.map(tag => (
+                                    <Button
+                                        key={tag}
+                                        variant={selectedTags.includes(tag) ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedTags(prev =>
+                                                prev.includes(tag)
+                                                    ? prev.filter(t => t !== tag)
+                                                    : [...prev, tag]
+                                            );
+                                        }}
+                                        className="h-7 text-xs"
+                                    >
+                                        {tag}
+                                    </Button>
+                                ))}
+                                {selectedTags.length > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSelectedTags([])}
+                                        className="h-7 text-xs text-muted-foreground"
+                                    >
+                                        <X className="h-3 w-3 mr-1" />
+                                        Clear tags
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Resource List */}
                     <div className="space-y-2">
                         {loading && resources.length === 0 ? (
@@ -257,6 +337,7 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                                     onClick={() => {
                                         setSearchQuery('');
                                         setCurrentFilter('all');
+                                        setSelectedTags([]);
                                     }}
                                 >
                                     Clear Filters
@@ -281,6 +362,11 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                                                 <h3 className="font-medium truncate">{resource.name}</h3>
                                                 <span className="text-xs text-muted-foreground">#{resource.id}</span>
                                             </div>
+                                            {resource.description && (
+                                                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                                                    {resource.description}
+                                                </p>
+                                            )}
                                             <div className="flex flex-wrap items-center gap-2 mt-1">
                                                 <Badge
                                                     variant={getStatusVariant(resource)}
@@ -306,9 +392,28 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                                                     </Badge>
                                                 ))}
                                                 {tags.length > 3 && (
-                                                    <span className="text-xs text-muted-foreground">
-                                                        +{tags.length - 3} more
-                                                    </span>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors cursor-pointer hover:bg-accent border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                                                            >
+                                                                +{tags.length - 3} more
+                                                            </button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent className="max-w-md p-3" align="start">
+                                                            <div className="space-y-2">
+                                                                <h4 className="font-medium text-sm mb-2">All Tags</h4>
+                                                                <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto">
+                                                                    {tags.slice(3).map(tag => (
+                                                                        <Badge key={tag} variant="outline" className="text-xs">
+                                                                            {tag}
+                                                                        </Badge>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 )}
                                             </div>
                                         </div>
@@ -322,12 +427,20 @@ export function ResourcesTab({ onRefresh }: ResourcesTabProps) {
                                             >
                                                 Schedule
                                             </Button>
+                                            <EditResourceDialog
+                                                resource={resource}
+                                                onSuccess={() => {
+                                                    refresh();
+                                                    onRefresh();
+                                                }}
+                                                disabled={!isAdmin}
+                                            />
                                             <BusinessHoursEditor
                                                 resourceId={resource.id}
                                                 resourceName={resource.name}
                                                 isAdmin={true}
                                             />
-                                            {resource.available && resource.status !== 'in_use' && (
+                                            {resource.available && (
                                                 <Button size="sm" onClick={() => handleReserve(resource)}>
                                                     Reserve
                                                 </Button>

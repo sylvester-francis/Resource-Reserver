@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Users, FileText, UserPlus, UserMinus } from 'lucide-react';
+import { Shield, Users, FileText, UserPlus, UserMinus, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 import api from '@/lib/api';
@@ -27,6 +27,37 @@ type RoleFormState = {
     description: string;
 };
 
+// Password strength calculation
+function getPasswordStrength(password: string): { score: number; label: string; color: string } {
+    if (!password) return { score: 0, label: '', color: '' };
+    
+    let score = 0;
+    
+    // Length checks
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+    if (password.length >= 16) score += 1;
+    
+    // Character type checks
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+    
+    // Normalize to 0-4 scale
+    const normalizedScore = Math.min(4, Math.floor(score / 1.75));
+    
+    const levels = [
+        { label: 'Very Weak', color: 'bg-red-500' },
+        { label: 'Weak', color: 'bg-orange-500' },
+        { label: 'Fair', color: 'bg-yellow-500' },
+        { label: 'Strong', color: 'bg-lime-500' },
+        { label: 'Very Strong', color: 'bg-green-500' },
+    ];
+    
+    return { score: normalizedScore, ...levels[normalizedScore] };
+}
+
 export default function AdminRolesClient() {
     const router = useRouter();
     const { user, loading: authLoading, isAuthenticated } = useAuth();
@@ -42,6 +73,7 @@ export default function AdminRolesClient() {
     });
     const [assignRole, setAssignRole] = useState({ userId: '', roleName: '' });
     const [removeRole, setRemoveRole] = useState({ userId: '', roleName: '' });
+    const [resetPassword, setResetPassword] = useState({ username: '', newPassword: '' });
     const [actionLoading, setActionLoading] = useState(false);
 
     const fetchMyRoles = useCallback(async () => {
@@ -50,26 +82,33 @@ export default function AdminRolesClient() {
             const result = Array.isArray(response.data) ? response.data : [];
             setMyRoles(result);
             setIsAdmin(result.some((role) => role.name === 'admin'));
+            setError(null); // Clear any previous errors on success
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load roles';
-            setError(message);
+            // Don't show connection errors during initial page load - they're usually transient
+            if (!message.toLowerCase().includes('unable to connect')) {
+                setError(message);
+            }
             setIsAdmin(false);
         }
     }, []);
 
     const fetchRoles = useCallback(async () => {
         setLoading(true);
-        setError(null);
         try {
             const response = await api.get('/roles/');
             setRoles(Array.isArray(response.data) ? response.data : []);
+            setError(null); // Clear any previous errors on success
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load roles';
-            setError(
-                message.toLowerCase().includes('insufficient permissions')
-                    ? 'Admin access required to manage roles.'
-                    : message
-            );
+            // Don't show connection errors during initial page load - they're usually transient
+            if (message.toLowerCase().includes('unable to connect')) {
+                // Silently ignore connection errors on initial load
+            } else if (message.toLowerCase().includes('insufficient permissions')) {
+                setError('Admin access required to manage roles.');
+            } else {
+                setError(message);
+            }
         } finally {
             setLoading(false);
         }
@@ -126,14 +165,14 @@ export default function AdminRolesClient() {
     const handleAssignRole = async (event: React.FormEvent) => {
         event.preventDefault();
         if (!assignRole.userId.trim() || !assignRole.roleName.trim()) {
-            setError('User ID and role name are required.');
+            setError('Username and role name are required.');
             return;
         }
         setActionLoading(true);
         setError(null);
         try {
             await api.post('/roles/assign', {
-                user_id: Number(assignRole.userId),
+                username: assignRole.userId.trim(),
                 role_name: assignRole.roleName.trim(),
             });
             toast.success('Role assigned successfully');
@@ -149,7 +188,7 @@ export default function AdminRolesClient() {
     const handleRemoveRole = async (event: React.FormEvent) => {
         event.preventDefault();
         if (!removeRole.userId.trim() || !removeRole.roleName.trim()) {
-            setError('User ID and role name are required.');
+            setError('Username and role name are required.');
             return;
         }
         setActionLoading(true);
@@ -157,7 +196,7 @@ export default function AdminRolesClient() {
         try {
             await api.delete('/roles/assign', {
                 data: {
-                    user_id: Number(removeRole.userId),
+                    username: removeRole.userId.trim(),
                     role_name: removeRole.roleName.trim(),
                 },
             });
@@ -165,6 +204,33 @@ export default function AdminRolesClient() {
             setRemoveRole({ userId: '', roleName: '' });
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to remove role';
+            setError(message);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleResetPassword = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!resetPassword.username.trim() || !resetPassword.newPassword.trim()) {
+            setError('Username and new password are required.');
+            return;
+        }
+        if (resetPassword.newPassword.length < 8) {
+            setError('Password must be at least 8 characters.');
+            return;
+        }
+        setActionLoading(true);
+        setError(null);
+        try {
+            await api.post('/auth/admin/reset-password', {
+                username: resetPassword.username.trim(),
+                new_password: resetPassword.newPassword,
+            });
+            toast.success(`Password reset successfully for ${resetPassword.username}`);
+            setResetPassword({ username: '', newPassword: '' });
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to reset password';
             setError(message);
         } finally {
             setActionLoading(false);
@@ -399,14 +465,14 @@ export default function AdminRolesClient() {
                                     Assignment
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="assign-user">User ID</Label>
+                                    <Label htmlFor="assign-user">Username</Label>
                                     <Input
                                         id="assign-user"
                                         value={assignRole.userId}
                                         onChange={(event) =>
                                             setAssignRole((prev) => ({ ...prev, userId: event.target.value }))
                                         }
-                                        placeholder="e.g., 12"
+                                        placeholder="e.g., dcaugher"
                                         disabled={!isAdmin}
                                     />
                                 </div>
@@ -445,14 +511,14 @@ export default function AdminRolesClient() {
                                     Revocation
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="remove-user">User ID</Label>
+                                    <Label htmlFor="remove-user">Username</Label>
                                     <Input
                                         id="remove-user"
                                         value={removeRole.userId}
                                         onChange={(event) =>
                                             setRemoveRole((prev) => ({ ...prev, userId: event.target.value }))
                                         }
-                                        placeholder="e.g., 12"
+                                        placeholder="e.g., dcaugher"
                                         disabled={!isAdmin}
                                     />
                                 </div>
@@ -470,6 +536,75 @@ export default function AdminRolesClient() {
                                 </div>
                                 <Button type="submit" variant="outline" disabled={actionLoading || !isAdmin}>
                                     Remove role
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+
+                    {/* Password Reset Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Reset Password</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Reset a user&apos;s password
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleResetPassword} className="space-y-4">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                    <KeyRound className="h-4 w-4" />
+                                    Password Reset
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="reset-username">Username</Label>
+                                    <Input
+                                        id="reset-username"
+                                        value={resetPassword.username}
+                                        onChange={(event) =>
+                                            setResetPassword((prev) => ({ ...prev, username: event.target.value }))
+                                        }
+                                        placeholder="e.g., johndoe"
+                                        disabled={!isAdmin}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="reset-password">New Password</Label>
+                                    <Input
+                                        id="reset-password"
+                                        type="password"
+                                        value={resetPassword.newPassword}
+                                        onChange={(event) =>
+                                            setResetPassword((prev) => ({ ...prev, newPassword: event.target.value }))
+                                        }
+                                        placeholder="Minimum 8 characters"
+                                        disabled={!isAdmin}
+                                    />
+                                    {/* Password Strength Meter */}
+                                    {resetPassword.newPassword && (
+                                        <div className="space-y-1">
+                                            <div className="flex gap-1">
+                                                {[0, 1, 2, 3, 4].map((level) => (
+                                                    <div
+                                                        key={level}
+                                                        className={`h-1.5 flex-1 rounded-full transition-colors ${
+                                                            level <= getPasswordStrength(resetPassword.newPassword).score
+                                                                ? getPasswordStrength(resetPassword.newPassword).color
+                                                                : 'bg-muted'
+                                                        }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Strength: {getPasswordStrength(resetPassword.newPassword).label}
+                                                {resetPassword.newPassword.length < 8 && (
+                                                    <span className="text-destructive"> (minimum 8 characters)</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                                <Button type="submit" variant="outline" disabled={actionLoading || !isAdmin || resetPassword.newPassword.length < 8}>
+                                    Reset password
                                 </Button>
                             </form>
                         </CardContent>

@@ -73,7 +73,8 @@ from app.auth import (
     rotate_refresh_token,
     verify_refresh_token,
 )
-from app.auth_routes import mfa_router, oauth_router, roles_router
+from app.rbac import is_admin
+from app.auth_routes import auth_router, mfa_router, oauth_router, roles_router
 from app.config import get_settings
 from app.core.cache import cache_manager
 from app.core.metrics import check_liveness, check_readiness, metrics
@@ -1032,12 +1033,14 @@ def login_user(
 @limiter.limit(settings.rate_limit_authenticated)
 def get_current_user_info(
     request: Request,
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     """Get the current authenticated user's profile information.
 
     Args:
         request: The incoming request (used for rate limiting).
+        db: Database session dependency.
         current_user: The authenticated user from the JWT token.
 
     Returns:
@@ -1049,6 +1052,7 @@ def get_current_user_info(
             - mfa_enabled: Multi-factor authentication status
             - email_notifications: Email notification preference
             - reminder_hours: Hours before reservation to send reminder
+            - is_admin: Whether user has admin role
     """
     return {
         "id": current_user.id,
@@ -1058,6 +1062,7 @@ def get_current_user_info(
         "mfa_enabled": current_user.mfa_enabled,
         "email_notifications": current_user.email_notifications,
         "reminder_hours": current_user.reminder_hours,
+        "is_admin": rbac.is_admin(current_user, db),
     }
 
 
@@ -1188,7 +1193,7 @@ def create_resource(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Create a new bookable resource.
+    """Create a new bookable resource (admin only).
 
     Args:
         request: The incoming request (used for rate limiting).
@@ -1198,7 +1203,16 @@ def create_resource(
 
     Returns:
         ResourceResponse: The created resource details.
+
+    Raises:
+        HTTPException: 403 if user is not an admin.
     """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can create resources",
+        )
+
     resource_service = ResourceService(db)
     return resource_service.create_resource(resource_data)
 
@@ -1258,6 +1272,167 @@ def list_resources(
         has_more=has_more,
         total_count=total_count,
     )
+
+
+@app.get(
+    "/api/v1/resources/tags",
+    response_model=list[str],
+    tags=["Resources"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def get_all_tags(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Get all unique tags from all resources.
+
+    Returns a sorted list of all unique tags used across resources.
+
+    Args:
+        request: The incoming request (used for rate limiting).
+        db: Database session dependency.
+
+    Returns:
+        list[str]: Sorted list of unique tags.
+    """
+    resources = db.query(models.Resource).all()
+    tags_set = set()
+    for resource in resources:
+        if resource.tags:
+            for tag in resource.tags:
+                tags_set.add(tag)
+    return sorted(tags_set)
+
+
+@app.get(
+    "/api/v1/resources/tags/details",
+    response_model=list[schemas.TagInfo],
+    tags=["Resources"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def get_all_tags_with_details(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Get all unique tags with usage counts (admin only).
+
+    Returns a list of all tags with the number of resources using each tag.
+
+    Args:
+        request: The incoming request (used for rate limiting).
+        db: Database session dependency.
+        current_user: The authenticated user.
+
+    Returns:
+        list[TagInfo]: List of tags with resource counts.
+    """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can view tag details",
+        )
+
+    resource_service = ResourceService(db)
+    return resource_service.get_all_tags_with_counts()
+
+
+@app.put(
+    "/api/v1/resources/tags/rename",
+    tags=["Resources"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def rename_tag_globally(
+    request: Request,
+    rename_data: schemas.TagRename,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Rename a tag across all resources (admin only).
+
+    Updates all resources that have the specified tag to use the new name.
+
+    Args:
+        request: The incoming request (used for rate limiting).
+        rename_data: The old and new tag names.
+        db: Database session dependency.
+        current_user: The authenticated user.
+
+    Returns:
+        dict: Success message with count of updated resources.
+
+    Raises:
+        HTTPException: 403 if user is not admin, 400 if tag doesn't exist
+            or new name already exists.
+    """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can rename tags",
+        )
+
+    resource_service = ResourceService(db)
+    try:
+        updated_count = resource_service.rename_tag_globally(
+            rename_data.old_name, rename_data.new_name
+        )
+        return {
+            "message": f"Tag renamed successfully",
+            "old_name": rename_data.old_name,
+            "new_name": rename_data.new_name,
+            "updated_resources": updated_count,
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
+
+
+@app.delete(
+    "/api/v1/resources/tags/{tag_name}",
+    tags=["Resources"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def delete_tag_globally(
+    request: Request,
+    tag_name: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Delete a tag from all resources (admin only).
+
+    Removes the specified tag from all resources that have it.
+
+    Args:
+        request: The incoming request (used for rate limiting).
+        tag_name: The tag name to delete.
+        db: Database session dependency.
+        current_user: The authenticated user.
+
+    Returns:
+        dict: Success message with count of updated resources.
+
+    Raises:
+        HTTPException: 403 if user is not admin, 400 if tag doesn't exist.
+    """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can delete tags",
+        )
+
+    resource_service = ResourceService(db)
+    try:
+        updated_count = resource_service.delete_tag_globally(tag_name)
+        return {
+            "message": f"Tag deleted successfully",
+            "deleted_tag": tag_name,
+            "updated_resources": updated_count,
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
 
 @app.get(
@@ -1388,7 +1563,7 @@ def upload_resources_csv(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Bulk upload resources from a CSV file.
+    """Bulk upload resources from a CSV file (admin only).
 
     Accepts a CSV file with columns: name (required), tags (comma-separated),
     and available (true/false). Creates resources for each valid row.
@@ -1405,9 +1580,16 @@ def upload_resources_csv(
             - errors: List of error messages (limited to first 10)
 
     Raises:
+        HTTPException: 403 if user is not an admin.
         HTTPException: 400 Bad Request if the file is not a CSV or cannot
             be processed.
     """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can upload resources",
+        )
+
     if not file.filename.endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1455,6 +1637,58 @@ def upload_resources_csv(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to process CSV file: {str(e)}",
+        ) from e
+
+
+@app.put(
+    "/api/v1/resources/{resource_id}",
+    response_model=schemas.ResourceResponse,
+    tags=["Resources"],
+)
+@limiter.limit(settings.rate_limit_authenticated)
+def update_resource(
+    request: Request,
+    resource_id: int,
+    update_data: schemas.ResourceUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Update a resource's details (admin only).
+
+    Allows administrators to update resource name, description, and tags.
+    The resource must not be currently in use.
+
+    Args:
+        request: The incoming request (used for rate limiting).
+        resource_id: The unique identifier of the resource to update.
+        update_data: The update data with optional name, description, tags.
+        db: Database session dependency.
+        current_user: The authenticated user making the request.
+
+    Returns:
+        ResourceResponse: The updated resource details.
+
+    Raises:
+        HTTPException: 403 if user is not an admin, 404 if resource not found,
+            400 if resource is in use or name conflicts with existing resource.
+    """
+    if not is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can edit resources",
+        )
+
+    resource_service = ResourceService(db)
+    try:
+        return resource_service.update_resource(resource_id, update_data)
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=error_msg
+            ) from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg
         ) from e
 
 
@@ -1535,7 +1769,7 @@ def set_resource_unavailable(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Mark a resource as unavailable for maintenance or repair.
+    """Mark a resource as unavailable for maintenance or repair (admin only).
 
     Sets the resource status to 'unavailable' with an optional auto-reset
     timer. After the specified hours, the background task will automatically
@@ -1553,8 +1787,15 @@ def set_resource_unavailable(
             the auto-reset configuration.
 
     Raises:
+        HTTPException: 403 if user is not an admin.
         HTTPException: 404 Not Found if the resource doesn't exist.
     """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can set resources unavailable",
+        )
+
     resource_service = ResourceService(db)
 
     try:
@@ -1588,7 +1829,7 @@ def reset_resource_to_available(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Reset a resource to available status.
+    """Reset a resource to available status (admin only).
 
     Manually resets a resource that was marked as unavailable back to
     the available state, clearing any auto-reset timer.
@@ -1603,8 +1844,15 @@ def reset_resource_to_available(
         dict: Confirmation message and updated resource details.
 
     Raises:
+        HTTPException: 403 if user is not an admin.
         HTTPException: 404 Not Found if the resource doesn't exist.
     """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can reset resource availability",
+        )
+
     resource_service = ResourceService(db)
 
     try:
@@ -1662,7 +1910,7 @@ def update_resource_availability(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Manually update resource base availability.
+    """Manually update resource base availability (admin only).
 
     Sets the resource's base availability flag, typically used for
     maintenance windows or decommissioning resources.
@@ -1678,8 +1926,15 @@ def update_resource_availability(
         dict: Confirmation message and updated resource details.
 
     Raises:
+        HTTPException: 403 if user is not an admin.
         HTTPException: 404 Not Found if the resource doesn't exist.
     """
+    if not rbac.is_admin(current_user, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can update resource availability",
+        )
+
     resource_service = ResourceService(db)
 
     try:
@@ -1944,14 +2199,15 @@ def cancel_reservation(
 
     Raises:
         HTTPException: 404 Not Found if reservation doesn't exist.
-            403 Forbidden if user doesn't own the reservation.
+            403 Forbidden if user doesn't own the reservation and is not admin.
             400 Bad Request for already cancelled reservations.
     """
     reservation_service = ReservationService(db)
+    user_is_admin = rbac.is_admin(current_user, db)
 
     try:
         cancelled_reservation = reservation_service.cancel_reservation(
-            reservation_id, cancellation, current_user.id
+            reservation_id, cancellation, current_user.id, is_admin=user_is_admin
         )
         return {
             "message": "Reservation cancelled successfully",
@@ -2096,6 +2352,7 @@ def manual_cleanup_expired_reservations(
 
 # Create a v1 router for auth sub-routes
 v1_auth_router = APIRouter(prefix="/api/v1")
+v1_auth_router.include_router(auth_router)
 v1_auth_router.include_router(mfa_router)
 v1_auth_router.include_router(roles_router)
 v1_auth_router.include_router(oauth_router)

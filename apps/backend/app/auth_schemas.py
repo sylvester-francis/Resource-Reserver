@@ -68,8 +68,16 @@ class RoleResponse(BaseModel):
 class RoleAssignRequest(BaseModel):
     """Assign a role to a user."""
 
-    user_id: int
+    user_id: int | None = None
+    username: str | None = None
     role_name: str
+
+
+class AdminPasswordResetRequest(BaseModel):
+    """Admin request to reset a user's password."""
+
+    username: str = Field(..., min_length=1, description="Username of the account to reset")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
 
 
 # ============================================================================

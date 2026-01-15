@@ -6,6 +6,11 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export interface LabelData {
     id: number;
@@ -116,7 +121,8 @@ export function LabelBadgeList({
     className,
 }: LabelBadgeListProps) {
     const displayedLabels = labels.slice(0, maxDisplay);
-    const remainingCount = labels.length - maxDisplay;
+    const remainingLabels = labels.slice(maxDisplay);
+    const remainingCount = remainingLabels.length;
 
     return (
         <div className={cn('flex flex-wrap items-center gap-1', className)}>
@@ -130,15 +136,32 @@ export function LabelBadgeList({
                 />
             ))}
             {remainingCount > 0 && (
-                <span
-                    className="text-xs text-muted-foreground cursor-help"
-                    title={labels
-                        .slice(maxDisplay)
-                        .map((l) => l.full_name)
-                        .join(', ')}
-                >
-                    +{remainingCount} more
-                </span>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors cursor-pointer hover:bg-accent border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        >
+                            +{remainingCount} more
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="max-w-md p-3" align="start">
+                        <div className="space-y-2">
+                            <h4 className="font-medium text-sm mb-2">All Tags</h4>
+                            <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto">
+                                {remainingLabels.map((label) => (
+                                    <LabelBadge
+                                        key={label.id}
+                                        label={label}
+                                        size={size}
+                                        showCategory={showCategory}
+                                        onRemove={onRemove ? () => onRemove(label) : undefined}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             )}
         </div>
     );

@@ -417,7 +417,7 @@ export default function DashboardClient() {
                     </TabsList>
 
                     <TabsContent value="resources">
-                        <ResourcesTab onRefresh={fetchData} />
+                        <ResourcesTab onRefresh={fetchData} isAdmin={user?.is_admin} />
                     </TabsContent>
 
                     <TabsContent value="reservations">

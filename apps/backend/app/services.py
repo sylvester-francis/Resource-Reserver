@@ -430,7 +430,7 @@ class ResourceService:
                 if tags:
                     tag_set = {tag.lower() for tag in tags}
                     resource_tags = {tag.lower() for tag in (resource.tags or [])}
-                    if not tag_set.intersection(resource_tags):
+                    if not tag_set.issubset(resource_tags):
                         continue
 
                 if not self._has_conflict(resource.id, available_from, available_until):
@@ -468,7 +468,7 @@ class ResourceService:
             if tags:
                 tag_set = {tag.lower() for tag in tags}
                 resource_tags = {tag.lower() for tag in (resource.tags or [])}
-                if not tag_set.intersection(resource_tags):
+                if not tag_set.issubset(resource_tags):
                     continue
 
             # Apply text search filter
@@ -484,6 +484,11 @@ class ResourceService:
             resource.current_availability = self._is_resource_currently_available(
                 resource.id
             )
+            # Set current user name if resource is in use
+            if resource.status == "in_use":
+                resource.current_user_name = self._get_current_user_for_resource(
+                    resource.id
+                )
             filtered_resources.append(resource)
 
         return filtered_resources
@@ -590,6 +595,36 @@ class ResourceService:
         # Reuse status update logic so status and availability stay in sync
         self._update_resource_status(resource)
         return resource.available and resource.status == "available"
+
+    def _get_current_user_for_resource(self, resource_id: int) -> str | None:
+        """Get the username of who is currently using a resource.
+
+        Checks for active reservations at the current time and returns
+        the username of the user who has the reservation.
+
+        Args:
+            resource_id: The ID of the resource to check.
+
+        Returns:
+            The username of the current user if the resource is in use,
+            None otherwise.
+        """
+        now = utcnow()
+        current_reservation = (
+            self.db.query(models.Reservation)
+            .join(models.User)
+            .filter(
+                models.Reservation.resource_id == resource_id,
+                models.Reservation.status == "active",
+                models.Reservation.start_time <= now,
+                models.Reservation.end_time > now,
+            )
+            .first()
+        )
+
+        if current_reservation:
+            return current_reservation.user.username
+        return None
 
     def _update_resource_status(self, resource: models.Resource) -> None:
         """Update resource status based on current reservations and auto-reset logic.
@@ -724,6 +759,80 @@ class ResourceService:
                 "status": resource.status,
                 "available": resource.available,
                 "auto_reset_hours": resource.auto_reset_hours,
+            },
+        )
+        return resource
+
+    def update_resource(
+        self, resource_id: int, update_data: schemas.ResourceUpdate
+    ) -> models.Resource:
+        """Update resource details (name, description, tags).
+
+        Only admins should call this method. The resource must not be
+        currently in use to be updated.
+
+        Args:
+            resource_id: The ID of the resource to update.
+            update_data: The update data containing optional name,
+                description, and tags fields.
+
+        Returns:
+            The updated Resource model instance.
+
+        Raises:
+            ValueError: If the resource is not found, is currently in use,
+                or if the new name conflicts with an existing resource.
+        """
+        resource = (
+            self.db.query(models.Resource)
+            .filter(models.Resource.id == resource_id)
+            .first()
+        )
+
+        if not resource:
+            raise ValueError("Resource not found")
+
+        # Check if resource is currently in use
+        if resource.status == "in_use":
+            raise ValueError("Cannot edit a resource that is currently in use")
+
+        # Update name if provided
+        if update_data.name is not None:
+            # Check for duplicate name (excluding current resource)
+            existing = (
+                self.db.query(models.Resource)
+                .filter(
+                    models.Resource.name == update_data.name,
+                    models.Resource.id != resource_id,
+                )
+                .first()
+            )
+            if existing:
+                raise ValueError(
+                    f"A resource with the name '{update_data.name}' already exists"
+                )
+            resource.name = update_data.name
+
+        # Update description if provided (can be set to empty string)
+        if update_data.description is not None:
+            resource.description = update_data.description if update_data.description else None
+
+        # Update tags if provided
+        if update_data.tags is not None:
+            resource.tags = update_data.tags
+
+        self.db.commit()
+        self.db.refresh(resource)
+        _invalidate_cache_sync()  # Invalidate resource cache
+
+        anyio.from_thread.run(
+            ws_manager.broadcast_all,
+            {
+                "type": "resource_updated",
+                "resource_id": resource.id,
+                "name": resource.name,
+                "description": resource.description,
+                "tags": resource.tags,
             },
         )
         return resource
@@ -985,6 +1094,138 @@ class ResourceService:
             },
         }
         return schedule
+
+    def get_all_tags_with_counts(self) -> list[dict]:
+        """Get all unique tags with their usage counts.
+
+        Returns:
+            A list of dictionaries with tag name and resource count.
+        """
+        resources = self.db.query(models.Resource).all()
+        tag_counts: dict[str, int] = {}
+
+        for resource in resources:
+            for tag in resource.tags or []:
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+
+        return [
+            {"name": tag, "resource_count": count}
+            for tag, count in sorted(tag_counts.items())
+        ]
+
+    def rename_tag_globally(self, old_name: str, new_name: str) -> int:
+        """Rename a tag across all resources.
+
+        Args:
+            old_name: The current tag name to rename.
+            new_name: The new tag name.
+
+        Returns:
+            The number of resources updated.
+
+        Raises:
+            ValueError: If old_name doesn't exist or new_name already exists.
+        """
+        old_name = old_name.strip()
+        new_name = new_name.strip()
+
+        if old_name == new_name:
+            raise ValueError("New tag name must be different from the old name")
+
+        # Check if old_name exists
+        resources_with_old_tag = []
+        all_tags = set()
+
+        for resource in self.db.query(models.Resource).all():
+            for tag in resource.tags or []:
+                all_tags.add(tag.lower())
+                if tag.lower() == old_name.lower():
+                    resources_with_old_tag.append(resource)
+
+        if not resources_with_old_tag:
+            raise ValueError(f"Tag '{old_name}' does not exist")
+
+        # Check if new_name already exists (case-insensitive)
+        if new_name.lower() in all_tags and new_name.lower() != old_name.lower():
+            raise ValueError(f"Tag '{new_name}' already exists")
+
+        # Update all resources with the old tag
+        updated_count = 0
+        for resource in resources_with_old_tag:
+            new_tags = []
+            for tag in resource.tags or []:
+                if tag.lower() == old_name.lower():
+                    new_tags.append(new_name)
+                else:
+                    new_tags.append(tag)
+            resource.tags = new_tags
+            updated_count += 1
+
+        self.db.commit()
+        _invalidate_cache_sync()
+
+        # Broadcast update
+        anyio.from_thread.run(
+            ws_manager.broadcast_all,
+            {
+                "type": "tag_renamed",
+                "old_name": old_name,
+                "new_name": new_name,
+                "updated_count": updated_count,
+            },
+        )
+
+        return updated_count
+
+    def delete_tag_globally(self, tag_name: str) -> int:
+        """Delete a tag from all resources.
+
+        Args:
+            tag_name: The tag name to delete.
+
+        Returns:
+            The number of resources updated.
+
+        Raises:
+            ValueError: If the tag doesn't exist.
+        """
+        tag_name = tag_name.strip()
+
+        # Find all resources with this tag
+        resources_with_tag = []
+        for resource in self.db.query(models.Resource).all():
+            for tag in resource.tags or []:
+                if tag.lower() == tag_name.lower():
+                    resources_with_tag.append(resource)
+                    break
+
+        if not resources_with_tag:
+            raise ValueError(f"Tag '{tag_name}' does not exist")
+
+        # Remove the tag from all resources
+        updated_count = 0
+        for resource in resources_with_tag:
+            new_tags = [
+                tag for tag in (resource.tags or [])
+                if tag.lower() != tag_name.lower()
+            ]
+            resource.tags = new_tags
+            updated_count += 1
+
+        self.db.commit()
+        _invalidate_cache_sync()
+
+        # Broadcast update
+        anyio.from_thread.run(
+            ws_manager.broadcast_all,
+            {
+                "type": "tag_deleted",
+                "name": tag_name,
+                "updated_count": updated_count,
+            },
+        )
+
+        return updated_count
 
 
 class NotificationService:
@@ -1483,23 +1724,25 @@ class ReservationService:
         reservation_id: int,
         cancellation: schemas.ReservationCancel,
         user_id: int,
+        is_admin: bool = False,
     ) -> models.Reservation:
         """Cancel an existing reservation.
 
         Cancels a reservation and notifies waitlist users if the slot
-        becomes available.
+        becomes available. Admins can cancel any reservation.
 
         Args:
             reservation_id: The ID of the reservation to cancel.
             cancellation: Cancellation data including optional reason.
             user_id: The ID of the user cancelling the reservation.
+            is_admin: Whether the user has admin privileges.
 
         Returns:
             The updated Reservation model instance with cancelled status.
 
         Raises:
             ValueError: If the reservation is not found, does not belong
-                to the user, or is already cancelled.
+                to the user (and user is not admin), or is already cancelled.
 
         Note:
             This method broadcasts WebSocket notifications and triggers
@@ -1514,7 +1757,7 @@ class ReservationService:
         if not reservation:
             raise ValueError("Reservation not found")
 
-        if reservation.user_id != user_id:
+        if reservation.user_id != user_id and not is_admin:
             raise ValueError("You can only cancel your own reservations")
 
         if reservation.status == "cancelled":

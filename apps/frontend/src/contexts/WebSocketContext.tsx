@@ -59,7 +59,6 @@ function buildWebSocketUrl(token: string) {
     protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     host = window.location.host;
   } else {
-  } else {
     // Fallback for SSR (shouldn't happen for WebSocket)
     return '';
   }

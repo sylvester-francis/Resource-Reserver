@@ -10,6 +10,7 @@ export interface User {
   email?: string;
   email_verified?: boolean;
   mfa_enabled: boolean;
+  is_admin?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -33,11 +34,13 @@ export interface Label {
 export interface Resource {
   id: number;
   name: string;
+  description?: string;
   available: boolean;
   tags: string[];
   labels?: Label[];
   status: 'available' | 'in_use' | 'unavailable';
   current_availability?: boolean;
+  current_user_name?: string;
   unavailable_since?: string;
   auto_reset_hours?: number;
 }

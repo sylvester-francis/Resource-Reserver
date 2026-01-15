@@ -374,12 +374,14 @@ class ResourceCreate(BaseModel):
     Attributes:
         name: The resource name. Must be 1-200 characters after trimming
             whitespace.
+        description: Optional description text for the resource.
         tags: List of tags for categorizing the resource. Defaults to
             an empty list.
         available: Initial availability status. Defaults to True.
     """
 
     name: str
+    description: str | None = None
     tags: list[str] | None = []
     available: bool | None = True
 
@@ -402,6 +404,23 @@ class ResourceCreate(BaseModel):
             raise ValueError("Resource name must be 1-200 characters")
         return name
 
+    @field_validator("tags")
+    @classmethod
+    def validate_and_strip_tags(cls, v: list[str] | None) -> list[str]:
+        """Validate and normalize tags by stripping whitespace.
+
+        Args:
+            v: The list of tags to validate, or None.
+
+        Returns:
+            A list of tags with whitespace stripped from each tag,
+            excluding empty tags after stripping.
+        """
+        if v is None:
+            return []
+        # Strip whitespace and filter out empty tags
+        return [tag.strip() for tag in v if tag.strip()]
+
 
 class ResourceResponse(BaseModel):
     """Schema for resource information in API responses.
@@ -412,21 +431,26 @@ class ResourceResponse(BaseModel):
     Attributes:
         id: The unique identifier of the resource.
         name: The resource name.
+        description: Optional description text for the resource.
         available: Base availability flag (manual enable/disable).
         current_availability: Real-time availability considering active
             reservations, or None if not computed.
         status: Current status string: "available", "in_use", or
             "unavailable".
+        current_user_name: Username of who is currently using the resource
+            (only populated when status is "in_use").
         tags: List of tags associated with the resource.
     """
 
     id: int
     name: str
+    description: str | None = None
     available: bool  # Base availability (manual enable/disable)
     current_availability: bool | None = (
         None  # Real-time availability (includes reservations)  # noqa
     )
     status: str = "available"  # Status: available, in_use, unavailable
+    current_user_name: str | None = None  # Username of current user if in_use
     tags: list[str]
 
     model_config = ConfigDict(from_attributes=True)
@@ -444,6 +468,61 @@ class ResourceAvailabilityUpdate(BaseModel):
     available: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ResourceUpdate(BaseModel):
+    """Schema for updating resource details.
+
+    Allows admins to update resource name, description, and tags.
+    All fields are optional - only provided fields will be updated.
+
+    Attributes:
+        name: New resource name. Must be 1-200 characters after trimming.
+        description: New description text for the resource.
+        tags: New list of tags for the resource.
+    """
+
+    name: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str | None) -> str | None:
+        """Validate and normalize the resource name if provided.
+
+        Args:
+            v: The resource name to validate, or None.
+
+        Returns:
+            The validated name with whitespace trimmed, or None.
+
+        Raises:
+            ValueError: If the name is empty or exceeds 200 characters.
+        """
+        if v is None:
+            return None
+        name = v.strip()
+        if not name or len(name) > 200:
+            raise ValueError("Resource name must be 1-200 characters")
+        return name
+
+    @field_validator("tags")
+    @classmethod
+    def validate_and_strip_tags(cls, v: list[str] | None) -> list[str] | None:
+        """Validate and normalize tags by stripping whitespace.
+
+        Args:
+            v: The list of tags to validate, or None.
+
+        Returns:
+            A list of tags with whitespace stripped from each tag,
+            excluding empty tags after stripping. Returns None if input is None.
+        """
+        if v is None:
+            return None
+        # Strip whitespace and filter out empty tags
+        return [tag.strip() for tag in v if tag.strip()]
 
 
 class ReservationCreate(BaseModel):
@@ -1553,6 +1632,63 @@ class PopularTagResponse(BaseModel):
 
     tag: str
     count: int
+
+
+# ============================================================================
+# Tag Management Schemas
+# ============================================================================
+
+
+class TagRename(BaseModel):
+    """Schema for renaming a tag globally.
+
+    Attributes:
+        old_name: The current tag name to rename.
+        new_name: The new tag name. Must be 1-100 characters.
+    """
+
+    old_name: str = Field(..., min_length=1, max_length=100)
+    new_name: str = Field(..., min_length=1, max_length=100)
+
+    @field_validator("old_name", "new_name")
+    @classmethod
+    def validate_tag_name(cls, v: str) -> str:
+        """Validate and normalize tag names."""
+        name = v.strip()
+        if not name:
+            raise ValueError("Tag name cannot be empty")
+        return name
+
+
+class TagDelete(BaseModel):
+    """Schema for deleting a tag globally.
+
+    Attributes:
+        name: The tag name to delete from all resources.
+    """
+
+    name: str = Field(..., min_length=1, max_length=100)
+
+    @field_validator("name")
+    @classmethod
+    def validate_tag_name(cls, v: str) -> str:
+        """Validate and normalize tag name."""
+        name = v.strip()
+        if not name:
+            raise ValueError("Tag name cannot be empty")
+        return name
+
+
+class TagInfo(BaseModel):
+    """Schema for tag information with usage statistics.
+
+    Attributes:
+        name: The tag name.
+        resource_count: Number of resources using this tag.
+    """
+
+    name: str
+    resource_count: int
 
 
 # ============================================================================

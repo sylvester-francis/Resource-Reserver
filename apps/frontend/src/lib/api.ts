@@ -21,12 +21,33 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || '';
 const API_BASE_URL = `${API_HOST}/api/v1`;
 
+// Custom params serializer to handle arrays correctly for FastAPI
+// FastAPI expects: tags=value1&tags=value2 (not tags[]=value1&tags[]=value2)
+function serializeParams(params: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      // Serialize arrays as repeated keys: key=v1&key=v2
+      for (const item of value) {
+        if (item !== undefined && item !== null) {
+          parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`);
+        }
+      }
+    } else {
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+  }
+  return parts.join('&');
+}
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  paramsSerializer: serializeParams,
 });
 
 // Token refresh state
@@ -171,7 +192,19 @@ api.interceptors.response.use(
     // Extract error message for non-401 errors
     if (error.response) {
       const data = error.response.data as Record<string, unknown>;
-      const message = data?.detail || data?.message || data?.error || `Error (${error.response.status})`;
+      let message = data?.detail || data?.message || data?.error || `Error (${error.response.status})`;
+      
+      // Handle FastAPI validation errors (detail is an array) or nested objects
+      if (typeof message === 'object') {
+        if (Array.isArray(message)) {
+          // FastAPI validation errors: [{loc: [...], msg: "...", type: "..."}]
+          message = message.map((err: { msg?: string; message?: string }) => err.msg || err.message || JSON.stringify(err)).join('; ');
+        } else {
+          // Generic object error
+          message = JSON.stringify(message);
+        }
+      }
+      
       return Promise.reject(new Error(String(message)));
     }
     return Promise.reject(new Error('Unable to connect to server'));

@@ -554,6 +554,78 @@ npm run test:e2e
 - CORS errors: make sure the frontend points to the correct API URL and CORS allows your origin.
 - 429 Too Many Requests: wait for the rate limit window to reset.
 
+### Upgrading from Previous Versions
+
+When upgrading to a new version, the database schema may have changed. If you see errors like `no such column` or resources/data disappearing after a rebuild, follow these steps:
+
+**Option 1: Run Alembic Migrations (Recommended)**
+
+```bash
+# Inside the backend container
+docker compose exec backend alembic upgrade heads
+
+# If you see "Multiple head revisions" error:
+docker compose exec backend alembic merge heads -m "merge branches"
+docker compose exec backend alembic upgrade head
+```
+
+**Option 2: Manual Column Addition (Quick Fix)**
+
+If migrations fail due to schema drift, you can add missing columns directly:
+
+```bash
+docker compose exec backend python -c "
+import sqlite3
+conn = sqlite3.connect('/app/data/db/resource_reserver.db')
+cursor = conn.cursor()
+
+# Check current columns
+cursor.execute('PRAGMA table_info(resources)')
+columns = [col[1] for col in cursor.fetchall()]
+print('Current columns:', columns)
+
+# Add missing columns (example: description)
+if 'description' not in columns:
+    cursor.execute('ALTER TABLE resources ADD COLUMN description TEXT')
+    conn.commit()
+    print('Added description column')
+
+conn.close()
+"
+```
+
+Then restart the backend:
+
+```bash
+docker compose restart backend
+```
+
+**Option 3: Fresh Start (Development Only)**
+
+If you don't need existing data, remove the volume and start fresh:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+**Checking Database Health**
+
+To verify your database has all required columns:
+
+```bash
+docker compose exec backend python -c "
+import sqlite3
+conn = sqlite3.connect('/app/data/db/resource_reserver.db')
+cursor = conn.cursor()
+cursor.execute('SELECT COUNT(*) FROM resources')
+print(f'Resources: {cursor.fetchone()[0]}')
+cursor.execute('PRAGMA table_info(resources)')
+print('Columns:', [col[1] for col in cursor.fetchall()])
+conn.close()
+"
+```
+
 ## License
 
 MIT License. See `LICENSE`.

@@ -29,6 +29,19 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
+// Helper functions to get consistent status display
+const getStatusText = (resource: Resource) => {
+    if (!resource.available) return 'Maintenance';
+    if (resource.status === 'in_use') return 'In Use';
+    return 'Available';
+};
+
+const getStatusVariant = (resource: Resource): 'default' | 'secondary' | 'destructive' => {
+    if (!resource.available) return 'destructive';
+    if (resource.status === 'in_use') return 'secondary';
+    return 'default';
+};
+
 interface AvailabilityDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -127,9 +140,14 @@ export function AvailabilityDialog({
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-xs text-muted-foreground">Status</span>
-                                <Badge variant={resource.available ? 'default' : 'destructive'}>
-                                    {resource.available ? 'Available' : 'Unavailable'}
+                                <Badge variant={getStatusVariant(resource)}>
+                                    {getStatusText(resource)}
                                 </Badge>
+                                {resource.status === 'in_use' && resource.current_user_name && (
+                                    <span className="text-xs text-muted-foreground">
+                                        by <span className="font-medium">{resource.current_user_name}</span>
+                                    </span>
+                                )}
                             </div>
                         </div>
                     )}
