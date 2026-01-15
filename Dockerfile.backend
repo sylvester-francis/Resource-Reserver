@@ -1,5 +1,11 @@
 # Backend Dockerfile for FastAPI
-FROM python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.11-slim
+
+# Set proxy for apt-get (passed via build args)
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ENV http_proxy=$HTTP_PROXY
+ENV https_proxy=$HTTPS_PROXY
 
 # Set working directory
 WORKDIR /app
@@ -9,6 +15,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
+
+# Clear proxy env vars so they don't persist in final image
+ENV http_proxy=
+ENV https_proxy=
 
 # Copy requirements first for better caching
 COPY apps/backend/requirements.txt .

@@ -1,10 +1,24 @@
 /**
- * Api module.
+ * API Client Module
+ * 
+ * Supports two modes of operation:
+ * 
+ * 1. API Proxy Mode (NEXT_PUBLIC_API_URL empty - recommended for Docker/enterprise):
+ *    - Uses relative URLs (/api/v1/...)
+ *    - Requests are proxied through Next.js rewrites to the backend
+ *    - Works with corporate proxies and firewalls
+ * 
+ * 2. Direct Mode (NEXT_PUBLIC_API_URL set to full URL):
+ *    - Uses absolute URLs (http://backend:8000/api/v1/...)
+ *    - Browser connects directly to the backend
+ *    - Requires backend to be accessible from user's browser
  */
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// API Proxy Mode: Empty NEXT_PUBLIC_API_URL = relative URLs proxied by Next.js
+// Direct Mode: Full URL = browser connects directly to backend
+const API_HOST = process.env.NEXT_PUBLIC_API_URL || '';
 const API_BASE_URL = `${API_HOST}/api/v1`;
 
 // Create axios instance

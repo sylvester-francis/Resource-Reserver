@@ -1,19 +1,46 @@
-# Frontend Dockerfile using Node for consistent CI builds
+# =============================================================================
+# Frontend Dockerfile - Next.js with API Proxy Support
+# =============================================================================
 # Multi-stage build for optimized production image
+#
+# API Proxy Mode (Recommended for Enterprise):
+#   Build with: NEXT_PUBLIC_API_URL= (empty)
+#   Result: Frontend proxies /api/* requests to backend via Next.js rewrites
+#   Use case: Corporate networks, firewalls, or when backend isn't directly
+#             accessible from user browsers
+#
+# Direct Mode:
+#   Build with: NEXT_PUBLIC_API_URL=http://your-backend:8000
+#   Result: Browser connects directly to backend API
+#   Use case: Development or when backend is directly accessible
+# =============================================================================
 
 # Stage 1: Install dependencies
-FROM node:20-slim AS deps
+FROM public.ecr.aws/docker/library/node:20-slim AS deps
+
+# Build args for proxy
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
 
 WORKDIR /app
 
 # Copy package files
 COPY apps/frontend/package.json apps/frontend/package-lock.json ./
 
-# Install dependencies (include optional platform binaries)
-RUN npm ci --include=optional
+# Configure npm to use proxy and install dependencies
+RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
+    if [ -n "$HTTPS_PROXY" ]; then npm config set https-proxy $HTTPS_PROXY; fi && \
+    npm ci --include=optional
 
 # Stage 2: Build the application
-FROM node:20-slim AS builder
+FROM public.ecr.aws/docker/library/node:20-slim AS builder
+
+# API URL configuration:
+# - Empty (default): Use API proxy mode - relative URLs proxied through Next.js
+# - Full URL: Direct mode - browser connects directly to backend
+ARG NEXT_PUBLIC_API_URL=
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 WORKDIR /app
 
@@ -29,13 +56,14 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # Stage 3: Production runner
-FROM node:20-slim AS runner
+FROM public.ecr.aws/docker/library/node:20-slim AS runner
 
 WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \

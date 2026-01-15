@@ -1,10 +1,20 @@
 /**
- * Middleware middleware.
+ * Next.js Middleware
+ * 
+ * Handles server-side routing logic (runs on the Next.js server, not browser).
+ * Uses INTERNAL_API_URL for direct container-to-container communication in Docker,
+ * bypassing the browser proxy path entirely.
+ * 
+ * Configuration priority:
+ * 1. INTERNAL_API_URL - Docker container networking (e.g., http://backend:8000)
+ * 2. NEXT_PUBLIC_API_URL - Direct URL if set
+ * 3. http://localhost:8000 - Local development fallback
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Server-side API URL for middleware (container-to-container in Docker)
+const API_BASE_URL = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function middleware(request: NextRequest) {
     if (request.nextUrl.pathname !== '/') {
