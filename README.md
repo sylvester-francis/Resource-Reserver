@@ -84,12 +84,12 @@ docker compose up -d
 
 5. Open the app:
 
-- Web app: http://localhost:3000
+- Web app: http://localhost:8081 (or custom `FRONTEND_PORT` in `.env`)
 - API docs: http://localhost:8000/docs
 
 6. Create the first admin account:
 
-- Visit http://localhost:3000/setup and follow the prompts.
+- Visit http://localhost:8081/setup and follow the prompts.
 
 7. Add resources and make a reservation.
 
@@ -109,8 +109,8 @@ docker compose up -d --build
 
 Default ports:
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
+- Frontend: http://localhost:8081 (configurable via `FRONTEND_PORT`)
+- Backend API: http://localhost:8000 (configurable via `BACKEND_PORT`)
 
 By default the backend uses SQLite. To use PostgreSQL instead:
 
@@ -307,16 +307,21 @@ ______________________________________________________________________
 ### Resources
 
 - Search, filter by status, and sort by name, status, or ID.
-- Add resources with tags and availability status.
+- Filter by tags (AND logic: shows resources with ALL selected tags).
+- Add resources with name, description, tags, and availability status (admin only).
+- Edit resource details including name, description, and tags (admin only).
 - Upload resources from CSV (see Data Import and Export).
 - Reserve a resource, view its schedule, or set it to maintenance.
 - Manage business hours and blackout dates for each resource.
+- Manage tags globally: rename or delete tags across all resources (admin only).
 
 ### Reservations and calendar
 
 - Create one-time or recurring reservations.
+- Reserve resources that are currently in use (for future time slots).
 - View My Reservations and Upcoming reservations.
-- Cancel reservations and view reservation history.
+- Cancel your own reservations (admins can cancel any reservation).
+- View reservation history.
 - Export calendar events as .ics or subscribe via a personal feed URL.
 
 ### Waitlist
@@ -341,7 +346,28 @@ ______________________________________________________________________
 
 ## Admin and Operations Guide
 
-- Roles: default roles are admin, user, and guest. Manage roles at `/admin/roles`.
+### Role-Based Access Control
+
+Default roles are admin, user, and guest. Manage roles at `/admin/roles`.
+
+**Admin-only actions:**
+- Create, edit, and delete resources
+- Upload resources via CSV
+- Set resource availability (available/unavailable)
+- Manage tags globally (rename, delete)
+- Cancel any user's reservation
+- Manage users and roles
+- Configure business hours and blackout dates
+
+**All authenticated users can:**
+- View and search resources
+- Create reservations on available resources
+- Reserve resources that are currently in use (for future time slots)
+- Cancel their own reservations
+- Join waitlists
+
+### Other Admin Features
+
 - Approvals: resources can require approval; manage settings via `/api/v1/approvals/resources/{resource_id}/settings`.
 - Resource groups: build hierarchies and assign resources via `/api/v1/resource-groups`.
 - Quotas and rate limits: view and manage via `/api/v1/quotas` (admin endpoints require admin role).

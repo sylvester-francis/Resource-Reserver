@@ -6,6 +6,8 @@ Base URL:
 http://localhost:8000
 ```
 
+For Docker deployments using API proxy mode, the frontend proxies requests to `/api/v1/*`.
+
 ## Authentication
 
 Most endpoints require a bearer token:
@@ -15,6 +17,16 @@ Authorization: Bearer <access_token>
 ```
 
 Tokens are issued by `POST /api/v1/token` and refreshed via `POST /api/v1/token/refresh`.
+
+## Authorization
+
+Endpoints are divided into:
+
+- **Public endpoints**: Available to any authenticated user (e.g., list resources, create reservations)
+- **Owner endpoints**: Restricted to the owner of a record (e.g., cancel own reservation)
+- **Admin endpoints**: Restricted to users with admin role (e.g., create/edit resources, manage tags)
+
+See individual endpoint documentation for specific authorization requirements.
 
 ## Pagination
 
@@ -40,3 +52,5 @@ A real-time channel is available at:
 ```
 /ws?token=<access_token>
 ```
+
+For API proxy mode deployments, WebSocket is available at `/ws` (proxied through the frontend).
