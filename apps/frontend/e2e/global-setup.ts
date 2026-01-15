@@ -4,8 +4,9 @@
 
 import { chromium, FullConfig } from '@playwright/test';
 
-const DEFAULT_ADMIN = { username: 'admin', password: 'adminpass123' };
-const DEFAULT_USER = { username: 'testuser', password: 'testpass123' };
+// Passwords must have uppercase letter, special character, and not contain username
+const DEFAULT_ADMIN = { username: 'admin', password: 'Admin@Pass123' };
+const DEFAULT_USER = { username: 'testuser', password: 'Test@Pass123' };
 
 function getApiBaseUrl(baseURL: string): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL;

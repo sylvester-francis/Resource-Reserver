@@ -85,6 +85,8 @@ test.describe('Resource Management (Admin)', () => {
   test.beforeEach(async ({ page }) => {
     // Login as admin user
     await loginAsAdmin(page);
+  });
+
   test('should show add resource button for admins', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 

@@ -4,11 +4,15 @@
 
 import { Page, expect } from '@playwright/test';
 
+// Passwords must have uppercase letter, special character, and not contain username
+const DEFAULT_PASSWORD = 'Test@Pass123';
+const ADMIN_PASSWORD = 'Admin@Pass123';
+
 /**
  * Login helper that waits for page stability before interacting.
  * This prevents "element was detached from the DOM" errors during React hydration.
  */
-export async function login(page: Page, username = 'testuser', password = 'testpass123') {
+export async function login(page: Page, username = 'testuser', password = DEFAULT_PASSWORD) {
   await page.goto('/login');
 
   // Wait for the page to be fully loaded and stable
@@ -40,5 +44,5 @@ export async function login(page: Page, username = 'testuser', password = 'testp
  * Login as admin user.
  */
 export async function loginAsAdmin(page: Page) {
-  await login(page, 'admin', 'adminpass123');
+  await login(page, 'admin', ADMIN_PASSWORD);
 }
