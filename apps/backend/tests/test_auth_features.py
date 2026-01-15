@@ -1,5 +1,6 @@
 """Unit tests for MFA, RBAC, and OAuth2 functionality."""
 
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -10,10 +11,9 @@ from app import mfa, models, oauth2, rbac
 from app.auth import hash_password
 from app.models import Base
 
-# Test database setup
-TEST_DB_PATH = Path(__file__).resolve().parents[3] / "data" / "db" / "test_auth.db"
-TEST_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-SQLALCHEMY_TEST_DATABASE_URL = f"sqlite:///{TEST_DB_PATH.as_posix()}"
+# Test database setup - use temp file instead of fixed path
+_db_fd, _db_path = tempfile.mkstemp(suffix=".db")
+SQLALCHEMY_TEST_DATABASE_URL = f"sqlite:///{_db_path}"
 engine = create_engine(
     SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
 )

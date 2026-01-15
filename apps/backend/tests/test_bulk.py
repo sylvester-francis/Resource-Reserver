@@ -48,13 +48,15 @@ class TestBulkCreate:
         )
         assert response.status_code == 422
 
-    def test_bulk_create_dry_run(self, client: TestClient, auth_headers: dict, test_db):
+    def test_bulk_create_dry_run(
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
+    ):
         """Test bulk create with dry run."""
-        # Create a resource first
+        # Create a resource first (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "bulk-test-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]
@@ -80,13 +82,15 @@ class TestBulkCreate:
         assert data["dry_run"] is True
         assert data["success"] == 1
 
-    def test_bulk_create_success(self, client: TestClient, auth_headers: dict, test_db):
+    def test_bulk_create_success(
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
+    ):
         """Test successful bulk create."""
-        # Create a resource first
+        # Create a resource first (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "bulk-create-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]
@@ -171,13 +175,15 @@ class TestCSVImport:
         assert response.status_code == 400
         assert "CSV" in response.json()["detail"]
 
-    def test_import_dry_run(self, client: TestClient, auth_headers: dict, test_db):
+    def test_import_dry_run(
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
+    ):
         """Test CSV import with dry run."""
-        # Create a resource first
+        # Create a resource first (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "csv-test-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]
@@ -236,14 +242,14 @@ class TestBulkValidate:
         assert response.status_code == 401
 
     def test_validate_returns_validity(
-        self, client: TestClient, auth_headers: dict, test_db
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
     ):
         """Test that validate returns validity status."""
-        # Create a resource first
+        # Create a resource first (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "validate-test-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]
@@ -272,13 +278,15 @@ class TestBulkValidate:
 class TestBulkWorkflow:
     """Integration tests for bulk workflow."""
 
-    def test_full_bulk_workflow(self, client: TestClient, auth_headers: dict, test_db):
+    def test_full_bulk_workflow(
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
+    ):
         """Test complete bulk workflow."""
-        # Create a resource
+        # Create a resource (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "bulk-workflow-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]

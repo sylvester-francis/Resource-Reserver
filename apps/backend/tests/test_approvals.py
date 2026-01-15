@@ -136,14 +136,14 @@ class TestApprovalWorkflow:
     """Integration tests for the complete approval workflow."""
 
     def test_full_approval_workflow(
-        self, client: TestClient, auth_headers: dict, test_db
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
     ):
         """Test the complete approval workflow from request to approval."""
-        # First create a resource
+        # First create a resource (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "approval-test-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]
@@ -222,13 +222,15 @@ class TestApprovalWorkflow:
         # The count should be less now
         assert pending_after.status_code == 200
 
-    def test_rejection_workflow(self, client: TestClient, auth_headers: dict, test_db):
+    def test_rejection_workflow(
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
+    ):
         """Test rejecting a reservation request."""
-        # Create a resource
+        # Create a resource (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "rejection-test-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]
@@ -270,14 +272,14 @@ class TestApprovalWorkflow:
         assert respond_response.json()["status"] == "rejected"
 
     def test_no_approval_required(
-        self, client: TestClient, auth_headers: dict, test_db
+        self, client: TestClient, auth_headers: dict, admin_headers: dict, test_db
     ):
         """Test creating reservation when no approval is required."""
-        # Create a resource without approval requirement
+        # Create a resource without approval requirement (requires admin)
         resource_response = client.post(
             "/api/v1/resources/",
             json={"name": "no-approval-resource"},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert resource_response.status_code in [200, 201]
         resource_id = resource_response.json()["id"]

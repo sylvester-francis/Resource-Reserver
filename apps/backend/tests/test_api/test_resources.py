@@ -9,8 +9,8 @@ API_V1 = "/api/v1"
 class TestResources:
     """Test resource management endpoints"""
 
-    def test_create_resource_success(self, client, auth_headers):
-        """Test successful resource creation"""
+    def test_create_resource_success(self, client, admin_headers):
+        """Test successful resource creation (requires admin)"""
         resource_data = {
             "name": "New Meeting Room",
             "tags": ["meeting", "projector"],
@@ -18,7 +18,7 @@ class TestResources:
         }
 
         response = client.post(
-            f"{API_V1}/resources", json=resource_data, headers=auth_headers
+            f"{API_V1}/resources", json=resource_data, headers=admin_headers
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -39,21 +39,34 @@ class TestResources:
         response = client.post(f"{API_V1}/resources", json=resource_data)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_create_resource_invalid_data(self, client, auth_headers):
-        """Test resource creation with invalid data"""
+    def test_create_resource_invalid_data(self, client, admin_headers):
+        """Test resource creation with invalid data (requires admin)"""
         # Empty name
         response = client.post(
             f"{API_V1}/resources",
             json={"name": "", "tags": ["test"], "available": True},
-            headers=auth_headers,
+            headers=admin_headers,
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
         # Missing required fields
         response = client.post(
-            f"{API_V1}/resources", json={"tags": ["test"]}, headers=auth_headers
+            f"{API_V1}/resources", json={"tags": ["test"]}, headers=admin_headers
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_create_resource_requires_admin(self, client, auth_headers):
+        """Test that resource creation requires admin privileges"""
+        resource_data = {
+            "name": "Unauthorized Room",
+            "tags": ["test"],
+            "available": True,
+        }
+
+        response = client.post(
+            f"{API_V1}/resources", json=resource_data, headers=auth_headers
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_list_resources(self, client, test_resource):
         """Test listing all resources"""
@@ -136,8 +149,8 @@ class TestResources:
         response = client.get(f"{API_V1}/resources/search", params=params)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_upload_resources_csv_success(self, client, auth_headers):
-        """Test successful CSV upload"""
+    def test_upload_resources_csv_success(self, client, admin_headers):
+        """Test successful CSV upload (requires admin)"""
         csv_content = """name,tags,available
 "Test Room 1","meeting,small",true
 "Test Room 2","conference,large",true
@@ -147,7 +160,7 @@ class TestResources:
         files = {"file": ("test_resources.csv", csv_content, "text/csv")}
 
         response = client.post(
-            f"{API_V1}/resources/upload", files=files, headers=auth_headers
+            f"{API_V1}/resources/upload", files=files, headers=admin_headers
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -156,12 +169,12 @@ class TestResources:
         assert data["created_count"] > 0
         assert "errors" in data
 
-    def test_upload_resources_csv_invalid_file(self, client, auth_headers):
-        """Test CSV upload with invalid file"""
+    def test_upload_resources_csv_invalid_file(self, client, admin_headers):
+        """Test CSV upload with invalid file (requires admin)"""
         files = {"file": ("test.txt", "not a csv", "text/plain")}
 
         response = client.post(
-            f"{API_V1}/resources/upload", files=files, headers=auth_headers
+            f"{API_V1}/resources/upload", files=files, headers=admin_headers
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -173,7 +186,7 @@ class TestResources:
         response = client.post(f"{API_V1}/resources/upload", files=files)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_list_resources_pagination(self, client, auth_headers):
+    def test_list_resources_pagination(self, client, admin_headers):
         """Test cursor pagination for resources"""
         for idx in range(3):
             client.post(
@@ -183,7 +196,7 @@ class TestResources:
                     "tags": ["paging"],
                     "available": True,
                 },
-                headers=auth_headers,
+                headers=admin_headers,
             )
 
         first_page = client.get(
