@@ -80,16 +80,44 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
 
+      - name: Run database migrations
+        run: |
+          alembic upgrade head
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/resource_reserver_test
+
       - name: Start backend server
         run: |
-          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-          sleep 10
+          # Start backend in background with logging
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "Backend PID: $BACKEND_PID"
+
+          # Wait for backend to be healthy with retries
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Backend is healthy after $i attempts"
+              break
+            fi
+            echo "Waiting for backend... attempt $i/30"
+            sleep 2
+          done
+
+          # Final health check
+          if ! curl -f http://localhost:8000/health; then
+            echo "Backend failed to start. Logs:"
+            cat /tmp/backend.log
+            exit 1
+          fi
         working-directory: apps/backend
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/resource_reserver_test
           REDIS_URL: redis://localhost:6379/0
           SECRET_KEY: test-secret-key-for-ci
           ALGORITHM: HS256
+          CACHE_ENABLED: "false"
+          RATE_LIMIT_ENABLED: "false"
 
       - name: Run Playwright tests
         run: npm run test:e2e
