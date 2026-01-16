@@ -274,7 +274,7 @@ export default function DashboardClient() {
                                     Role Management
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                                <DropdownMenuItem onClick={handleLogout} className="text-red-600" data-testid="sign-out-button">
                                     <LogOut className="mr-2 h-4 w-4" />
                                     Sign Out
                                 </DropdownMenuItem>

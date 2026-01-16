@@ -64,24 +64,18 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle').catch(() => { });
     await page.waitForTimeout(500);
 
-    // Click the user menu button (avatar) - try multiple selectors
-    const userMenuButton = page.locator('[data-testid="user-menu"]')
-      .or(page.locator('button').filter({ hasText: /profile|account|user/i }))
-      .or(page.locator('[aria-haspopup="menu"]').first());
-
-    await expect(userMenuButton.first()).toBeVisible({ timeout: 10000 });
-    await userMenuButton.first().click();
+    // Click the user menu button (avatar)
+    const userMenuButton = page.locator('[data-testid="user-menu"]');
+    await expect(userMenuButton).toBeVisible({ timeout: 10000 });
+    await userMenuButton.click();
 
     // Wait for dropdown menu to appear
     await page.waitForTimeout(500);
 
-    // Click "Sign Out" in dropdown - try multiple selectors
-    const signOutButton = page.getByRole('menuitem', { name: /sign out|logout|log out/i })
-      .or(page.locator('[role="menuitem"]').filter({ hasText: /sign out|logout/i }))
-      .or(page.getByText(/sign out|logout/i));
-
-    await expect(signOutButton.first()).toBeVisible({ timeout: 10000 });
-    await signOutButton.first().click();
+    // Click "Sign Out" using data-testid (most reliable)
+    const signOutButton = page.locator('[data-testid="sign-out-button"]');
+    await expect(signOutButton).toBeVisible({ timeout: 10000 });
+    await signOutButton.click();
 
     // Should redirect to login
     await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
