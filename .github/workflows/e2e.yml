@@ -82,7 +82,7 @@ jobs:
 
       - name: Run database migrations
         run: |
-          alembic upgrade head
+          alembic upgrade heads
         working-directory: apps/backend
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/resource_reserver_test
