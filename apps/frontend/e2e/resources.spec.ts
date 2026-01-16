@@ -32,7 +32,8 @@ test.describe('Resource Browsing', () => {
     if (hasResources) {
       await expect(resourceList.first()).toBeVisible();
     } else {
-      await expect(emptyState).toBeVisible();
+      // Use first() to handle multiple matching elements
+      await expect(emptyState.first()).toBeVisible();
     }
   });
 

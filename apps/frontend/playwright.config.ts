@@ -42,5 +42,10 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      ...process.env,
+      // Ensure Next.js rewrites proxy to the correct backend URL
+      INTERNAL_API_URL: process.env.INTERNAL_API_URL || 'http://localhost:8000',
+    },
   },
 });
