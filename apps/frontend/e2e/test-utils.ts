@@ -18,24 +18,21 @@ export async function login(page: Page, username = 'testuser', password = DEFAUL
 
   await page.goto('/login');
 
-  // Wait for DOM content to load (don't wait for all network requests)
-  await page.waitForLoadState('domcontentloaded');
+  // Wait for page to stabilize
+  await page.waitForLoadState('networkidle').catch(() => { });
+  await page.waitForTimeout(500);
 
-  // Check if we're redirected to setup (no users exist) - with short timeout
-  try {
-    await page.waitForURL(/\/(login|setup)/, { timeout: 5000 });
-  } catch {
-    // If timeout, check current URL
-  }
-
-  const currentUrl = page.url();
-  if (currentUrl.includes('/setup')) {
+  // Check if we're on setup page (no users exist)
+  if (page.url().includes('/setup')) {
     throw new Error('No users exist - global setup may have failed. Check password requirements.');
   }
 
-  // Wait for the login form elements to be visible
+  // Wait for the login form - use specific selectors to avoid matching setup form
+  // Login form has a single password field, setup form has password + confirm
   const usernameInput = page.getByLabel(/username/i);
-  const passwordInput = page.getByLabel(/password/i);
+  // Use exact match for "Password" label to avoid matching "Confirm password"
+  const passwordInput = page.getByLabel('Password', { exact: true })
+    .or(page.locator('input[type="password"]').first());
   const submitButton = page.getByRole('button', { name: /sign in/i });
 
   // Wait for form elements with reasonable timeout
