@@ -121,6 +121,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Clear Docker cache
+        run: docker system prune -af
+
       - name: Build Docker services
         run: docker compose build backend frontend
 
@@ -209,6 +212,9 @@ jobs:
         run: |
           mkdir -p data
           chmod 755 data
+
+      - name: Clear Docker cache
+        run: docker system prune -af
 
       - name: Start services with docker compose
         run: |
