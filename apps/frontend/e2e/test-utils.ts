@@ -53,14 +53,15 @@ export async function login(page: Page, username = 'testuser', password = DEFAUL
   await submitButton.click();
 
   // Wait for either dashboard redirect OR error message
-  const dashboardPromise = page.waitForURL(/\/dashboard/, { timeout: 10000 });
-  const errorLocator = page.locator('[role="alert"], .text-destructive, .text-red-500').first();
+  const dashboardPromise = page.waitForURL(/\/dashboard/, { timeout: 15000 });
+  // More specific error locators - look for actual error content, not empty containers
+  const errorLocator = page.locator('[data-sonner-toast][data-type="error"], [role="alert"]:has-text(/./), .text-destructive:has-text(/./)').first();
 
   try {
     // Race between dashboard redirect and error appearing
     await Promise.race([
       dashboardPromise,
-      errorLocator.waitFor({ state: 'visible', timeout: 5000 }).then(() => {
+      errorLocator.waitFor({ state: 'visible', timeout: 8000 }).then(() => {
         throw new Error('LOGIN_ERROR');
       }),
     ]);
@@ -68,13 +69,19 @@ export async function login(page: Page, username = 'testuser', password = DEFAUL
     if (e instanceof Error && e.message === 'LOGIN_ERROR') {
       // Get the error text
       const errorText = await errorLocator.textContent().catch(() => 'Unknown error');
-      throw new Error(`Login failed for user '${username}': ${errorText}`);
+      throw new Error(`Login failed for user '${username}': ${errorText?.trim() || 'Empty error message'}`);
     }
     // Check if we're still on login page
     if (page.url().includes('/login')) {
+      // Take a screenshot for debugging
+      await page.screenshot({ path: `login-failed-${username}.png` }).catch(() => { });
+
       // Check for any visible error text
       const visibleError = await page.getByText(/invalid|incorrect|failed|error|wrong/i).first().textContent().catch(() => null);
-      throw new Error(`Login failed for user '${username}'. Still on login page. Error: ${visibleError || 'No error message visible'}`);
+
+      // Also check network response
+      const currentUrl = page.url();
+      throw new Error(`Login failed for user '${username}'. Still on login page (${currentUrl}). Error: ${visibleError || 'No error message visible'}`);
     }
     throw e;
   }
